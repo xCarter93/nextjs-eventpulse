@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { type Recipient } from "@/types";
-import { RecipientCard } from "@/components/recipients/RecipientCard";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -14,6 +13,21 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DatePicker } from "@/components/ui/date-picker";
+import { AgGridReact } from "ag-grid-react";
+import {
+	type ColDef,
+	type ICellRendererParams,
+	ModuleRegistry,
+	ClientSideRowModelModule,
+	themeQuartz,
+	colorSchemeLightCold,
+	colorSchemeDarkBlue,
+} from "ag-grid-community";
+import { format } from "date-fns";
+import { useTheme } from "next-themes";
+
+// Register AG Grid Modules
+ModuleRegistry.registerModules([ClientSideRowModelModule]);
 
 // Mock data - would come from your database
 const initialRecipients: Recipient[] = [
@@ -31,9 +45,60 @@ const initialRecipients: Recipient[] = [
 		birthday: new Date(1985, 7, 22),
 		userId: "user1",
 	},
+	{
+		id: "3",
+		name: "Carol Davis",
+		email: "carol@example.com",
+		birthday: new Date(1992, 2, 8),
+		userId: "user1",
+	},
+	{
+		id: "4",
+		name: "David Wilson",
+		email: "david@example.com",
+		birthday: new Date(1988, 11, 25),
+		userId: "user1",
+	},
+	{
+		id: "5",
+		name: "Emma Brown",
+		email: "emma@example.com",
+		birthday: new Date(1995, 9, 30),
+		userId: "user1",
+	},
 ];
 
+interface ActionCellRendererProps extends ICellRendererParams {
+	data: Recipient;
+	onEdit: (recipient: Recipient) => void;
+	onDelete: (id: string) => void;
+}
+
+const ActionCellRenderer = (props: ActionCellRendererProps) => {
+	return (
+		<div className="flex gap-2 py-1">
+			<Button
+				variant="outline"
+				size="sm"
+				onClick={() => props.onEdit(props.data)}
+				className="h-7 px-2"
+			>
+				Edit
+			</Button>
+			<Button
+				variant="destructive"
+				size="sm"
+				onClick={() => props.onDelete(props.data.id)}
+				className="h-7 px-2"
+			>
+				Delete
+			</Button>
+		</div>
+	);
+};
+
 export default function RecipientsPage() {
+	const { theme } = useTheme();
 	const [recipients, setRecipients] = useState<Recipient[]>(initialRecipients);
 	const [isEditing, setIsEditing] = useState(false);
 	const [editingRecipient, setEditingRecipient] = useState<Recipient | null>(
@@ -41,6 +106,10 @@ export default function RecipientsPage() {
 	);
 	const [selectedDate, setSelectedDate] = useState<Date | undefined>(
 		editingRecipient?.birthday
+	);
+
+	const gridTheme = themeQuartz.withPart(
+		theme === "dark" ? colorSchemeDarkBlue : colorSchemeLightCold
 	);
 
 	const handleEdit = (recipient: Recipient) => {
@@ -51,6 +120,32 @@ export default function RecipientsPage() {
 
 	const handleDelete = (id: string) => {
 		setRecipients((current) => current.filter((r) => r.id !== id));
+	};
+
+	const columnDefs: ColDef<Recipient>[] = [
+		{ field: "name", headerName: "Name", flex: 1 },
+		{ field: "email", headerName: "Email", flex: 1 },
+		{
+			field: "birthday",
+			headerName: "Birthday",
+			flex: 1,
+			valueFormatter: (params) =>
+				format(new Date(params.value), "MMMM d, yyyy"),
+		},
+		{
+			headerName: "Actions",
+			minWidth: 200,
+			cellRenderer: ActionCellRenderer,
+			cellRendererParams: {
+				onEdit: handleEdit,
+				onDelete: handleDelete,
+			},
+		},
+	];
+
+	const defaultColDef = {
+		sortable: true,
+		resizable: true,
 	};
 
 	return (
@@ -161,15 +256,19 @@ export default function RecipientsPage() {
 			</div>
 
 			{recipients.length > 0 ? (
-				<div className="grid gap-4">
-					{recipients.map((recipient) => (
-						<RecipientCard
-							key={recipient.id}
-							recipient={recipient}
-							onEdit={handleEdit}
-							onDelete={handleDelete}
-						/>
-					))}
+				<div className="w-full">
+					<AgGridReact
+						rowData={recipients}
+						columnDefs={columnDefs}
+						defaultColDef={defaultColDef}
+						domLayout="autoHeight"
+						animateRows={true}
+						rowSelection="single"
+						theme={gridTheme}
+						rowHeight={40}
+						headerHeight={40}
+						suppressCellFocus={true}
+					/>
 				</div>
 			) : (
 				<div className="text-center py-12">
