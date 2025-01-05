@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DatePicker } from "@/components/ui/date-picker";
 
 // Mock data - would come from your database
 const initialRecipients: Recipient[] = [
@@ -38,9 +39,13 @@ export default function RecipientsPage() {
 	const [editingRecipient, setEditingRecipient] = useState<Recipient | null>(
 		null
 	);
+	const [selectedDate, setSelectedDate] = useState<Date | undefined>(
+		editingRecipient?.birthday
+	);
 
 	const handleEdit = (recipient: Recipient) => {
 		setEditingRecipient(recipient);
+		setSelectedDate(recipient.birthday);
 		setIsEditing(true);
 	};
 
@@ -52,9 +57,22 @@ export default function RecipientsPage() {
 		<div className="space-y-6">
 			<div className="flex justify-between items-center">
 				<h1 className="text-2xl font-bold text-foreground">Recipients</h1>
-				<Dialog open={isEditing} onOpenChange={setIsEditing}>
+				<Dialog
+					open={isEditing}
+					onOpenChange={(open) => {
+						setIsEditing(open);
+						if (!open) {
+							setSelectedDate(undefined);
+						}
+					}}
+				>
 					<DialogTrigger asChild>
-						<Button onClick={() => setEditingRecipient(null)}>
+						<Button
+							onClick={() => {
+								setEditingRecipient(null);
+								setSelectedDate(undefined);
+							}}
+						>
 							Add Recipient
 						</Button>
 					</DialogTrigger>
@@ -72,7 +90,7 @@ export default function RecipientsPage() {
 									id: editingRecipient?.id || Date.now().toString(),
 									name: formData.get("name") as string,
 									email: formData.get("email") as string,
-									birthday: new Date(formData.get("birthday") as string),
+									birthday: selectedDate || new Date(),
 									userId: "user1",
 								};
 
@@ -88,6 +106,7 @@ export default function RecipientsPage() {
 
 								setIsEditing(false);
 								setEditingRecipient(null);
+								setSelectedDate(undefined);
 							}}
 							className="space-y-4"
 						>
@@ -113,15 +132,10 @@ export default function RecipientsPage() {
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="birthday">Birthday</Label>
-								<Input
-									type="date"
-									id="birthday"
-									name="birthday"
-									required
-									defaultValue={
-										editingRecipient?.birthday.toISOString().split("T")[0]
-									}
+								<Label>Birthday</Label>
+								<DatePicker
+									selected={selectedDate}
+									onSelect={setSelectedDate}
 								/>
 							</div>
 
@@ -132,11 +146,12 @@ export default function RecipientsPage() {
 									onClick={() => {
 										setIsEditing(false);
 										setEditingRecipient(null);
+										setSelectedDate(undefined);
 									}}
 								>
 									Cancel
 								</Button>
-								<Button type="submit">
+								<Button type="submit" disabled={!selectedDate}>
 									{editingRecipient ? "Save Changes" : "Add Recipient"}
 								</Button>
 							</div>

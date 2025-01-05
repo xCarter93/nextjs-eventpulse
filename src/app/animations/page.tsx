@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { type ChangeEvent } from "react";
+import Flower from "@/components/animations/Flower";
+import BalloonsContainer from "@/components/animations/BalloonsContainer";
 
 // Mock data - would come from your API/database
 const templates: AnimationTemplate[] = [
@@ -16,7 +18,7 @@ const templates: AnimationTemplate[] = [
 		id: "1",
 		name: "Floating Balloons",
 		description: "Colorful balloons floating up with a birthday message",
-		previewUrl: "/previews/balloons.gif",
+		previewComponent: BalloonsContainer,
 		isPremium: false,
 	},
 	{
@@ -31,7 +33,14 @@ const templates: AnimationTemplate[] = [
 		name: "Sparkle Text",
 		description: "Your message appears with magical sparkles",
 		previewUrl: "/previews/sparkles.gif",
-		isPremium: true,
+		isPremium: false,
+	},
+	{
+		id: "4",
+		name: "Blooming Flower",
+		description: "A beautiful animated flower that blooms with your message",
+		previewComponent: Flower,
+		isPremium: false,
 	},
 ];
 

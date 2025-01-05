@@ -17,6 +17,7 @@ export function TemplateCard({
 	subscription,
 }: TemplateCardProps) {
 	const isLocked = template.isPremium && subscription === "free";
+	const PreviewComponent = template.previewComponent;
 
 	return (
 		<Card
@@ -27,12 +28,18 @@ export function TemplateCard({
 		>
 			<CardContent className="p-4">
 				<div className="aspect-video relative rounded-md overflow-hidden mb-3">
-					<Image
-						src={template.previewUrl}
-						alt={template.name}
-						fill
-						className="object-cover"
-					/>
+					{PreviewComponent ? (
+						<div className="flex items-center justify-center w-full h-[180px]">
+							<PreviewComponent isPreview={true} />
+						</div>
+					) : template.previewUrl ? (
+						<Image
+							src={template.previewUrl}
+							alt={template.name}
+							fill
+							className="object-cover"
+						/>
+					) : null}
 					{isLocked && (
 						<div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center">
 							<span className="text-muted-foreground font-semibold">

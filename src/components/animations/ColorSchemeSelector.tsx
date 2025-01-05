@@ -1,8 +1,14 @@
 import { type ColorScheme } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { HexColorPicker, HexColorInput } from "react-colorful";
+import { useState } from "react";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface ColorSchemeSelectorProps {
 	value: ColorScheme;
@@ -34,18 +40,47 @@ export function ColorSchemeSelector({
 	value,
 	onChange,
 }: ColorSchemeSelectorProps) {
+	const [activeColor, setActiveColor] = useState<keyof ColorScheme | null>(
+		null
+	);
+
+	const handleColorChange = (color: string) => {
+		if (activeColor) {
+			onChange({ ...value, [activeColor]: color });
+		}
+	};
+
 	return (
 		<div className="space-y-6">
 			<div className="grid grid-cols-4 gap-4">
 				{Object.entries(value).map(([key, color]) => (
 					<div key={key} className="space-y-2">
 						<Label className="capitalize">{key}</Label>
-						<Input
-							type="color"
-							value={color}
-							onChange={(e) => onChange({ ...value, [key]: e.target.value })}
-							className="h-10 cursor-pointer"
-						/>
+						<Popover>
+							<PopoverTrigger asChild>
+								<Button
+									variant="outline"
+									className="w-full h-10"
+									onClick={() => setActiveColor(key as keyof ColorScheme)}
+									style={{ backgroundColor: color }}
+								>
+									<span className="sr-only">Pick a {key} color</span>
+								</Button>
+							</PopoverTrigger>
+							<PopoverContent className="w-auto p-3" align="start">
+								<div className="space-y-3">
+									<HexColorPicker color={color} onChange={handleColorChange} />
+									<div className="flex items-center space-x-2">
+										<span className="text-sm text-muted-foreground">#</span>
+										<HexColorInput
+											color={color}
+											onChange={handleColorChange}
+											className="flex h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+										/>
+									</div>
+								</div>
+							</PopoverContent>
+						</Popover>
 					</div>
 				))}
 			</div>

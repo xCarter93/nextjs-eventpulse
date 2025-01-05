@@ -6,11 +6,16 @@ export interface Recipient {
 	userId: string;
 }
 
+interface PreviewComponentProps {
+	isPreview?: boolean;
+}
+
 export interface AnimationTemplate {
 	id: string;
 	name: string;
 	description: string;
-	previewUrl: string;
+	previewUrl?: string;
+	previewComponent?: React.ComponentType<PreviewComponentProps>;
 	isPremium: boolean;
 }
 

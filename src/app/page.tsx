@@ -1,5 +1,8 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { MagicCard } from "@/components/ui/magic-card";
+import { Card } from "@/components/ui/card";
 
 export default function LandingPage() {
 	return (
@@ -31,7 +34,7 @@ export default function LandingPage() {
 				</div>
 
 				<div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-					<div className="bg-card p-6 rounded-lg shadow-sm">
+					<MagicCard className="p-6">
 						<div className="text-3xl mb-4">✨</div>
 						<h3 className="text-xl font-semibold mb-2 text-card-foreground">
 							Beautiful Templates
@@ -40,9 +43,9 @@ export default function LandingPage() {
 							Choose from a variety of stunning animation templates designed to
 							delight.
 						</p>
-					</div>
+					</MagicCard>
 
-					<div className="bg-card p-6 rounded-lg shadow-sm">
+					<MagicCard className="p-6">
 						<div className="text-3xl mb-4">🎨</div>
 						<h3 className="text-xl font-semibold mb-2 text-card-foreground">
 							Custom Colors
@@ -50,9 +53,9 @@ export default function LandingPage() {
 						<p className="text-muted-foreground">
 							Personalize every animation with your favorite colors and themes.
 						</p>
-					</div>
+					</MagicCard>
 
-					<div className="bg-card p-6 rounded-lg shadow-sm">
+					<MagicCard className="p-6">
 						<div className="text-3xl mb-4">📅</div>
 						<h3 className="text-xl font-semibold mb-2 text-card-foreground">
 							Never Miss a Birthday
@@ -60,7 +63,7 @@ export default function LandingPage() {
 						<p className="text-muted-foreground">
 							Get reminders and schedule animations to send automatically.
 						</p>
-					</div>
+					</MagicCard>
 				</div>
 			</div>
 
@@ -73,59 +76,67 @@ export default function LandingPage() {
 					</p>
 				</div>
 
-				<div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-					<div className="bg-card p-8 rounded-lg shadow-sm border">
-						<h3 className="text-xl font-semibold mb-4 text-card-foreground">
-							Free
-						</h3>
-						<p className="text-4xl font-bold mb-6 text-foreground">$0</p>
-						<ul className="space-y-3 mb-8">
-							<li className="flex items-center text-muted-foreground">
-								<span className="text-primary mr-2">✓</span>
-								Up to 5 recipients
-							</li>
-							<li className="flex items-center text-muted-foreground">
-								<span className="text-primary mr-2">✓</span>
-								Basic animation templates
-							</li>
-							<li className="flex items-center text-muted-foreground">
-								<span className="text-primary mr-2">✓</span>
-								Email reminders
-							</li>
-						</ul>
-						<Button variant="outline" asChild className="w-full">
-							<Link href="/dashboard">Get Started</Link>
-						</Button>
-					</div>
-
-					<div className="bg-primary text-primary-foreground p-8 rounded-lg shadow-lg relative">
-						<div className="absolute top-0 right-0 -translate-y-1/2 px-3 py-1 bg-warning text-warning-foreground text-sm font-medium rounded-full">
-							Popular
+				<div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto pt-4">
+					<Card className="p-8">
+						<div className="flex flex-col h-full">
+							<h3 className="text-xl font-semibold mb-4 text-card-foreground">
+								Free
+							</h3>
+							<p className="text-4xl font-bold mb-6 text-foreground">$0</p>
+							<ul className="space-y-3 mb-8 flex-grow">
+								<li className="flex items-center text-muted-foreground">
+									<span className="text-primary mr-2">✓</span>
+									Up to 5 recipients
+								</li>
+								<li className="flex items-center text-muted-foreground">
+									<span className="text-primary mr-2">✓</span>
+									Basic animation templates
+								</li>
+								<li className="flex items-center text-muted-foreground">
+									<span className="text-primary mr-2">✓</span>
+									Email reminders
+								</li>
+							</ul>
+							<Button variant="outline" asChild className="w-full">
+								<Link href="/dashboard">Get Started</Link>
+							</Button>
 						</div>
-						<h3 className="text-xl font-semibold mb-4">Premium</h3>
-						<p className="text-4xl font-bold mb-6">$5/mo</p>
-						<ul className="space-y-3 mb-8">
-							<li className="flex items-center text-primary-foreground/90">
-								<span className="text-warning mr-2">✓</span>
-								Unlimited recipients
-							</li>
-							<li className="flex items-center text-primary-foreground/90">
-								<span className="text-warning mr-2">✓</span>
-								All premium templates
-							</li>
-							<li className="flex items-center text-primary-foreground/90">
-								<span className="text-warning mr-2">✓</span>
-								Automatic sending
-							</li>
-							<li className="flex items-center text-primary-foreground/90">
-								<span className="text-warning mr-2">✓</span>
-								Priority support
-							</li>
-						</ul>
-						<Button variant="secondary" asChild className="w-full">
-							<Link href="/upgrade">Upgrade Now</Link>
-						</Button>
-					</div>
+					</Card>
+
+					<Card className="p-8 bg-gradient-to-br from-[#9333EA] to-[#4F46E5] relative">
+						<div className="flex flex-col h-full relative">
+							<Badge variant="secondary" className="absolute -top-12 right-0">
+								Popular
+							</Badge>
+							<h3 className="text-xl font-semibold mb-4 text-primary-foreground">
+								Premium
+							</h3>
+							<p className="text-4xl font-bold mb-6 text-primary-foreground">
+								$5/mo
+							</p>
+							<ul className="space-y-3 mb-8 flex-grow">
+								<li className="flex items-center text-primary-foreground/90">
+									<span className="text-warning mr-2">✓</span>
+									Unlimited recipients
+								</li>
+								<li className="flex items-center text-primary-foreground/90">
+									<span className="text-warning mr-2">✓</span>
+									All premium templates
+								</li>
+								<li className="flex items-center text-primary-foreground/90">
+									<span className="text-warning mr-2">✓</span>
+									Automatic sending
+								</li>
+								<li className="flex items-center text-primary-foreground/90">
+									<span className="text-warning mr-2">✓</span>
+									Priority support
+								</li>
+							</ul>
+							<Button variant="secondary" asChild className="w-full">
+								<Link href="/upgrade">Upgrade Now</Link>
+							</Button>
+						</div>
+					</Card>
 				</div>
 			</div>
 
