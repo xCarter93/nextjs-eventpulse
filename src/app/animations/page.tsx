@@ -9,37 +9,51 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { type ChangeEvent } from "react";
-import Flower from "@/components/animations/Flower";
-import BalloonsContainer from "@/components/animations/BalloonsContainer";
+import LottieAnimation from "@/components/animations/LottieAnimation";
 
 // Mock data - would come from your API/database
 const templates: AnimationTemplate[] = [
 	{
 		id: "1",
-		name: "Floating Balloons",
-		description: "Colorful balloons floating up with a birthday message",
-		previewComponent: BalloonsContainer,
+		name: "Floating Animation",
+		description: "A beautiful animated celebration message",
+		previewComponent: LottieAnimation,
 		isPremium: false,
 	},
 	{
 		id: "2",
 		name: "Confetti Explosion",
 		description: "A burst of confetti with customizable colors",
-		previewUrl: "/previews/confetti.gif",
+		previewComponent: (props) => (
+			<LottieAnimation
+				{...props}
+				src="/lottiefiles/Confetti - 1736126738780.lottie"
+			/>
+		),
 		isPremium: false,
 	},
 	{
 		id: "3",
-		name: "Sparkle Text",
-		description: "Your message appears with magical sparkles",
-		previewUrl: "/previews/sparkles.gif",
+		name: "Sparkle Animation",
+		description: "A magical sparkle effect for your birthday message",
+		previewComponent: (props) => (
+			<LottieAnimation
+				{...props}
+				src="/lottiefiles/Sparkle - 1736127010347.lottie"
+			/>
+		),
 		isPremium: false,
 	},
 	{
 		id: "4",
-		name: "Blooming Flower",
-		description: "A beautiful animated flower that blooms with your message",
-		previewComponent: Flower,
+		name: "Blooming Rose",
+		description: "A beautiful animated rose that blooms with your message",
+		previewComponent: (props) => (
+			<LottieAnimation
+				{...props}
+				src="/lottiefiles/Rose - 1736126013373.lottie"
+			/>
+		),
 		isPremium: false,
 	},
 ];
@@ -57,7 +71,6 @@ export default function AnimationsPage() {
 	const [colorScheme, setColorScheme] =
 		useState<ColorScheme>(defaultColorScheme);
 	const [message, setMessage] = useState("");
-	const subscription = "free"; // This would come from your user's data
 
 	const handleCreate = () => {
 		// This would send the data to your API to create the animation
@@ -90,7 +103,6 @@ export default function AnimationsPage() {
 									template={template}
 									isSelected={selectedTemplate?.id === template.id}
 									onSelect={setSelectedTemplate}
-									subscription={subscription}
 								/>
 							))}
 						</div>
