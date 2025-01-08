@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { type ChangeEvent } from "react";
 import LottieAnimation from "@/components/animations/LottieAnimation";
+import { CustomAnimationUploader } from "@/components/animations/CustomAnimationUploader";
 
 // Mock data - would come from your API/database
 const templates: AnimationTemplate[] = [
@@ -54,6 +55,29 @@ const templates: AnimationTemplate[] = [
 				src="/lottiefiles/Rose - 1736126013373.lottie"
 			/>
 		),
+		isPremium: false,
+	},
+	{
+		id: "custom",
+		name: "Custom Animation",
+		description: (
+			<div className="space-y-1">
+				<span>Upload your own Lottie animation file</span>
+				<span className="block text-xs">
+					Find free animations at{" "}
+					<a
+						href="https://lottiefiles.com/featured-free-animations"
+						target="_blank"
+						rel="noopener noreferrer"
+						className="text-primary hover:underline"
+						onClick={(e) => e.stopPropagation()}
+					>
+						LottieFiles
+					</a>
+				</span>
+			</div>
+		),
+		previewComponent: CustomAnimationUploader,
 		isPremium: false,
 	},
 ];

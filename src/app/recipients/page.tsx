@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { type Recipient } from "@/types";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -25,53 +24,28 @@ import {
 } from "ag-grid-community";
 import { format } from "date-fns";
 import { useTheme } from "next-themes";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { Id } from "../../../convex/_generated/dataModel";
+import { toast } from "sonner";
+import { useAuth } from "@clerk/nextjs";
 
 // Register AG Grid Modules
 ModuleRegistry.registerModules([ClientSideRowModelModule]);
 
-// Mock data - would come from your database
-const initialRecipients: Recipient[] = [
-	{
-		id: "1",
-		name: "Alice Johnson",
-		email: "alice@example.com",
-		birthday: new Date(1990, 5, 15),
-		userId: "user1",
-	},
-	{
-		id: "2",
-		name: "Bob Smith",
-		email: "bob@example.com",
-		birthday: new Date(1985, 7, 22),
-		userId: "user1",
-	},
-	{
-		id: "3",
-		name: "Carol Davis",
-		email: "carol@example.com",
-		birthday: new Date(1992, 2, 8),
-		userId: "user1",
-	},
-	{
-		id: "4",
-		name: "David Wilson",
-		email: "david@example.com",
-		birthday: new Date(1988, 11, 25),
-		userId: "user1",
-	},
-	{
-		id: "5",
-		name: "Emma Brown",
-		email: "emma@example.com",
-		birthday: new Date(1995, 9, 30),
-		userId: "user1",
-	},
-];
+interface Recipient {
+	_id: Id<"recipients">;
+	_creationTime: number;
+	name: string;
+	email: string;
+	birthday: number;
+	userId: Id<"users">;
+}
 
 interface ActionCellRendererProps extends ICellRendererParams {
 	data: Recipient;
 	onEdit: (recipient: Recipient) => void;
-	onDelete: (id: string) => void;
+	onDelete: (id: Id<"recipients">) => void;
 }
 
 const ActionCellRenderer = (props: ActionCellRendererProps) => {
@@ -88,7 +62,7 @@ const ActionCellRenderer = (props: ActionCellRendererProps) => {
 			<Button
 				variant="destructive"
 				size="sm"
-				onClick={() => props.onDelete(props.data.id)}
+				onClick={() => props.onDelete(props.data._id)}
 				className="h-7 px-2"
 			>
 				Delete
@@ -97,15 +71,33 @@ const ActionCellRenderer = (props: ActionCellRendererProps) => {
 	);
 };
 
-export default function RecipientsPage() {
+function RecipientsPageContent() {
 	const { theme } = useTheme();
-	const [recipients, setRecipients] = useState<Recipient[]>(initialRecipients);
+	const { userId } = useAuth();
+	const [tokenIdentifier, setTokenIdentifier] = useState<string>("");
+
+	useEffect(() => {
+		if (userId) {
+			setTokenIdentifier(
+				`https://${process.env.NEXT_PUBLIC_CLERK_HOSTNAME}|${userId}`
+			);
+		}
+	}, [userId]);
+
+	const recipients = useQuery(
+		api.recipients.getRecipients,
+		tokenIdentifier ? { tokenIdentifier } : "skip"
+	);
+	const addRecipient = useMutation(api.recipients.addRecipient);
+	const updateRecipient = useMutation(api.recipients.updateRecipient);
+	const deleteRecipient = useMutation(api.recipients.deleteRecipient);
+
 	const [isEditing, setIsEditing] = useState(false);
 	const [editingRecipient, setEditingRecipient] = useState<Recipient | null>(
 		null
 	);
 	const [selectedDate, setSelectedDate] = useState<Date | undefined>(
-		editingRecipient?.birthday
+		editingRecipient ? new Date(editingRecipient.birthday) : undefined
 	);
 
 	const gridTheme = themeQuartz.withPart(
@@ -114,12 +106,18 @@ export default function RecipientsPage() {
 
 	const handleEdit = (recipient: Recipient) => {
 		setEditingRecipient(recipient);
-		setSelectedDate(recipient.birthday);
+		setSelectedDate(new Date(recipient.birthday));
 		setIsEditing(true);
 	};
 
-	const handleDelete = (id: string) => {
-		setRecipients((current) => current.filter((r) => r.id !== id));
+	const handleDelete = async (id: Id<"recipients">) => {
+		try {
+			await deleteRecipient({ id, tokenIdentifier });
+			toast.success("Recipient deleted successfully");
+		} catch (error) {
+			toast.error("Failed to delete recipient");
+			console.error(error);
+		}
 	};
 
 	const columnDefs: ColDef<Recipient>[] = [
@@ -158,6 +156,7 @@ export default function RecipientsPage() {
 						setIsEditing(open);
 						if (!open) {
 							setSelectedDate(undefined);
+							setEditingRecipient(null);
 						}
 					}}
 				>
@@ -178,30 +177,46 @@ export default function RecipientsPage() {
 							</DialogTitle>
 						</DialogHeader>
 						<form
-							onSubmit={(e) => {
+							onSubmit={async (e) => {
 								e.preventDefault();
 								const formData = new FormData(e.currentTarget);
-								const newRecipient: Recipient = {
-									id: editingRecipient?.id || Date.now().toString(),
-									name: formData.get("name") as string,
-									email: formData.get("email") as string,
-									birthday: selectedDate || new Date(),
-									userId: "user1",
-								};
 
-								if (editingRecipient) {
-									setRecipients((current) =>
-										current.map((r) =>
-											r.id === editingRecipient.id ? newRecipient : r
-										)
-									);
-								} else {
-									setRecipients((current) => [...current, newRecipient]);
+								if (!selectedDate) {
+									toast.error("Please select a birthday");
+									return;
 								}
 
-								setIsEditing(false);
-								setEditingRecipient(null);
-								setSelectedDate(undefined);
+								try {
+									if (editingRecipient) {
+										await updateRecipient({
+											id: editingRecipient._id,
+											name: formData.get("name") as string,
+											email: formData.get("email") as string,
+											birthday: selectedDate.getTime(),
+											tokenIdentifier,
+										});
+										toast.success("Recipient updated successfully");
+									} else {
+										await addRecipient({
+											name: formData.get("name") as string,
+											email: formData.get("email") as string,
+											birthday: selectedDate.getTime(),
+											tokenIdentifier,
+										});
+										toast.success("Recipient added successfully");
+									}
+
+									setIsEditing(false);
+									setEditingRecipient(null);
+									setSelectedDate(undefined);
+								} catch (error) {
+									toast.error(
+										editingRecipient
+											? "Failed to update recipient"
+											: "Failed to add recipient"
+									);
+									console.error(error);
+								}
 							}}
 							className="space-y-4"
 						>
@@ -255,34 +270,21 @@ export default function RecipientsPage() {
 				</Dialog>
 			</div>
 
-			{recipients.length > 0 ? (
-				<div className="w-full">
+			<div className="ag-theme-quartz" style={{ height: "500px" }}>
+				{recipients && (
 					<AgGridReact
 						rowData={recipients}
 						columnDefs={columnDefs}
 						defaultColDef={defaultColDef}
-						domLayout="autoHeight"
-						animateRows={true}
-						rowSelection="single"
 						theme={gridTheme}
-						rowHeight={40}
-						headerHeight={40}
-						suppressCellFocus={true}
+						pagination={true}
+						paginationAutoPageSize={true}
 					/>
-				</div>
-			) : (
-				<div className="text-center py-12">
-					<h3 className="text-lg font-medium text-foreground">
-						No recipients yet
-					</h3>
-					<p className="mt-2 text-muted-foreground">
-						Get started by adding your first recipient
-					</p>
-					<div className="mt-6">
-						<Button onClick={() => setIsEditing(true)}>Add Recipient</Button>
-					</div>
-				</div>
-			)}
+				)}
+			</div>
 		</div>
 	);
+}
+export default function RecipientsPage() {
+	return <RecipientsPageContent />;
 }

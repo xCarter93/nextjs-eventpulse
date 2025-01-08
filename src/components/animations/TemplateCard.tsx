@@ -9,6 +9,7 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { useState } from "react";
+import Image from "next/image";
 
 interface TemplateCardProps {
 	template: AnimationTemplate;
@@ -34,7 +35,7 @@ export function TemplateCard({
 			>
 				<CardContent className="p-4">
 					<div
-						className="aspect-video bg-muted rounded-lg mb-4 overflow-hidden"
+						className="aspect-video bg-muted rounded-lg mb-4 overflow-hidden relative"
 						onClick={(e) => {
 							e.stopPropagation();
 							setShowPreview(true);
@@ -44,18 +45,19 @@ export function TemplateCard({
 							<PreviewComponent isPreview />
 						) : (
 							template.previewUrl && (
-								<img
+								<Image
 									src={template.previewUrl}
 									alt={template.name}
-									className="w-full h-full object-cover"
+									fill
+									className="object-cover"
 								/>
 							)
 						)}
 					</div>
 					<h3 className="font-semibold">{template.name}</h3>
-					<p className="text-sm text-muted-foreground">
+					<div className="text-sm text-muted-foreground">
 						{template.description}
-					</p>
+					</div>
 				</CardContent>
 			</Card>
 
@@ -64,15 +66,16 @@ export function TemplateCard({
 					<DialogHeader>
 						<DialogTitle>{template.name} Preview</DialogTitle>
 					</DialogHeader>
-					<div className="aspect-video">
+					<div className="aspect-video relative">
 						{PreviewComponent ? (
 							<PreviewComponent />
 						) : (
 							template.previewUrl && (
-								<img
+								<Image
 									src={template.previewUrl}
 									alt={template.name}
-									className="w-full h-full object-cover"
+									fill
+									className="object-cover"
 								/>
 							)
 						)}

@@ -1,38 +1,66 @@
+"use client";
+
 import { getDaysUntilBirthday, isWithinDays } from "@/utils/date";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import Calendar from "@/components/dashboard/Calendar";
 import { getPublicHolidays } from "@/app/actions/holidays";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { useAuth } from "@clerk/nextjs";
+import { useState, useEffect } from "react";
 
-// This is a mock of what would come from your database
-const mockRecipients = [
-	{
-		id: "1",
-		name: "Alice Johnson",
-		email: "alice@example.com",
-		birthday: new Date(1990, 5, 15),
-		userId: "user1",
-	},
-	{
-		id: "2",
-		name: "Bob Smith",
-		email: "bob@example.com",
-		birthday: new Date(1985, 7, 22),
-		userId: "user1",
-	},
-];
+interface Holiday {
+	date: string;
+	name: string;
+	localName: string;
+	type: string;
+}
 
-export default async function DashboardPage() {
-	const upcomingBirthdays = mockRecipients
+export default function DashboardPage() {
+	const { userId } = useAuth();
+	const [tokenIdentifier, setTokenIdentifier] = useState<string>("");
+	const [holidays, setHolidays] = useState<Holiday[]>([]);
+
+	useEffect(() => {
+		if (userId) {
+			setTokenIdentifier(
+				`https://${process.env.NEXT_PUBLIC_CLERK_HOSTNAME}|${userId}`
+			);
+		}
+	}, [userId]);
+
+	useEffect(() => {
+		const fetchHolidays = async () => {
+			const currentYear = new Date().getFullYear();
+			const holidaysData = await getPublicHolidays(currentYear, "US");
+			setHolidays(holidaysData);
+		};
+		fetchHolidays();
+	}, []);
+
+	const recipients =
+		useQuery(
+			api.recipients.getRecipients,
+			tokenIdentifier ? { tokenIdentifier } : "skip"
+		) || [];
+
+	const user = useQuery(
+		api.users.getUser,
+		tokenIdentifier ? { tokenIdentifier } : "skip"
+	);
+
+	const recipientsWithDate = recipients.map((r) => ({
+		...r,
+		birthday: new Date(r.birthday),
+	}));
+
+	const upcomingBirthdays = recipientsWithDate
 		.filter((recipient) => isWithinDays(recipient.birthday, 30))
 		.sort(
 			(a, b) =>
 				getDaysUntilBirthday(a.birthday) - getDaysUntilBirthday(b.birthday)
 		);
-
-	// Get holidays for the current year
-	const currentYear = new Date().getFullYear();
-	const holidays = await getPublicHolidays(currentYear, "US");
 
 	return (
 		<div className="space-y-6">
@@ -40,11 +68,12 @@ export default async function DashboardPage() {
 				<h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
 				<div className="flex space-x-4">
 					<div className="text-sm text-muted-foreground">
-						<span className="font-medium">Recipients:</span>{" "}
-						{mockRecipients.length}/5
+						<span className="font-medium">Recipients:</span> {recipients.length}
+						/{user?.subscription.features.maxRecipients ?? "-"}
 					</div>
 					<div className="text-sm text-muted-foreground">
-						<span className="font-medium">Plan:</span> Free
+						<span className="font-medium">Plan:</span>{" "}
+						{user?.subscription.tier === "pro" ? "Pro" : "Free"}
 					</div>
 				</div>
 			</div>
@@ -52,7 +81,7 @@ export default async function DashboardPage() {
 			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 				<div className="lg:col-span-2">
 					<Calendar
-						birthdays={mockRecipients.map((r) => ({
+						birthdays={recipientsWithDate.map((r) => ({
 							date: r.birthday,
 							name: r.name,
 						}))}
@@ -70,7 +99,7 @@ export default async function DashboardPage() {
 							<div className="space-y-4">
 								{upcomingBirthdays.map((recipient) => (
 									<div
-										key={recipient.id}
+										key={recipient._id}
 										className="flex justify-between items-center p-3 bg-muted rounded-md"
 									>
 										<div>

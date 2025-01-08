@@ -1,3 +1,5 @@
+import { type ComponentType, type ReactNode } from "react";
+
 export interface Recipient {
 	id: string;
 	name: string;
@@ -6,28 +8,13 @@ export interface Recipient {
 	userId: string;
 }
 
-interface PreviewComponentProps {
-	isPreview?: boolean;
-}
-
 export interface AnimationTemplate {
 	id: string;
 	name: string;
-	description: string;
+	description: string | ReactNode;
 	previewUrl?: string;
-	previewComponent?: React.ComponentType<PreviewComponentProps>;
+	previewComponent?: ComponentType<{ isPreview?: boolean }>;
 	isPremium: boolean;
-}
-
-export interface CustomAnimation {
-	id: string;
-	templateId: string;
-	recipientId: string;
-	userId: string;
-	customText: string;
-	colorScheme: ColorScheme;
-	createdAt: Date;
-	url: string;
 }
 
 export interface ColorScheme {
