@@ -3,12 +3,17 @@ import { mutation, query } from "./_generated/server";
 import { ConvexError } from "convex/values";
 
 export const getRecipients = query({
-	args: { tokenIdentifier: v.string() },
-	async handler(ctx, args) {
+	async handler(ctx) {
+		const identity = await ctx.auth.getUserIdentity();
+
+		if (!identity) {
+			return [];
+		}
+
 		const user = await ctx.db
 			.query("users")
 			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", args.tokenIdentifier)
+				q.eq("tokenIdentifier", identity.tokenIdentifier)
 			)
 			.first();
 
@@ -27,16 +32,21 @@ export const getRecipients = query({
 
 export const addRecipient = mutation({
 	args: {
-		tokenIdentifier: v.string(),
 		name: v.string(),
 		email: v.string(),
 		birthday: v.number(),
 	},
 	async handler(ctx, args) {
+		const identity = await ctx.auth.getUserIdentity();
+
+		if (!identity) {
+			throw new ConvexError("Not authenticated");
+		}
+
 		const user = await ctx.db
 			.query("users")
 			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", args.tokenIdentifier)
+				q.eq("tokenIdentifier", identity.tokenIdentifier)
 			)
 			.first();
 
@@ -57,17 +67,22 @@ export const addRecipient = mutation({
 
 export const updateRecipient = mutation({
 	args: {
-		tokenIdentifier: v.string(),
 		id: v.id("recipients"),
 		name: v.string(),
 		email: v.string(),
 		birthday: v.number(),
 	},
 	async handler(ctx, args) {
+		const identity = await ctx.auth.getUserIdentity();
+
+		if (!identity) {
+			throw new ConvexError("Not authenticated");
+		}
+
 		const user = await ctx.db
 			.query("users")
 			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", args.tokenIdentifier)
+				q.eq("tokenIdentifier", identity.tokenIdentifier)
 			)
 			.first();
 
@@ -90,14 +105,19 @@ export const updateRecipient = mutation({
 
 export const deleteRecipient = mutation({
 	args: {
-		tokenIdentifier: v.string(),
 		id: v.id("recipients"),
 	},
 	async handler(ctx, args) {
+		const identity = await ctx.auth.getUserIdentity();
+
+		if (!identity) {
+			throw new ConvexError("Not authenticated");
+		}
+
 		const user = await ctx.db
 			.query("users")
 			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", args.tokenIdentifier)
+				q.eq("tokenIdentifier", identity.tokenIdentifier)
 			)
 			.first();
 

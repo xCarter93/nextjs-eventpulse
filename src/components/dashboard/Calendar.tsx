@@ -4,30 +4,32 @@ import React, { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 
-interface CalendarProps {
-	birthdays: Array<{
-		date: Date;
-		name: string;
-	}>;
-	holidays?: Array<{
-		date: string;
-		name: string;
-		localName: string;
-		type: string;
-	}>;
-	className?: string;
+interface Holiday {
+	date: string;
+	name: string;
+	localName: string;
+	type: string;
 }
 
-const Calendar: React.FC<CalendarProps> = ({
-	birthdays = [],
-	holidays = [],
-	className,
-}) => {
+interface CalendarProps {
+	holidays: Holiday[];
+}
+
+export function Calendar({ holidays }: CalendarProps) {
 	const [currentDate, setCurrentDate] = useState(new Date());
 	const [showBirthdays, setShowBirthdays] = useState(true);
 	const [showHolidays, setShowHolidays] = useState(true);
 	const today = new Date();
+
+	// Fetch recipients
+	const recipients = useQuery(api.recipients.getRecipients) || [];
+	const birthdays = recipients.map((r) => ({
+		date: new Date(r.birthday),
+		name: r.name,
+	}));
 
 	const isCurrentMonth =
 		currentDate.getMonth() === today.getMonth() &&
@@ -88,7 +90,7 @@ const Calendar: React.FC<CalendarProps> = ({
 						birthdayDate.getDate() === day &&
 						birthdayDate.getMonth() === currentDate.getMonth()
 					);
-			  })
+				})
 			: [];
 
 		const dayHolidays = showHolidays
@@ -99,7 +101,7 @@ const Calendar: React.FC<CalendarProps> = ({
 	};
 
 	return (
-		<div className={cn("w-full rounded-lg bg-card", className)}>
+		<div className="w-full rounded-lg bg-card shadow-sm">
 			{/* Calendar Header */}
 			<div className="flex items-center justify-between p-4 border-b">
 				<div>
@@ -233,6 +235,4 @@ const Calendar: React.FC<CalendarProps> = ({
 			</div>
 		</div>
 	);
-};
-
-export default Calendar;
+}
