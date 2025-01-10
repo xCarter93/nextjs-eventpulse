@@ -22,6 +22,13 @@ import {
 	themeQuartz,
 	colorSchemeLightCold,
 	colorSchemeDarkBlue,
+	CheckboxEditorModule,
+	CellValueChangedEvent,
+	TextEditorModule,
+	ValidationModule,
+	RowSelectionModule,
+	PaginationModule,
+	DateEditorModule,
 } from "ag-grid-community";
 import { format } from "date-fns";
 import { useTheme } from "next-themes";
@@ -29,9 +36,18 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // Register AG Grid Modules
-ModuleRegistry.registerModules([ClientSideRowModelModule]);
+ModuleRegistry.registerModules([
+	ClientSideRowModelModule,
+	CheckboxEditorModule,
+	TextEditorModule,
+	ValidationModule,
+	RowSelectionModule,
+	PaginationModule,
+	DateEditorModule,
+]);
 
 interface Recipient {
 	_id: Id<"recipients">;
@@ -40,25 +56,17 @@ interface Recipient {
 	email: string;
 	birthday: number;
 	userId: Id<"users">;
+	sendAutomaticEmail: boolean;
 }
 
 interface ActionCellRendererProps extends ICellRendererParams {
 	data: Recipient;
-	onEdit: (recipient: Recipient) => void;
 	onDelete: (id: Id<"recipients">) => void;
 }
 
 const ActionCellRenderer = (props: ActionCellRendererProps) => {
 	return (
-		<div className="flex gap-2 py-1">
-			<Button
-				variant="outline"
-				size="sm"
-				onClick={() => props.onEdit(props.data)}
-				className="h-7 px-2"
-			>
-				Edit
-			</Button>
+		<div className="flex justify-center py-1">
 			<Button
 				variant="destructive"
 				size="sm"
@@ -83,9 +91,8 @@ export function RecipientsTable() {
 	const [editingRecipient, setEditingRecipient] = useState<Recipient | null>(
 		null
 	);
-	const [selectedDate, setSelectedDate] = useState<Date | undefined>(
-		editingRecipient ? new Date(editingRecipient.birthday) : undefined
-	);
+	const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+	const [sendAutomaticEmail, setSendAutomaticEmail] = useState(false);
 
 	const gridTheme = themeQuartz.withPart(
 		theme === "dark" ? colorSchemeDarkBlue : colorSchemeLightCold
@@ -94,6 +101,7 @@ export function RecipientsTable() {
 	const defaultColDef = {
 		sortable: true,
 		resizable: true,
+		editable: true,
 	};
 
 	const gridOptions: GridOptions<Recipient> = {
@@ -106,12 +114,6 @@ export function RecipientsTable() {
 		...defaultColDef,
 	};
 
-	const handleEdit = (recipient: Recipient) => {
-		setEditingRecipient(recipient);
-		setSelectedDate(new Date(recipient.birthday));
-		setIsEditing(true);
-	};
-
 	const handleDelete = async (id: Id<"recipients">) => {
 		try {
 			await deleteRecipient({ id });
@@ -122,22 +124,81 @@ export function RecipientsTable() {
 		}
 	};
 
+	const handleCellValueChanged = async (event: CellValueChangedEvent) => {
+		try {
+			await updateRecipient({
+				id: event.data._id,
+				name: event.data.name,
+				email: event.data.email,
+				birthday: event.data.birthday,
+				sendAutomaticEmail: event.data.sendAutomaticEmail,
+			});
+			toast.success("Recipient updated successfully");
+		} catch (error) {
+			toast.error("Failed to update recipient");
+			console.error(error);
+		}
+	};
+
 	const columnDefs: ColDef<Recipient>[] = [
-		{ field: "name", headerName: "Name", flex: 1 },
-		{ field: "email", headerName: "Email", flex: 1 },
+		{
+			field: "name",
+			headerName: "Name",
+			flex: 1,
+			editable: true,
+			cellEditor: "agTextCellEditor",
+		},
+		{
+			field: "email",
+			headerName: "Email",
+			flex: 1,
+			editable: true,
+			cellEditor: "agTextCellEditor",
+		},
 		{
 			field: "birthday",
 			headerName: "Birthday",
 			flex: 1,
-			valueFormatter: (params) =>
-				format(new Date(params.value), "MMMM d, yyyy"),
+			editable: true,
+			valueFormatter: (params) => {
+				if (!params.value) return "";
+				const date = new Date(params.value);
+				return format(date, "MMMM d, yyyy");
+			},
+			valueGetter: (params) => {
+				if (!params.data?.birthday) return null;
+				const date = new Date(params.data.birthday);
+				return date;
+			},
+			valueSetter: (params) => {
+				if (!params.data) return false;
+				const newValue = params.newValue;
+				const timestamp =
+					newValue instanceof Date
+						? newValue.getTime()
+						: new Date(newValue).getTime();
+				if (isNaN(timestamp)) return false;
+				params.data.birthday = timestamp;
+				return true;
+			},
+			cellEditor: "agDateCellEditor",
+			cellEditorParams: {
+				browserDatePicker: true,
+			},
+		},
+		{
+			field: "sendAutomaticEmail",
+			headerName: "Send Automatic Email",
+			flex: 1,
+			cellEditor: "agCheckboxCellEditor",
+			editable: true,
+			cellRenderer: "agCheckboxCellRenderer",
 		},
 		{
 			headerName: "Actions",
-			minWidth: 200,
+			minWidth: 100,
 			cellRenderer: ActionCellRenderer,
 			cellRendererParams: {
-				onEdit: handleEdit,
 				onDelete: handleDelete,
 			},
 		},
@@ -153,6 +214,7 @@ export function RecipientsTable() {
 						if (!open) {
 							setSelectedDate(undefined);
 							setEditingRecipient(null);
+							setSendAutomaticEmail(false);
 						}
 					}}
 				>
@@ -161,6 +223,7 @@ export function RecipientsTable() {
 							onClick={() => {
 								setEditingRecipient(null);
 								setSelectedDate(undefined);
+								setSendAutomaticEmail(false);
 							}}
 						>
 							Add Recipient
@@ -189,6 +252,7 @@ export function RecipientsTable() {
 											name: formData.get("name") as string,
 											email: formData.get("email") as string,
 											birthday: selectedDate.getTime(),
+											sendAutomaticEmail,
 										});
 										toast.success("Recipient updated successfully");
 									} else {
@@ -196,6 +260,7 @@ export function RecipientsTable() {
 											name: formData.get("name") as string,
 											email: formData.get("email") as string,
 											birthday: selectedDate.getTime(),
+											sendAutomaticEmail,
 										});
 										toast.success("Recipient added successfully");
 									}
@@ -203,6 +268,7 @@ export function RecipientsTable() {
 									setIsEditing(false);
 									setEditingRecipient(null);
 									setSelectedDate(undefined);
+									setSendAutomaticEmail(false);
 								} catch (error) {
 									toast.error(
 										editingRecipient
@@ -235,12 +301,30 @@ export function RecipientsTable() {
 								/>
 							</div>
 
-							<div className="space-y-2">
-								<Label>Birthday</Label>
-								<DatePicker
-									selected={selectedDate}
-									onSelect={setSelectedDate}
-								/>
+							<div className="grid grid-cols-2 gap-4">
+								<div className="space-y-2">
+									<Label>Birthday</Label>
+									<DatePicker
+										selected={selectedDate}
+										onSelect={setSelectedDate}
+									/>
+								</div>
+
+								<div className="space-y-2">
+									<Label>Settings</Label>
+									<div className="flex items-center h-10 space-x-2">
+										<Checkbox
+											id="sendAutomaticEmail"
+											checked={sendAutomaticEmail}
+											onCheckedChange={(checked) =>
+												setSendAutomaticEmail(!!checked)
+											}
+										/>
+										<Label htmlFor="sendAutomaticEmail" className="font-normal">
+											Send Automatic Email
+										</Label>
+									</div>
+								</div>
 							</div>
 
 							<div className="flex justify-end space-x-3">
@@ -251,6 +335,7 @@ export function RecipientsTable() {
 										setIsEditing(false);
 										setEditingRecipient(null);
 										setSelectedDate(undefined);
+										setSendAutomaticEmail(false);
 									}}
 								>
 									Cancel
@@ -274,6 +359,7 @@ export function RecipientsTable() {
 						theme={gridTheme}
 						pagination={true}
 						paginationAutoPageSize={true}
+						onCellValueChanged={handleCellValueChanged}
 					/>
 				)}
 			</div>

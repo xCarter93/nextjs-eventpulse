@@ -35,6 +35,7 @@ export const addRecipient = mutation({
 		name: v.string(),
 		email: v.string(),
 		birthday: v.number(),
+		sendAutomaticEmail: v.boolean(),
 	},
 	async handler(ctx, args) {
 		const identity = await ctx.auth.getUserIdentity();
@@ -59,6 +60,7 @@ export const addRecipient = mutation({
 			name: args.name,
 			email: args.email,
 			birthday: args.birthday,
+			sendAutomaticEmail: args.sendAutomaticEmail,
 		});
 
 		return recipientId;
@@ -71,6 +73,7 @@ export const updateRecipient = mutation({
 		name: v.string(),
 		email: v.string(),
 		birthday: v.number(),
+		sendAutomaticEmail: v.boolean(),
 	},
 	async handler(ctx, args) {
 		const identity = await ctx.auth.getUserIdentity();
@@ -99,6 +102,7 @@ export const updateRecipient = mutation({
 			name: args.name,
 			email: args.email,
 			birthday: args.birthday,
+			sendAutomaticEmail: args.sendAutomaticEmail,
 		});
 	},
 });

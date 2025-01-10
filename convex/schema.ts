@@ -34,5 +34,6 @@ export default defineSchema({
 		name: v.string(),
 		email: v.string(),
 		birthday: v.number(),
+		sendAutomaticEmail: v.boolean(),
 	}).index("by_userId", ["userId"]),
 });
