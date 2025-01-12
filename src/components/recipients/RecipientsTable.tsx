@@ -9,9 +9,6 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { DatePicker } from "@/components/ui/date-picker";
 import { AgGridReact } from "ag-grid-react";
 import {
 	type ColDef,
@@ -36,7 +33,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
-import { Checkbox } from "@/components/ui/checkbox";
+import { RecipientForm } from "./RecipientForm";
 
 // Register AG Grid Modules
 ModuleRegistry.registerModules([
@@ -83,7 +80,6 @@ export function RecipientsTable() {
 	const { theme } = useTheme();
 
 	const recipients = useQuery(api.recipients.getRecipients);
-	const addRecipient = useMutation(api.recipients.addRecipient);
 	const updateRecipient = useMutation(api.recipients.updateRecipient);
 	const deleteRecipient = useMutation(api.recipients.deleteRecipient);
 
@@ -91,8 +87,6 @@ export function RecipientsTable() {
 	const [editingRecipient, setEditingRecipient] = useState<Recipient | null>(
 		null
 	);
-	const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-	const [sendAutomaticEmail, setSendAutomaticEmail] = useState(false);
 
 	const gridTheme = themeQuartz.withPart(
 		theme === "dark" ? colorSchemeDarkBlue : colorSchemeLightCold
@@ -212,9 +206,7 @@ export function RecipientsTable() {
 					onOpenChange={(open) => {
 						setIsEditing(open);
 						if (!open) {
-							setSelectedDate(undefined);
 							setEditingRecipient(null);
-							setSendAutomaticEmail(false);
 						}
 					}}
 				>
@@ -222,8 +214,6 @@ export function RecipientsTable() {
 						<Button
 							onClick={() => {
 								setEditingRecipient(null);
-								setSelectedDate(undefined);
-								setSendAutomaticEmail(false);
 							}}
 						>
 							Add Recipient
@@ -235,116 +225,10 @@ export function RecipientsTable() {
 								{editingRecipient ? "Edit Recipient" : "Add Recipient"}
 							</DialogTitle>
 						</DialogHeader>
-						<form
-							onSubmit={async (e) => {
-								e.preventDefault();
-								const formData = new FormData(e.currentTarget);
-
-								if (!selectedDate) {
-									toast.error("Please select a birthday");
-									return;
-								}
-
-								try {
-									if (editingRecipient) {
-										await updateRecipient({
-											id: editingRecipient._id,
-											name: formData.get("name") as string,
-											email: formData.get("email") as string,
-											birthday: selectedDate.getTime(),
-											sendAutomaticEmail,
-										});
-										toast.success("Recipient updated successfully");
-									} else {
-										await addRecipient({
-											name: formData.get("name") as string,
-											email: formData.get("email") as string,
-											birthday: selectedDate.getTime(),
-											sendAutomaticEmail,
-										});
-										toast.success("Recipient added successfully");
-									}
-
-									setIsEditing(false);
-									setEditingRecipient(null);
-									setSelectedDate(undefined);
-									setSendAutomaticEmail(false);
-								} catch (error) {
-									toast.error(
-										editingRecipient
-											? "Failed to update recipient"
-											: "Failed to add recipient"
-									);
-									console.error(error);
-								}
-							}}
-							className="space-y-4"
-						>
-							<div className="space-y-2">
-								<Label htmlFor="name">Name</Label>
-								<Input
-									id="name"
-									name="name"
-									required
-									defaultValue={editingRecipient?.name}
-								/>
-							</div>
-
-							<div className="space-y-2">
-								<Label htmlFor="email">Email</Label>
-								<Input
-									type="email"
-									id="email"
-									name="email"
-									required
-									defaultValue={editingRecipient?.email}
-								/>
-							</div>
-
-							<div className="grid grid-cols-2 gap-4">
-								<div className="space-y-2">
-									<Label>Birthday</Label>
-									<DatePicker
-										selected={selectedDate}
-										onSelect={setSelectedDate}
-									/>
-								</div>
-
-								<div className="space-y-2">
-									<Label>Settings</Label>
-									<div className="flex items-center h-10 space-x-2">
-										<Checkbox
-											id="sendAutomaticEmail"
-											checked={sendAutomaticEmail}
-											onCheckedChange={(checked) =>
-												setSendAutomaticEmail(!!checked)
-											}
-										/>
-										<Label htmlFor="sendAutomaticEmail" className="font-normal">
-											Send Automatic Email
-										</Label>
-									</div>
-								</div>
-							</div>
-
-							<div className="flex justify-end space-x-3">
-								<Button
-									type="button"
-									variant="outline"
-									onClick={() => {
-										setIsEditing(false);
-										setEditingRecipient(null);
-										setSelectedDate(undefined);
-										setSendAutomaticEmail(false);
-									}}
-								>
-									Cancel
-								</Button>
-								<Button type="submit" disabled={!selectedDate}>
-									{editingRecipient ? "Save Changes" : "Add Recipient"}
-								</Button>
-							</div>
-						</form>
+						<RecipientForm
+							recipient={editingRecipient ?? undefined}
+							onSuccess={() => setIsEditing(false)}
+						/>
 					</DialogContent>
 				</Dialog>
 			</div>

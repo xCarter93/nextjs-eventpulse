@@ -1,5 +1,5 @@
 import { Calendar } from "@/components/dashboard/Calendar";
-import { UpcomingBirthdays } from "@/components/dashboard/UpcomingBirthdays";
+import { UpcomingEvents } from "@/components/dashboard/UpcomingEvents";
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { UserStats } from "@/components/dashboard/UserStats";
 import { getPublicHolidays } from "@/app/actions/holidays";
@@ -21,7 +21,7 @@ export default async function DashboardPage() {
 				</div>
 
 				<div className="space-y-6">
-					<UpcomingBirthdays />
+					<UpcomingEvents />
 					<QuickActions />
 				</div>
 			</div>

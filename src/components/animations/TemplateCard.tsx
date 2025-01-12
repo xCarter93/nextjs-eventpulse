@@ -15,15 +15,36 @@ interface TemplateCardProps {
 	template: AnimationTemplate;
 	isSelected: boolean;
 	onSelect: (template: AnimationTemplate) => void;
+	createdAt?: number;
+	isCustom?: boolean;
+	userTier?: "free" | "pro";
 }
 
 export function TemplateCard({
 	template,
 	isSelected,
 	onSelect,
+	createdAt,
+	isCustom,
+	userTier,
 }: TemplateCardProps) {
 	const [showPreview, setShowPreview] = useState(false);
 	const PreviewComponent = template.previewComponent;
+
+	// Calculate days until deletion for free tier users
+	const getDaysUntilDeletion = () => {
+		if (!createdAt || !isCustom || userTier !== "free") return null;
+		const creationDate = new Date(createdAt);
+		const deletionDate = new Date(
+			creationDate.getTime() + 30 * 24 * 60 * 60 * 1000
+		); // 30 days
+		const daysLeft = Math.ceil(
+			(deletionDate.getTime() - Date.now()) / (24 * 60 * 60 * 1000)
+		);
+		return daysLeft;
+	};
+
+	const daysUntilDeletion = getDaysUntilDeletion();
 
 	return (
 		<>
@@ -58,6 +79,11 @@ export function TemplateCard({
 					<div className="text-sm text-muted-foreground">
 						{template.description}
 					</div>
+					{daysUntilDeletion !== null && daysUntilDeletion > 0 && (
+						<p className="text-sm text-yellow-600 dark:text-yellow-500 mt-2">
+							Will be deleted in {daysUntilDeletion} days
+						</p>
+					)}
 				</CardContent>
 			</Card>
 

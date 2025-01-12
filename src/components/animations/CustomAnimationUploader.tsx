@@ -1,43 +1,116 @@
 "use client";
 
-import { useState, type ChangeEvent } from "react";
+import { type ChangeEvent, useState } from "react";
 import { Input } from "@/components/ui/input";
-import LottieAnimation from "./LottieAnimation";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { toast } from "sonner";
+import { Upload } from "lucide-react";
+import Link from "next/link";
+import { Id } from "../../../convex/_generated/dataModel";
 
-interface CustomAnimationUploaderProps {
-	isPreview?: boolean;
-}
-
-export function CustomAnimationUploader({
-	isPreview,
-}: CustomAnimationUploaderProps) {
-	const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+export function CustomAnimationUploader() {
+	const generateUploadUrl = useMutation(api.animations.generateUploadUrl);
+	const saveAnimation = useMutation(api.animations.saveAnimation);
+	const user = useQuery(api.users.getUser);
+	const [isUploading, setIsUploading] = useState(false);
 
 	const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
 		e.stopPropagation();
 		const file = e.target.files?.[0];
 		if (!file) return;
 
-		const url = URL.createObjectURL(file);
-		setPreviewUrl(url);
+		setIsUploading(true);
+		try {
+			// Read the file content
+			const fileContent = await file.arrayBuffer();
+			const fileBlob = new Blob([fileContent], { type: "application/json" });
+
+			// Step 1: Get a short-lived upload URL
+			const postUrl = await generateUploadUrl();
+
+			// Step 2: POST the file to the URL
+			const result = await fetch(postUrl, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: fileBlob,
+			});
+
+			if (!result.ok) {
+				throw new Error(`Upload failed: ${result.status} ${result.statusText}`);
+			}
+
+			const { storageId } = await result.json();
+			if (!storageId) {
+				throw new Error("No storage ID received from upload");
+			}
+
+			// Step 3: Save the animation to the database
+			await saveAnimation({
+				storageId: storageId as Id<"_storage">,
+				name: file.name.replace(/\.[^/.]+$/, ""), // Remove file extension
+				description: "Custom uploaded animation",
+			});
+
+			toast.success("Animation uploaded successfully");
+		} catch (error) {
+			console.error("Error uploading animation:", error);
+			toast.error("Failed to upload animation");
+		} finally {
+			setIsUploading(false);
+		}
 	};
 
-	if (previewUrl) {
-		return <LottieAnimation isPreview={isPreview} src={previewUrl} />;
-	}
-
 	return (
-		<div className="flex flex-col items-center justify-center h-full space-y-4 p-4">
+		<div
+			className="relative rounded-lg border bg-card text-card-foreground shadow-sm cursor-pointer hover:bg-accent/10 transition-colors"
+			onClick={() =>
+				!isUploading && document.getElementById("file-upload")?.click()
+			}
+		>
+			<div className="flex flex-col items-center justify-center h-full min-h-[200px] space-y-4 p-6">
+				<Upload
+					className={`w-12 h-12 text-muted-foreground ${isUploading ? "animate-bounce" : ""}`}
+				/>
+				<div className="space-y-2 text-center">
+					<h3 className="font-semibold">Custom Animation</h3>
+					<p className="text-sm text-muted-foreground">
+						{isUploading
+							? "Uploading animation..."
+							: "Click to upload your own Lottie animation"}
+					</p>
+					{user?.subscription.tier === "free" && (
+						<p className="text-sm text-yellow-600 dark:text-yellow-500">
+							Note: On the free plan, custom animations are automatically
+							deleted after 30 days.{" "}
+							<Link
+								href="/upgrade"
+								className="underline hover:text-yellow-700 dark:hover:text-yellow-400"
+							>
+								Upgrade to keep them permanently
+							</Link>
+						</p>
+					)}
+					<a
+						href="https://lottiefiles.com/featured-free-animations"
+						target="_blank"
+						rel="noopener noreferrer"
+						className="text-xs text-primary hover:underline block"
+						onClick={(e) => e.stopPropagation()}
+					>
+						Browse free animations at LottieFiles
+					</a>
+				</div>
+			</div>
 			<Input
+				id="file-upload"
 				type="file"
 				accept=".json,.lottie"
 				onChange={handleFileChange}
-				onClick={(e) => e.stopPropagation()}
-				className="max-w-[200px]"
+				className="hidden"
 			/>
-			<p className="text-sm text-muted-foreground text-center">
-				Upload a .lottie or .json file
-			</p>
 		</div>
 	);
 }

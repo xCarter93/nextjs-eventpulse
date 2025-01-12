@@ -24,7 +24,7 @@ export function RecipientCard({
 						</h3>
 						<p className="text-muted-foreground">{recipient.email}</p>
 						<p className="text-sm text-muted-foreground">
-							Birthday: {formatDate(recipient.birthday)}
+							Special Date: {formatDate(recipient.birthday)}
 						</p>
 					</div>
 					<div className="space-x-2">

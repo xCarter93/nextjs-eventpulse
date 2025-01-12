@@ -11,76 +11,8 @@ import { Separator } from "@/components/ui/separator";
 import { type ChangeEvent } from "react";
 import LottieAnimation from "@/components/animations/LottieAnimation";
 import { CustomAnimationUploader } from "@/components/animations/CustomAnimationUploader";
-
-// Mock data - would come from your API/database
-const templates: AnimationTemplate[] = [
-	{
-		id: "1",
-		name: "Floating Animation",
-		description: "A beautiful animated celebration message",
-		previewComponent: LottieAnimation,
-		isPremium: false,
-	},
-	{
-		id: "2",
-		name: "Confetti Explosion",
-		description: "A burst of confetti with customizable colors",
-		previewComponent: (props) => (
-			<LottieAnimation
-				{...props}
-				src="/lottiefiles/Confetti - 1736126738780.lottie"
-			/>
-		),
-		isPremium: false,
-	},
-	{
-		id: "3",
-		name: "Sparkle Animation",
-		description: "A magical sparkle effect for your birthday message",
-		previewComponent: (props) => (
-			<LottieAnimation
-				{...props}
-				src="/lottiefiles/Sparkle - 1736127010347.lottie"
-			/>
-		),
-		isPremium: false,
-	},
-	{
-		id: "4",
-		name: "Blooming Rose",
-		description: "A beautiful animated rose that blooms with your message",
-		previewComponent: (props) => (
-			<LottieAnimation
-				{...props}
-				src="/lottiefiles/Rose - 1736126013373.lottie"
-			/>
-		),
-		isPremium: false,
-	},
-	{
-		id: "custom",
-		name: "Custom Animation",
-		description: (
-			<div className="space-y-1">
-				<span>Upload your own Lottie animation file</span>
-				<span className="block text-xs">
-					Find free animations at{" "}
-					<a
-						href="https://lottiefiles.com/featured-free-animations"
-						target="_blank"
-						rel="noopener noreferrer"
-						className="text-primary hover:underline"
-						onClick={(e) => e.stopPropagation()}
-					>
-						LottieFiles
-					</a>
-				</span>
-			</div>
-		),
-		previewComponent: CustomAnimationUploader,
-		isPremium: false,
-	},
-];
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 
 const defaultColorScheme: ColorScheme = {
 	primary: "#3B82F6",
@@ -89,12 +21,30 @@ const defaultColorScheme: ColorScheme = {
 	background: "#F3F4F6",
 };
 
+type LottieAnimationProps = React.ComponentProps<typeof LottieAnimation>;
+
 export default function AnimationsPage() {
 	const [selectedTemplate, setSelectedTemplate] =
 		useState<AnimationTemplate | null>(null);
 	const [colorScheme, setColorScheme] =
 		useState<ColorScheme>(defaultColorScheme);
 	const [message, setMessage] = useState("");
+
+	const baseAnimations = useQuery(api.animations.getBaseAnimations);
+	const user = useQuery(api.users.getUser);
+
+	const templates =
+		baseAnimations?.map((animation) => ({
+			id: animation._id,
+			name: animation.name || "Untitled Animation",
+			description: animation.description || "",
+			previewComponent: (props: LottieAnimationProps) => (
+				<LottieAnimation {...props} storageId={animation.storageId} />
+			),
+			isPremium: animation.isPremium || false,
+			createdAt: animation._creationTime,
+			isCustom: !animation.isBaseAnimation,
+		})) || [];
 
 	const handleCreate = () => {
 		// This would send the data to your API to create the animation
@@ -110,7 +60,7 @@ export default function AnimationsPage() {
 			<div>
 				<h1 className="text-2xl font-bold text-foreground">Create Animation</h1>
 				<p className="mt-2 text-muted-foreground">
-					Choose a template and customize your birthday animation
+					Choose a template and customize your celebration animation
 				</p>
 			</div>
 
@@ -127,8 +77,12 @@ export default function AnimationsPage() {
 									template={template}
 									isSelected={selectedTemplate?.id === template.id}
 									onSelect={setSelectedTemplate}
+									createdAt={template.createdAt}
+									isCustom={template.isCustom}
+									userTier={user?.subscription.tier}
 								/>
 							))}
+							<CustomAnimationUploader />
 						</div>
 					</CardContent>
 				</Card>
@@ -149,7 +103,7 @@ export default function AnimationsPage() {
 
 						<Card>
 							<CardHeader>
-								<CardTitle>Birthday Message</CardTitle>
+								<CardTitle>Greeting Message</CardTitle>
 							</CardHeader>
 							<CardContent>
 								<Textarea
@@ -157,7 +111,7 @@ export default function AnimationsPage() {
 									onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
 										setMessage(e.target.value)
 									}
-									placeholder="Enter your birthday message..."
+									placeholder="Enter your greeting message..."
 									className="h-32"
 								/>
 							</CardContent>
