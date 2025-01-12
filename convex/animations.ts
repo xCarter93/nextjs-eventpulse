@@ -13,9 +13,16 @@ export const generateUploadUrl = mutation(async (ctx) => {
 	return await ctx.storage.generateUploadUrl();
 });
 
-export const getAnimationUrl = mutation({
+export const getAnimationUrl = query({
 	args: { storageId: v.id("_storage") },
-	handler: async (ctx, args) => {
+	async handler(ctx, args) {
+		return await ctx.storage.getUrl(args.storageId);
+	},
+});
+
+export const getAnimationUrlInternal = internalQuery({
+	args: { storageId: v.id("_storage") },
+	async handler(ctx, args) {
 		return await ctx.storage.getUrl(args.storageId);
 	},
 });
@@ -183,4 +190,23 @@ export const deleteAnimation = internalMutation({
 		await ctx.db.delete(args.id);
 	},
 	args: { id: v.id("animations") },
+});
+
+export const getBaseAnimation = internalQuery({
+	args: {},
+	async handler(ctx) {
+		// Get a random base animation
+		const baseAnimations = await ctx.db
+			.query("animations")
+			.filter((q) => q.eq(q.field("isBaseAnimation"), true))
+			.collect();
+
+		if (baseAnimations.length === 0) {
+			throw new Error("No base animations found");
+		}
+
+		// Return a random animation
+		const randomIndex = Math.floor(Math.random() * baseAnimations.length);
+		return baseAnimations[randomIndex];
+	},
 });

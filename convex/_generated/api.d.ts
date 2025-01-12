@@ -16,8 +16,10 @@ import type {
 import type * as animations from "../animations.js";
 import type * as clerk from "../clerk.js";
 import type * as crons from "../crons.js";
+import type * as emails from "../emails.js";
 import type * as http from "../http.js";
 import type * as recipients from "../recipients.js";
+import type * as scheduledEmails from "../scheduledEmails.js";
 import type * as users from "../users.js";
 
 /**
@@ -32,8 +34,10 @@ declare const fullApi: ApiFromModules<{
   animations: typeof animations;
   clerk: typeof clerk;
   crons: typeof crons;
+  emails: typeof emails;
   http: typeof http;
   recipients: typeof recipients;
+  scheduledEmails: typeof scheduledEmails;
   users: typeof users;
 }>;
 export declare const api: FilterApi<

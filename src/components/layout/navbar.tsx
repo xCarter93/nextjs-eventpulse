@@ -1,13 +1,40 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { SignInButton, UserButton } from "@clerk/nextjs";
 import { useUser } from "@clerk/nextjs";
+import { LayoutDashboard, Users, Sparkles, Mail } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const routes = [
+	{
+		label: "Dashboard",
+		href: "/dashboard",
+		icon: LayoutDashboard,
+	},
+	{
+		label: "Recipients",
+		href: "/recipients",
+		icon: Users,
+	},
+	{
+		label: "Animations",
+		href: "/animations",
+		icon: Sparkles,
+	},
+	{
+		label: "Scheduled Emails",
+		href: "/scheduled-emails",
+		icon: Mail,
+	},
+];
 
 export function Navbar() {
 	const { isSignedIn } = useUser();
+	const pathname = usePathname();
 
 	return (
 		<header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -17,25 +44,22 @@ export function Navbar() {
 						<span className="font-bold">AnimGreet</span>
 					</Link>
 					{isSignedIn && (
-						<nav className="flex items-center space-x-6 text-sm font-medium">
-							<Link
-								href="/dashboard"
-								className="transition-colors hover:text-foreground/80 text-foreground"
-							>
-								Dashboard
-							</Link>
-							<Link
-								href="/animations"
-								className="transition-colors hover:text-foreground/80 text-foreground"
-							>
-								Animations
-							</Link>
-							<Link
-								href="/recipients"
-								className="transition-colors hover:text-foreground/80 text-foreground"
-							>
-								Recipients
-							</Link>
+						<nav className="flex items-center space-x-4 text-sm font-medium">
+							{routes.map((route) => (
+								<Link
+									key={route.href}
+									href={route.href}
+									className={cn(
+										"flex items-center gap-2 rounded-lg px-3 py-1.5 transition-colors",
+										pathname === route.href
+											? "bg-primary text-primary-foreground"
+											: "text-muted-foreground hover:bg-muted hover:text-foreground"
+									)}
+								>
+									<route.icon className="h-4 w-4" />
+									{route.label}
+								</Link>
+							))}
 						</nav>
 					)}
 				</div>

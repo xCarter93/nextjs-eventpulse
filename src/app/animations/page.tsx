@@ -41,7 +41,6 @@ export default function AnimationsPage() {
 			previewComponent: (props: LottieAnimationProps) => (
 				<LottieAnimation {...props} storageId={animation.storageId} />
 			),
-			isPremium: animation.isPremium || false,
 			createdAt: animation._creationTime,
 			isCustom: !animation.isBaseAnimation,
 		})) || [];

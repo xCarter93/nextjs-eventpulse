@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
-import { useMutation } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 
@@ -17,27 +17,27 @@ export default function LottieAnimation({
 	src,
 	storageId,
 }: LottieAnimationProps) {
-	const [animationUrl, setAnimationUrl] = useState<string | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
-	const getAnimationUrl = useMutation(api.animations.getAnimationUrl);
+	const queryResult = useQuery(
+		api.animations.getAnimationUrl,
+		storageId ? { storageId } : "skip"
+	);
 
 	useEffect(() => {
 		if (storageId) {
 			setIsLoading(true);
 			setError(null);
-			getAnimationUrl({ storageId })
-				.then((url) => {
-					setAnimationUrl(url);
-					setIsLoading(false);
-				})
-				.catch((err) => {
-					console.error("Error loading animation:", err);
-					setError("Failed to load animation");
-					setIsLoading(false);
-				});
+			if (queryResult === undefined) {
+				setIsLoading(true);
+			} else if (queryResult === null) {
+				setError("Failed to load animation");
+				setIsLoading(false);
+			} else {
+				setIsLoading(false);
+			}
 		}
-	}, [storageId, getAnimationUrl]);
+	}, [storageId, queryResult]);
 
 	if (isLoading) {
 		return (
@@ -63,7 +63,7 @@ export default function LottieAnimation({
 		>
 			<DotLottieReact
 				src={
-					animationUrl || src || "/lottiefiles/Animation - 1736125012323.lottie"
+					queryResult || src || "/lottiefiles/Animation - 1736125012323.lottie"
 				}
 				loop
 				autoplay

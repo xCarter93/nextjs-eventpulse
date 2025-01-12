@@ -98,47 +98,16 @@ export function RecipientForm({ recipient, onSuccess }: RecipientFormProps) {
 
 	return (
 		<Form {...form}>
-			<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-				<FormField
-					control={form.control}
-					name="name"
-					render={({ field }) => (
-						<FormItem>
-							<FormLabel>Name</FormLabel>
-							<FormControl>
-								<Input placeholder="John Doe" {...field} />
-							</FormControl>
-							<FormMessage />
-						</FormItem>
-					)}
-				/>
-
-				<FormField
-					control={form.control}
-					name="email"
-					render={({ field }) => (
-						<FormItem>
-							<FormLabel>Email</FormLabel>
-							<FormControl>
-								<Input type="email" placeholder="john@example.com" {...field} />
-							</FormControl>
-							<FormMessage />
-						</FormItem>
-					)}
-				/>
-
-				<div className="grid grid-cols-2 gap-4">
+			<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+				<div className="space-y-4">
 					<FormField
 						control={form.control}
-						name="birthday"
+						name="name"
 						render={({ field }) => (
 							<FormItem>
-								<FormLabel>Special Date</FormLabel>
+								<FormLabel>Name</FormLabel>
 								<FormControl>
-									<DatePicker
-										selected={field.value}
-										onSelect={field.onChange}
-									/>
+									<Input placeholder="John Doe" {...field} />
 								</FormControl>
 								<FormMessage />
 							</FormItem>
@@ -147,28 +116,65 @@ export function RecipientForm({ recipient, onSuccess }: RecipientFormProps) {
 
 					<FormField
 						control={form.control}
-						name="sendAutomaticEmail"
+						name="email"
 						render={({ field }) => (
 							<FormItem>
-								<FormLabel>Settings</FormLabel>
-								<div className="flex items-center h-10 space-x-2">
-									<FormControl>
-										<Checkbox
-											checked={field.value}
-											onCheckedChange={field.onChange}
-										/>
-									</FormControl>
-									<FormLabel className="font-normal">
-										Send Automatic Email
-									</FormLabel>
-								</div>
+								<FormLabel>Email</FormLabel>
+								<FormControl>
+									<Input
+										type="email"
+										placeholder="john@example.com"
+										{...field}
+									/>
+								</FormControl>
 								<FormMessage />
 							</FormItem>
 						)}
 					/>
+
+					<div className="grid grid-cols-2 gap-4">
+						<FormField
+							control={form.control}
+							name="birthday"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Special Date</FormLabel>
+									<FormControl>
+										<DatePicker
+											selected={field.value}
+											onSelect={field.onChange}
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+
+						<FormField
+							control={form.control}
+							name="sendAutomaticEmail"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Settings</FormLabel>
+									<div className="flex items-center h-10 space-x-2">
+										<FormControl>
+											<Checkbox
+												checked={field.value}
+												onCheckedChange={field.onChange}
+											/>
+										</FormControl>
+										<FormLabel className="font-normal">
+											Send Automatic Email
+										</FormLabel>
+									</div>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+					</div>
 				</div>
 
-				<div className="flex justify-end space-x-3">
+				<div className="flex justify-center space-x-3">
 					<Button type="button" variant="outline" onClick={() => onSuccess()}>
 						Cancel
 					</Button>

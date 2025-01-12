@@ -14,7 +14,7 @@ export interface AnimationTemplate {
 	description: string | ReactNode;
 	previewUrl?: string;
 	previewComponent?: ComponentType<{ isPreview?: boolean }>;
-	isPremium: boolean;
+	isPremium?: boolean;
 }
 
 export interface ColorScheme {
