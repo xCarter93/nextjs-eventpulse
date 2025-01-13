@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import { useRouter } from "next/navigation";
 
 interface Holiday {
 	date: string;
@@ -23,9 +24,12 @@ export function Calendar({ holidays }: CalendarProps) {
 	const [showBirthdays, setShowBirthdays] = useState(true);
 	const [showHolidays, setShowHolidays] = useState(true);
 	const today = new Date();
+	const router = useRouter();
 
-	// Fetch recipients
+	// Fetch recipients and scheduled emails
 	const recipients = useQuery(api.recipients.getRecipients) || [];
+	const scheduledEmails =
+		useQuery(api.scheduledEmails.listScheduledEmails) || [];
 	const birthdays = recipients.map((r) => ({
 		date: new Date(r.birthday),
 		name: r.name,
@@ -74,6 +78,15 @@ export function Calendar({ holidays }: CalendarProps) {
 		});
 	};
 
+	const handleDayClick = (day: number) => {
+		const selectedDate = new Date(
+			currentDate.getFullYear(),
+			currentDate.getMonth(),
+			day
+		);
+		router.push(`/scheduled-emails/new?date=${selectedDate.getTime()}`);
+	};
+
 	const getDayEvents = (day: number) => {
 		const currentDateStr = new Date(
 			currentDate.getFullYear(),
@@ -97,7 +110,21 @@ export function Calendar({ holidays }: CalendarProps) {
 			? holidays.filter((holiday) => holiday.date === currentDateStr)
 			: [];
 
-		return { birthdays: dayBirthdays, holidays: dayHolidays };
+		const dayScheduledEmails = scheduledEmails.filter((email) => {
+			const emailDate = new Date(email.scheduledTime);
+			return (
+				email.status === "pending" &&
+				emailDate.getDate() === day &&
+				emailDate.getMonth() === currentDate.getMonth() &&
+				emailDate.getFullYear() === currentDate.getFullYear()
+			);
+		});
+
+		return {
+			birthdays: dayBirthdays,
+			holidays: dayHolidays,
+			scheduledEmails: dayScheduledEmails,
+		};
 	};
 
 	return (
@@ -178,22 +205,22 @@ export function Calendar({ holidays }: CalendarProps) {
 					{Array.from({ length: daysInMonth }).map((_, index) => {
 						const day = index + 1;
 						const events = getDayEvents(day);
-						const hasEvents =
-							events.birthdays.length > 0 || events.holidays.length > 0;
 						const isToday =
 							day === new Date().getDate() &&
 							currentDate.getMonth() === new Date().getMonth() &&
 							currentDate.getFullYear() === new Date().getFullYear();
 
 						return (
-							<div
+							<button
 								key={day}
+								onClick={() => handleDayClick(day)}
 								className={cn(
 									"aspect-square p-1 relative group hover:bg-accent/50 rounded-sm transition-colors border border-border",
 									isToday && "bg-accent/30 border-accent"
 								)}
 							>
-								{hasEvents && (
+								{(events.birthdays.length > 0 ||
+									events.holidays.length > 0) && (
 									<div className="absolute top-0 inset-x-0 flex h-1">
 										{events.birthdays.length > 0 && (
 											<div className="flex-1 bg-pink-500 rounded-t-sm" />
@@ -203,9 +230,19 @@ export function Calendar({ holidays }: CalendarProps) {
 										)}
 									</div>
 								)}
-								<span className="text-sm block pl-1">{day}</span>
+								<span className="text-sm absolute top-1 left-1">{day}</span>
+								{events.scheduledEmails.length > 0 && (
+									<div className="absolute inset-0 flex items-center justify-center">
+										<div className="flex items-center gap-1 text-sm text-muted-foreground">
+											<span>{events.scheduledEmails.length}</span>
+											<Mail className="w-4 h-4" />
+										</div>
+									</div>
+								)}
 								{/* Event tooltip */}
-								{hasEvents && (
+								{(events.birthdays.length > 0 ||
+									events.holidays.length > 0 ||
+									events.scheduledEmails.length > 0) && (
 									<div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50">
 										<div className="bg-popover text-popover-foreground text-sm rounded-md shadow-lg p-2 whitespace-nowrap">
 											{events.birthdays.map((birthday, i) => (
@@ -225,10 +262,28 @@ export function Calendar({ holidays }: CalendarProps) {
 													</span>
 												</div>
 											))}
+											{events.scheduledEmails.map((email, i) => (
+												<div key={i} className="flex flex-col gap-1">
+													<div className="flex items-center gap-2">
+														<Mail className="w-3 h-3" />
+														<span>
+															{email.isAutomated
+																? "Automated Email"
+																: "Custom Email"}{" "}
+															to {email.recipient.name}
+														</span>
+													</div>
+													{email.subject && (
+														<span className="text-xs text-muted-foreground pl-4">
+															{email.subject}
+														</span>
+													)}
+												</div>
+											))}
 										</div>
 									</div>
 								)}
-							</div>
+							</button>
 						);
 					})}
 				</div>

@@ -39,6 +39,7 @@ interface PreviewData {
 
 interface NewScheduledEmailFormProps {
 	onFormChange: (data: PreviewData) => void;
+	initialDate?: Date;
 }
 
 const formSchema = z.object({
@@ -54,6 +55,7 @@ const formSchema = z.object({
 
 export function NewScheduledEmailForm({
 	onFormChange,
+	initialDate,
 }: NewScheduledEmailFormProps) {
 	const recipients = useQuery(api.recipients.getRecipients);
 	const animations = useQuery(api.animations.getBaseAnimations);
@@ -67,7 +69,13 @@ export function NewScheduledEmailForm({
 			recipients: [],
 			animation: "",
 			subject: "",
-			scheduledDate: "",
+			scheduledDate: initialDate
+				? new Date(
+						initialDate.getTime() - initialDate.getTimezoneOffset() * 60000
+					)
+						.toISOString()
+						.slice(0, 16)
+				: "",
 			heading: "",
 			body: "",
 		},

@@ -3,6 +3,7 @@
 import { NewScheduledEmailForm } from "@/components/scheduled-emails/NewScheduledEmailForm";
 import { EmailPreview } from "@/components/scheduled-emails/EmailPreview";
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 interface PreviewData {
 	heading?: string;
@@ -12,6 +13,8 @@ interface PreviewData {
 
 const NewScheduledEmailPage = () => {
 	const [preview, setPreview] = useState<PreviewData>({});
+	const searchParams = useSearchParams();
+	const dateParam = searchParams.get("date");
 
 	return (
 		<div className="container py-8">
@@ -25,7 +28,10 @@ const NewScheduledEmailPage = () => {
 					</p>
 				</div>
 				<div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-					<NewScheduledEmailForm onFormChange={setPreview} />
+					<NewScheduledEmailForm
+						onFormChange={setPreview}
+						initialDate={dateParam ? new Date(parseInt(dateParam)) : undefined}
+					/>
 					<div className="rounded-lg border bg-card p-6">
 						<h2 className="text-lg font-semibold mb-4">Email Preview</h2>
 						<EmailPreview {...preview} />
