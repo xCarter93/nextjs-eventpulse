@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { type ChangeEvent } from "react";
-import LottieAnimation from "@/components/animations/LottieAnimation";
+import Animation from "@/components/animations/LottieAnimation";
 import { CustomAnimationUploader } from "@/components/animations/CustomAnimationUploader";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -21,7 +21,7 @@ const defaultColorScheme: ColorScheme = {
 	background: "#F3F4F6",
 };
 
-type LottieAnimationProps = React.ComponentProps<typeof LottieAnimation>;
+type LottieAnimationProps = React.ComponentProps<typeof Animation>;
 
 export default function AnimationsPage() {
 	const [selectedTemplate, setSelectedTemplate] =
@@ -39,7 +39,7 @@ export default function AnimationsPage() {
 			name: animation.name || "Untitled Animation",
 			description: animation.description || "",
 			previewComponent: (props: LottieAnimationProps) => (
-				<LottieAnimation {...props} storageId={animation.storageId} />
+				<Animation {...props} storageId={animation.storageId} />
 			),
 			createdAt: animation._creationTime,
 			isCustom: !animation.isBaseAnimation,

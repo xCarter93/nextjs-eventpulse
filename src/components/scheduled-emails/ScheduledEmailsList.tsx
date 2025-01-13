@@ -21,7 +21,7 @@ interface ScheduledEmail {
 	_id: Id<"_scheduled_functions">;
 	scheduledTime: number;
 	completedTime?: number;
-	status: "pending" | "inProgress" | "completed" | "errored" | "canceled";
+	status: "pending" | "inProgress" | "success" | "failed" | "canceled";
 	recipient: {
 		name: string;
 		email: string;
@@ -29,6 +29,7 @@ interface ScheduledEmail {
 	customMessage?: string;
 	subject?: string;
 	isAutomated: boolean;
+	error?: string;
 }
 
 interface ScheduledEmailsListProps {
@@ -55,7 +56,10 @@ export function ScheduledEmailsList({
 		if (filterStatus === "pending") {
 			return email.status === "pending" || email.status === "inProgress";
 		}
-		return email.status === filterStatus;
+		if (filterStatus === "completed") {
+			return email.status === "success";
+		}
+		return email.status === "canceled" || email.status === "failed";
 	});
 
 	if (filteredEmails.length === 0) {
@@ -68,7 +72,7 @@ export function ScheduledEmailsList({
 							? "You don't have any pending emails scheduled at the moment."
 							: filterStatus === "completed"
 								? "No emails have been completed yet."
-								: "No emails have been canceled."}
+								: "No emails have been canceled or failed."}
 					</CardDescription>
 				</CardHeader>
 			</Card>
@@ -141,9 +145,9 @@ export function ScheduledEmailsList({
 											"bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200":
 												email.status === "inProgress",
 											"bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200":
-												email.status === "completed",
+												email.status === "success",
 											"bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200":
-												email.status === "errored",
+												email.status === "failed",
 											"bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200":
 												email.status === "canceled",
 										}
@@ -152,6 +156,12 @@ export function ScheduledEmailsList({
 									{email.status.charAt(0).toUpperCase() + email.status.slice(1)}
 								</span>
 							</div>
+							{email.error && (
+								<div className="text-red-600 dark:text-red-400">
+									<span className="font-medium">Error: </span>
+									{email.error}
+								</div>
+							)}
 							<div>
 								<span className="text-muted-foreground">Type: </span>
 								{email.isAutomated

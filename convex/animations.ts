@@ -210,3 +210,10 @@ export const getBaseAnimation = internalQuery({
 		return baseAnimations[randomIndex];
 	},
 });
+
+export const getAnimation = internalQuery({
+	args: { id: v.id("animations") },
+	async handler(ctx, args) {
+		return await ctx.db.get(args.id);
+	},
+});

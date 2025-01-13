@@ -1,4 +1,3 @@
-import { type ReactNode } from "react";
 import {
 	Html,
 	Head,
@@ -7,11 +6,14 @@ import {
 	Section,
 	Text,
 	Heading,
+	Img,
+	Preview,
 } from "@react-email/components";
+import * as React from "react";
 
 interface EmailTemplateProps {
 	heading: string;
-	lottieAnimation: ReactNode;
+	lottieAnimation: React.ReactNode;
 	bodyText: string;
 }
 
@@ -23,15 +25,25 @@ export default function EmailTemplate({
 	return (
 		<Html>
 			<Head />
+			<Preview>{heading}</Preview>
 			<Body style={main}>
 				<Container style={container}>
-					<Section>
-						<Heading style={headingStyle}>{heading}</Heading>
+					<Heading style={h1}>{heading}</Heading>
+					<Section style={imageContainer}>
+						{typeof lottieAnimation === "string" ? (
+							<Img
+								src={lottieAnimation}
+								alt="Animation"
+								width="400"
+								height="400"
+								style={image}
+							/>
+						) : (
+							lottieAnimation
+						)}
 					</Section>
-					<Section style={animationContainer}>{lottieAnimation}</Section>
-					<Section>
-						<Text style={text}>{bodyText}</Text>
-					</Section>
+					<Text style={text}>{bodyText}</Text>
+					<Text style={footer}>Sent with ❤️ from AnimGreet</Text>
 				</Container>
 			</Body>
 		</Html>
@@ -39,37 +51,54 @@ export default function EmailTemplate({
 }
 
 const main = {
-	backgroundColor: "#f6f9fc",
+	backgroundColor: "#f9fafb",
+	margin: "0 auto",
 	fontFamily:
-		'-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Ubuntu,sans-serif',
+		"-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif",
 };
 
 const container = {
-	backgroundColor: "#ffffff",
-	margin: "0 auto",
-	padding: "20px 0 48px",
-	marginBottom: "64px",
+	margin: "auto",
+	padding: "20px",
+	maxWidth: "600px",
+	backgroundColor: "white",
+	borderRadius: "8px",
+	boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
 };
 
-const headingStyle = {
-	color: "#333",
+const h1 = {
+	color: "#111827",
 	fontSize: "24px",
-	fontWeight: "bold",
+	fontWeight: "600",
+	lineHeight: "32px",
+	margin: "0 0 20px",
 	textAlign: "center" as const,
-	margin: "30px 0",
 };
 
-const animationContainer = {
-	margin: "30px auto",
-	width: "100%",
-	maxWidth: "400px",
+const imageContainer = {
 	textAlign: "center" as const,
+	margin: "20px 0",
+};
+
+const image = {
+	maxWidth: "100%",
+	height: "auto",
+	margin: "0 auto",
 };
 
 const text = {
-	color: "#333",
+	color: "#374151",
 	fontSize: "16px",
 	lineHeight: "24px",
+	margin: "20px 0",
 	textAlign: "center" as const,
-	margin: "0 48px",
+};
+
+const footer = {
+	color: "#6b7280",
+	fontSize: "14px",
+	margin: "20px 0 0",
+	padding: "20px 0 0",
+	borderTop: "1px solid #e5e7eb",
+	textAlign: "center" as const,
 };

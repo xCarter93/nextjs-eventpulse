@@ -20,11 +20,17 @@ export function CustomAnimationUploader() {
 		const file = e.target.files?.[0];
 		if (!file) return;
 
+		// Verify file is a GIF
+		if (!file.type.startsWith("image/gif")) {
+			toast.error("Please upload a GIF file");
+			return;
+		}
+
 		setIsUploading(true);
 		try {
 			// Read the file content
 			const fileContent = await file.arrayBuffer();
-			const fileBlob = new Blob([fileContent], { type: "application/json" });
+			const fileBlob = new Blob([fileContent], { type: "image/gif" });
 
 			// Step 1: Get a short-lived upload URL
 			const postUrl = await generateUploadUrl();
@@ -33,7 +39,7 @@ export function CustomAnimationUploader() {
 			const result = await fetch(postUrl, {
 				method: "POST",
 				headers: {
-					"Content-Type": "application/json",
+					"Content-Type": "image/gif",
 				},
 				body: fileBlob,
 			});
@@ -79,7 +85,7 @@ export function CustomAnimationUploader() {
 					<p className="text-sm text-muted-foreground">
 						{isUploading
 							? "Uploading animation..."
-							: "Click to upload your own Lottie animation"}
+							: "Click to upload your GIF animation"}
 					</p>
 					{user?.subscription.tier === "free" && (
 						<p className="text-sm text-yellow-600 dark:text-yellow-500">
@@ -93,21 +99,26 @@ export function CustomAnimationUploader() {
 							</Link>
 						</p>
 					)}
-					<a
-						href="https://lottiefiles.com/featured-free-animations"
-						target="_blank"
-						rel="noopener noreferrer"
-						className="text-xs text-primary hover:underline block"
-						onClick={(e) => e.stopPropagation()}
-					>
-						Browse free animations at LottieFiles
-					</a>
+					<div className="space-y-1">
+						<a
+							href="https://lottiefiles.com/featured-free-animations"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-xs text-primary hover:underline block"
+							onClick={(e) => e.stopPropagation()}
+						>
+							Browse free animations at LottieFiles
+						</a>
+						<p className="text-xs text-muted-foreground">
+							Export your Lottie animation as GIF before uploading
+						</p>
+					</div>
 				</div>
 			</div>
 			<Input
 				id="file-upload"
 				type="file"
-				accept=".json,.lottie"
+				accept=".gif"
 				onChange={handleFileChange}
 				className="hidden"
 			/>

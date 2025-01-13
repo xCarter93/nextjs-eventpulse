@@ -30,10 +30,12 @@ import { MultiSelect } from "../ui/multi-select";
 import { Doc, Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface PreviewData {
 	heading?: string;
 	animationId?: string;
+	animationUrl?: string;
 	body?: string;
 }
 
@@ -42,16 +44,34 @@ interface NewScheduledEmailFormProps {
 	initialDate?: Date;
 }
 
-const formSchema = z.object({
-	recipients: z
-		.array(z.string().transform((val) => val as Id<"recipients">))
-		.min(1, "Select at least one recipient"),
-	animation: z.string().min(1, "Select an animation"),
-	subject: z.string().min(1, "Enter a subject"),
-	scheduledDate: z.string().min(1, "Select a date"),
-	heading: z.string().min(1, "Enter a heading"),
-	body: z.string().min(1, "Enter a message"),
-});
+const formSchema = z
+	.object({
+		recipients: z
+			.array(z.string().transform((val) => val as Id<"recipients">))
+			.min(1, "Select at least one recipient"),
+		animationType: z.enum(["uploaded", "url"]),
+		animation: z.string().optional(),
+		animationUrl: z.string().optional(),
+		subject: z.string().min(1, "Enter a subject"),
+		scheduledDate: z.string().min(1, "Select a date"),
+		heading: z.string().min(1, "Enter a heading"),
+		body: z.string().min(1, "Enter a message"),
+	})
+	.refine(
+		(data) => {
+			if (data.animationType === "uploaded") {
+				return !!data.animation;
+			} else {
+				return (
+					!!data.animationUrl && data.animationUrl.match(/\.(gif|jpe?g|png)$/i)
+				);
+			}
+		},
+		{
+			message: "Please select an animation or enter a valid image URL",
+			path: ["animation"],
+		}
+	);
 
 export function NewScheduledEmailForm({
 	onFormChange,
@@ -67,7 +87,9 @@ export function NewScheduledEmailForm({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
 			recipients: [],
+			animationType: "uploaded",
 			animation: "",
+			animationUrl: "",
 			subject: "",
 			scheduledDate: initialDate
 				? new Date(
@@ -84,14 +106,23 @@ export function NewScheduledEmailForm({
 	// Watch form fields for preview
 	useEffect(() => {
 		const subscription = form.watch((value) => {
+			let previewAnimationId;
+			if (value.animationType === "uploaded") {
+				const selectedAnimation = animations?.find(
+					(a) => a._id === value.animation
+				);
+				previewAnimationId = selectedAnimation?.storageId;
+			}
 			onFormChange({
 				heading: value.heading,
-				animationId: value.animation,
+				animationId: previewAnimationId,
+				animationUrl:
+					value.animationType === "url" ? value.animationUrl : undefined,
 				body: value.body,
 			});
 		});
 		return () => subscription.unsubscribe();
-	}, [form, onFormChange]);
+	}, [form, onFormChange, animations]);
 
 	async function onSubmit(values: z.infer<typeof formSchema>) {
 		setIsSubmitting(true);
@@ -104,6 +135,12 @@ export function NewScheduledEmailForm({
 						scheduledDate: new Date(values.scheduledDate).getTime(),
 						message: values.body,
 						subject: values.subject,
+						animationId:
+							values.animationType === "uploaded"
+								? (values.animation as Id<"animations">)
+								: undefined,
+						animationUrl:
+							values.animationType === "url" ? values.animationUrl : undefined,
 					});
 				})
 			);
@@ -158,34 +195,92 @@ export function NewScheduledEmailForm({
 
 				<FormField
 					control={form.control}
-					name="animation"
+					name="animationType"
 					render={({ field }) => (
 						<FormItem>
-							<FormLabel>Animation</FormLabel>
-							<Select onValueChange={field.onChange} defaultValue={field.value}>
-								<FormControl>
-									<SelectTrigger>
-										<SelectValue placeholder="Select an animation" />
-									</SelectTrigger>
-								</FormControl>
-								<SelectContent>
-									{animations.map((animation: Doc<"animations">) => (
-										<SelectItem
-											key={animation._id}
-											value={animation.storageId as string}
-										>
-											{animation.name}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-							<FormDescription>
-								Choose an animation to include in the email.
-							</FormDescription>
-							<FormMessage />
+							<FormLabel>Animation Type</FormLabel>
+							<FormControl>
+								<RadioGroup
+									onValueChange={field.onChange}
+									defaultValue={field.value}
+									className="flex flex-col space-y-1"
+								>
+									<FormItem className="flex items-center space-x-3 space-y-0">
+										<FormControl>
+											<RadioGroupItem value="uploaded" />
+										</FormControl>
+										<FormLabel className="font-normal">
+											Choose from uploaded images/animations
+										</FormLabel>
+									</FormItem>
+									<FormItem className="flex items-center space-x-3 space-y-0">
+										<FormControl>
+											<RadioGroupItem value="url" />
+										</FormControl>
+										<FormLabel className="font-normal">
+											Use custom GIF/image URL
+										</FormLabel>
+									</FormItem>
+								</RadioGroup>
+							</FormControl>
 						</FormItem>
 					)}
 				/>
+
+				{form.watch("animationType") === "uploaded" && (
+					<FormField
+						control={form.control}
+						name="animation"
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel>Animation</FormLabel>
+								<Select
+									onValueChange={field.onChange}
+									defaultValue={field.value}
+								>
+									<FormControl>
+										<SelectTrigger>
+											<SelectValue placeholder="Select an image or animation" />
+										</SelectTrigger>
+									</FormControl>
+									<SelectContent>
+										{animations?.map((animation: Doc<"animations">) => (
+											<SelectItem key={animation._id} value={animation._id}>
+												{animation.name}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+								<FormDescription>
+									Choose an image or animation to include in the email.
+								</FormDescription>
+								<FormMessage />
+							</FormItem>
+						)}
+					/>
+				)}
+
+				{form.watch("animationType") === "url" && (
+					<FormField
+						control={form.control}
+						name="animationUrl"
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel>Image URL</FormLabel>
+								<FormControl>
+									<Input
+										placeholder="Enter URL of a GIF, JPG, or PNG image..."
+										{...field}
+									/>
+								</FormControl>
+								<FormDescription>
+									Enter the URL of a GIF from Giphy or any other image URL.
+								</FormDescription>
+								<FormMessage />
+							</FormItem>
+						)}
+					/>
+				)}
 
 				<FormField
 					control={form.control}

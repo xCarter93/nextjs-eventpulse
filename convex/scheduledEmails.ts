@@ -10,11 +10,17 @@ export const scheduleCustomEmail = mutation({
 		scheduledDate: v.number(),
 		message: v.string(),
 		subject: v.string(),
+		animationId: v.optional(v.id("animations")),
+		animationUrl: v.optional(v.string()),
 	},
 	async handler(ctx, args) {
 		const identity = await ctx.auth.getUserIdentity();
 		if (!identity) {
 			throw new ConvexError("Not authenticated");
+		}
+
+		if (!identity.email) {
+			throw new ConvexError("User email is required");
 		}
 
 		// Verify user has access to this recipient
@@ -34,6 +40,11 @@ export const scheduleCustomEmail = mutation({
 			throw new ConvexError("Recipient not found or access denied");
 		}
 
+		// Validate animationUrl if provided
+		if (args.animationUrl && !args.animationUrl.match(/\.(gif|jpe?g|png)$/i)) {
+			throw new ConvexError("Invalid image URL format");
+		}
+
 		// Schedule the email
 		await ctx.scheduler.runAt(
 			args.scheduledDate,
@@ -43,6 +54,8 @@ export const scheduleCustomEmail = mutation({
 				date: args.scheduledDate,
 				customMessage: args.message,
 				subject: args.subject,
+				animationId: args.animationId,
+				animationUrl: args.animationUrl,
 			}
 		);
 	},
@@ -68,6 +81,7 @@ export const listScheduledEmails = query({
 			throw new ConvexError("User not found");
 		}
 
+		// Get all scheduled emails (both pending and completed)
 		const scheduledEmails = await ctx.db.system
 			.query("_scheduled_functions")
 			.filter((q) => q.eq(q.field("name"), "emails.js:sendScheduledEmail"))
@@ -78,23 +92,28 @@ export const listScheduledEmails = query({
 		// Enrich emails with recipient details
 		const enrichedEmails = await Promise.all(
 			scheduledEmails.map(async (email) => {
+				console.log("Processing email:", email);
 				const args = email.args[0] as {
 					recipientId: Id<"recipients">;
 					date: number;
 					customMessage?: string;
 					subject?: string;
+					animationId?: Id<"animations">;
 				};
 
 				const recipient = (await ctx.db.get(
 					args.recipientId
 				)) as Doc<"recipients"> | null;
 
+				console.log("Found recipient:", recipient);
+
 				// Only include emails for recipients that belong to this user
 				if (!recipient || recipient.userId !== user._id) {
+					console.log("Skipping email - recipient not found or access denied");
 					return null;
 				}
 
-				return {
+				const enrichedEmail = {
 					_id: email._id,
 					scheduledTime: email.scheduledTime,
 					status: email.state.kind,
@@ -106,14 +125,21 @@ export const listScheduledEmails = query({
 					customMessage: args.customMessage,
 					subject: args.subject,
 					isAutomated: !args.customMessage,
+					error: email.state.kind === "failed" ? email.state.error : undefined,
 				};
+
+				console.log("Enriched email:", enrichedEmail);
+				return enrichedEmail;
 			})
 		);
 
-		// Filter out null values and sort by scheduled time
-		return enrichedEmails
+		// Filter out null values and sort by scheduled time (most recent first)
+		const filteredEmails = enrichedEmails
 			.filter((email): email is NonNullable<typeof email> => email !== null)
-			.sort((a, b) => a.scheduledTime - b.scheduledTime);
+			.sort((a, b) => b.scheduledTime - a.scheduledTime);
+
+		console.log("Final filtered emails:", filteredEmails);
+		return filteredEmails;
 	},
 });
 

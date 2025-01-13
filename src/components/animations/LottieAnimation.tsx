@@ -1,23 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
+import Image from "next/image";
 
-interface LottieAnimationProps {
+interface AnimationProps {
 	isPreview?: boolean;
 	src?: string;
 	storageId?: Id<"_storage">;
 }
 
-export default function LottieAnimation({
+export default function Animation({
 	isPreview,
 	src,
 	storageId,
-}: LottieAnimationProps) {
-	const [isLoading, setIsLoading] = useState(true);
+}: AnimationProps) {
+	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const queryResult = useQuery(
 		api.animations.getAnimationUrl,
@@ -36,8 +36,11 @@ export default function LottieAnimation({
 			} else {
 				setIsLoading(false);
 			}
+		} else if (src) {
+			setIsLoading(false);
+			setError(null);
 		}
-	}, [storageId, queryResult]);
+	}, [storageId, queryResult, src]);
 
 	if (isLoading) {
 		return (
@@ -55,23 +58,20 @@ export default function LottieAnimation({
 		);
 	}
 
+	const animationUrl = queryResult || src || "/images/default-animation.gif";
+
 	return (
 		<div
 			className={`relative flex items-center justify-center w-full h-full ${
 				isPreview ? "scale-75" : ""
 			}`}
 		>
-			<DotLottieReact
-				src={
-					queryResult || src || "/lottiefiles/Animation - 1736125012323.lottie"
-				}
-				loop
-				autoplay
-				className="w-full h-full"
-				onError={(error) => {
-					console.error("Lottie animation error:", error);
-					setError("Failed to play animation");
-				}}
+			<Image
+				src={animationUrl}
+				alt="Animation"
+				width={400}
+				height={400}
+				className="w-full h-full object-contain"
 			/>
 		</div>
 	);

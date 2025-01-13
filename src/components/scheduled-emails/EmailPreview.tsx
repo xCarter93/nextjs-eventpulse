@@ -1,18 +1,20 @@
 "use client";
 
 import { Id } from "../../../convex/_generated/dataModel";
-import LottieAnimation from "../animations/LottieAnimation";
+import Animation from "../animations/LottieAnimation";
 import Link from "next/link";
 
 interface EmailPreviewProps {
 	heading?: string;
 	animationId?: string;
+	animationUrl?: string;
 	body?: string;
 }
 
 export function EmailPreview({
 	heading,
 	animationId,
+	animationUrl,
 	body,
 }: EmailPreviewProps) {
 	return (
@@ -23,16 +25,16 @@ export function EmailPreview({
 				</h2>
 			)}
 			<div className="w-full my-8 text-center">
-				{animationId && (
+				{animationId || animationUrl ? (
 					<div className="relative w-full aspect-square max-w-[400px] mx-auto">
-						<LottieAnimation
+						<Animation
 							storageId={animationId as unknown as Id<"_storage">}
+							src={animationUrl}
 						/>
 					</div>
-				)}
-				{!animationId && (
+				) : (
 					<div className="w-full aspect-square max-w-[400px] mx-auto bg-muted rounded-md flex items-center justify-center text-muted-foreground">
-						Select an animation to preview
+						Select an animation or enter a URL to preview
 					</div>
 				)}
 			</div>
