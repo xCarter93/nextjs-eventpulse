@@ -7,6 +7,7 @@ import {
 	Text,
 	Heading,
 	Img,
+	Link,
 } from "@react-email/components";
 
 interface EmailTemplateProps {
@@ -40,6 +41,14 @@ export default function EmailTemplate({
 					</Section>
 					<Section>
 						<Text style={text}>{bodyText}</Text>
+					</Section>
+					<Section>
+						<Text style={footer}>
+							Sent with ❤️ from{" "}
+							<Link href="https://animgreet.com" style={footerLink}>
+								AnimGreet
+							</Link>
+						</Text>
 					</Section>
 				</Container>
 			</Body>
@@ -83,4 +92,19 @@ const text = {
 	lineHeight: "1.6",
 	color: "#484848",
 	textAlign: "center" as const,
+};
+
+const footer = {
+	fontSize: "14px",
+	color: "#666666",
+	textAlign: "center" as const,
+	marginTop: "32px",
+	borderTop: "1px solid #eaeaea",
+	paddingTop: "24px",
+};
+
+const footerLink = {
+	color: "#000000",
+	textDecoration: "none",
+	fontWeight: "500" as const,
 };
