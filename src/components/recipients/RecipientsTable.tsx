@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -13,19 +14,19 @@ import { AgGridReact } from "ag-grid-react";
 import {
 	type ColDef,
 	type ICellRendererParams,
+	type CellValueChangedEvent,
 	ModuleRegistry,
 	ClientSideRowModelModule,
 	GridOptions,
 	themeQuartz,
 	colorSchemeLightCold,
 	colorSchemeDarkBlue,
-	CheckboxEditorModule,
-	CellValueChangedEvent,
 	TextEditorModule,
 	ValidationModule,
 	RowSelectionModule,
 	PaginationModule,
 	DateEditorModule,
+	RowStyleModule,
 } from "ag-grid-community";
 import { format } from "date-fns";
 import { useTheme } from "next-themes";
@@ -38,12 +39,12 @@ import { RecipientForm } from "./RecipientForm";
 // Register AG Grid Modules
 ModuleRegistry.registerModules([
 	ClientSideRowModelModule,
-	CheckboxEditorModule,
 	TextEditorModule,
 	ValidationModule,
 	RowSelectionModule,
 	PaginationModule,
 	DateEditorModule,
+	RowStyleModule,
 ]);
 
 interface Recipient {
@@ -53,7 +54,6 @@ interface Recipient {
 	email: string;
 	birthday: number;
 	userId: Id<"users">;
-	sendAutomaticEmail: boolean;
 }
 
 interface ActionCellRendererProps extends ICellRendererParams {
@@ -67,7 +67,10 @@ const ActionCellRenderer = (props: ActionCellRendererProps) => {
 			<Button
 				variant="destructive"
 				size="sm"
-				onClick={() => props.onDelete(props.data._id)}
+				onClick={(e) => {
+					e.stopPropagation();
+					props.onDelete(props.data._id);
+				}}
 				className="h-7 px-2"
 			>
 				Delete
@@ -77,6 +80,7 @@ const ActionCellRenderer = (props: ActionCellRendererProps) => {
 };
 
 export function RecipientsTable() {
+	const router = useRouter();
 	const { theme } = useTheme();
 
 	const recipients = useQuery(api.recipients.getRecipients);
@@ -106,6 +110,16 @@ export function RecipientsTable() {
 		animateRows: true,
 		rowSelection: "single",
 		...defaultColDef,
+		onRowClicked: (event) => {
+			// Check if we're clicking the delete button or its container
+			const target = event.event?.target as HTMLElement;
+			const isDeleteButton = target?.closest("button") !== null;
+
+			if (event.data && !isDeleteButton) {
+				router.push(`/recipients/${event.data._id}`);
+			}
+		},
+		rowStyle: { cursor: "pointer" },
 	};
 
 	const handleDelete = async (id: Id<"recipients">) => {
@@ -125,7 +139,6 @@ export function RecipientsTable() {
 				name: event.data.name,
 				email: event.data.email,
 				birthday: event.data.birthday,
-				sendAutomaticEmail: event.data.sendAutomaticEmail,
 			});
 			toast.success("Recipient updated successfully");
 		} catch (error) {
@@ -179,14 +192,6 @@ export function RecipientsTable() {
 			cellEditorParams: {
 				browserDatePicker: true,
 			},
-		},
-		{
-			field: "sendAutomaticEmail",
-			headerName: "Send Automatic Email",
-			flex: 1,
-			cellEditor: "agCheckboxCellEditor",
-			editable: true,
-			cellRenderer: "agCheckboxCellRenderer",
 		},
 		{
 			headerName: "Actions",

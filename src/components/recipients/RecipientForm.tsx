@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
-import { Checkbox } from "@/components/ui/checkbox";
 
 const formSchema = z.object({
 	name: z.string().min(2, {
@@ -31,7 +30,6 @@ const formSchema = z.object({
 	birthday: z.date({
 		required_error: "Please select a date.",
 	}),
-	sendAutomaticEmail: z.boolean().default(false),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -42,7 +40,6 @@ interface RecipientFormProps {
 		name: string;
 		email: string;
 		birthday: number;
-		sendAutomaticEmail: boolean;
 	};
 	onSuccess: () => void;
 }
@@ -58,12 +55,10 @@ export function RecipientForm({ recipient, onSuccess }: RecipientFormProps) {
 					name: recipient.name,
 					email: recipient.email,
 					birthday: new Date(recipient.birthday),
-					sendAutomaticEmail: recipient.sendAutomaticEmail,
 				}
 			: {
 					name: "",
 					email: "",
-					sendAutomaticEmail: false,
 				},
 	});
 
@@ -75,7 +70,6 @@ export function RecipientForm({ recipient, onSuccess }: RecipientFormProps) {
 					name: data.name,
 					email: data.email,
 					birthday: data.birthday.getTime(),
-					sendAutomaticEmail: data.sendAutomaticEmail,
 				});
 				toast.success("Recipient updated successfully");
 			} else {
@@ -83,7 +77,6 @@ export function RecipientForm({ recipient, onSuccess }: RecipientFormProps) {
 					name: data.name,
 					email: data.email,
 					birthday: data.birthday.getTime(),
-					sendAutomaticEmail: data.sendAutomaticEmail,
 				});
 				toast.success("Recipient added successfully");
 			}
@@ -132,46 +125,22 @@ export function RecipientForm({ recipient, onSuccess }: RecipientFormProps) {
 						)}
 					/>
 
-					<div className="grid grid-cols-2 gap-4">
-						<FormField
-							control={form.control}
-							name="birthday"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Special Date</FormLabel>
-									<FormControl>
-										<DatePicker
-											selected={field.value}
-											onSelect={field.onChange}
-										/>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
-
-						<FormField
-							control={form.control}
-							name="sendAutomaticEmail"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Settings</FormLabel>
-									<div className="flex items-center h-10 space-x-2">
-										<FormControl>
-											<Checkbox
-												checked={field.value}
-												onCheckedChange={field.onChange}
-											/>
-										</FormControl>
-										<FormLabel className="font-normal">
-											Send Automatic Email
-										</FormLabel>
-									</div>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
-					</div>
+					<FormField
+						control={form.control}
+						name="birthday"
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel>Birthday</FormLabel>
+								<FormControl>
+									<DatePicker
+										selected={field.value}
+										onSelect={field.onChange}
+									/>
+								</FormControl>
+								<FormMessage />
+							</FormItem>
+						)}
+					/>
 				</div>
 
 				<div className="flex justify-center space-x-3">

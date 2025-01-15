@@ -75,8 +75,8 @@ export default function LandingPage() {
 			{/* Footer */}
 			<footer className="border-t border-border">
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-					<div className="text-center text-muted-foreground">
-						<p>© 2024 AnimGreet. All rights reserved.</p>
+					<div className="flex flex-col items-center border-t border-border">
+						<p>© 2024 EventPulse. All rights reserved.</p>
 					</div>
 				</div>
 			</footer>

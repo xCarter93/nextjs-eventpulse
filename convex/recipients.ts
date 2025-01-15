@@ -1,8 +1,7 @@
 import { v } from "convex/values";
-import { mutation, query, internalQuery } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import { ConvexError } from "convex/values";
 import { internal } from "./_generated/api";
-import { Id } from "./_generated/dataModel";
 
 export const getRecipients = query({
 	async handler(ctx) {
@@ -37,7 +36,6 @@ export const addRecipient = mutation({
 		name: v.string(),
 		email: v.string(),
 		birthday: v.number(),
-		sendAutomaticEmail: v.boolean(),
 	},
 	async handler(ctx, args) {
 		const identity = await ctx.auth.getUserIdentity();
@@ -62,21 +60,7 @@ export const addRecipient = mutation({
 			name: args.name,
 			email: args.email,
 			birthday: args.birthday,
-			sendAutomaticEmail: args.sendAutomaticEmail,
 		});
-
-		// If automatic emails are enabled, schedule the next email
-		if (args.sendAutomaticEmail) {
-			const nextBirthday = getNextOccurrence(args.birthday);
-			await ctx.scheduler.runAt(
-				nextBirthday,
-				internal.emails.sendScheduledEmail,
-				{
-					recipientId,
-					date: nextBirthday,
-				}
-			);
-		}
 
 		return recipientId;
 	},
@@ -88,7 +72,6 @@ export const updateRecipient = mutation({
 		name: v.string(),
 		email: v.string(),
 		birthday: v.number(),
-		sendAutomaticEmail: v.boolean(),
 	},
 	async handler(ctx, args) {
 		const identity = await ctx.auth.getUserIdentity();
@@ -117,40 +100,54 @@ export const updateRecipient = mutation({
 			name: args.name,
 			email: args.email,
 			birthday: args.birthday,
-			sendAutomaticEmail: args.sendAutomaticEmail,
 		});
+	},
+});
 
-		// Cancel any existing scheduled emails
-		const scheduledFunctions = await ctx.db.system
-			.query("_scheduled_functions")
-			.filter((q) => q.eq(q.field("name"), "emails.js:sendScheduledEmail"))
-			.collect();
+export const updateRecipientMetadata = mutation({
+	args: {
+		id: v.id("recipients"),
+		metadata: v.object({
+			relation: v.optional(
+				v.union(
+					v.literal("friend"),
+					v.literal("parent"),
+					v.literal("spouse"),
+					v.literal("sibling")
+				)
+			),
+			anniversaryDate: v.optional(v.number()),
+			notes: v.optional(v.string()),
+			nickname: v.optional(v.string()),
+			phoneNumber: v.optional(v.string()),
+		}),
+	},
+	async handler(ctx, args) {
+		const identity = await ctx.auth.getUserIdentity();
 
-		// Find and cancel matching functions
-		for (const fn of scheduledFunctions) {
-			const emailArgs = fn.args[0] as {
-				recipientId: Id<"recipients">;
-				date: number;
-				customMessage?: string;
-				subject?: string;
-			};
-			if (emailArgs.recipientId === args.id) {
-				await ctx.scheduler.cancel(fn._id);
-			}
+		if (!identity) {
+			throw new ConvexError("Not authenticated");
 		}
 
-		// If automatic emails are enabled, schedule the next email
-		if (args.sendAutomaticEmail) {
-			const nextBirthday = getNextOccurrence(args.birthday);
-			await ctx.scheduler.runAt(
-				nextBirthday,
-				internal.emails.sendScheduledEmail,
-				{
-					recipientId: args.id,
-					date: nextBirthday,
-				}
-			);
+		const user = await ctx.db
+			.query("users")
+			.withIndex("by_tokenIdentifier", (q) =>
+				q.eq("tokenIdentifier", identity.tokenIdentifier)
+			)
+			.first();
+
+		if (!user) {
+			throw new ConvexError("User not found");
 		}
+
+		const existing = await ctx.db.get(args.id);
+		if (!existing || existing.userId !== user._id) {
+			throw new ConvexError("Recipient not found or access denied");
+		}
+
+		await ctx.db.patch(args.id, {
+			metadata: args.metadata,
+		});
 	},
 });
 
@@ -193,30 +190,37 @@ export const deleteRecipient = mutation({
 	},
 });
 
-export const getRecipient = internalQuery({
+export const getRecipient = query({
 	args: { id: v.id("recipients") },
 	async handler(ctx, args) {
-		return await ctx.db.get(args.id);
+		const identity = await ctx.auth.getUserIdentity();
+		const recipient = await ctx.db.get(args.id);
+
+		if (!recipient) {
+			throw new ConvexError("Recipient not found");
+		}
+
+		// If this is an internal call (no user identity), allow access
+		if (!identity) {
+			return recipient;
+		}
+
+		// For authenticated users, verify ownership
+		const user = await ctx.db
+			.query("users")
+			.withIndex("by_tokenIdentifier", (q) =>
+				q.eq("tokenIdentifier", identity.tokenIdentifier)
+			)
+			.first();
+
+		if (!user) {
+			throw new ConvexError("User not found");
+		}
+
+		if (recipient.userId !== user._id) {
+			throw new ConvexError("Access denied");
+		}
+
+		return recipient;
 	},
 });
-
-// Helper function to calculate the next occurrence of a date
-function getNextOccurrence(timestamp: number): number {
-	const date = new Date(timestamp);
-	const today = new Date();
-	const nextDate = new Date(
-		today.getFullYear(),
-		date.getMonth(),
-		date.getDate(),
-		9, // Send at 9 AM
-		0,
-		0
-	);
-
-	// If the date has already passed this year, schedule for next year
-	if (nextDate.getTime() < today.getTime()) {
-		nextDate.setFullYear(today.getFullYear() + 1);
-	}
-
-	return nextDate.getTime();
-}

@@ -23,12 +23,19 @@ export const sendScheduledEmail = internalAction({
 
 		console.log("Recipient data:", { recipient });
 
-		if (!recipient || !recipient.sendAutomaticEmail) {
+		if (!recipient) {
+			console.log("Skipping email - recipient not found", {
+				recipientFound: false,
+			});
+			return;
+		}
+
+		// Only check sendAutomaticEmail for automated birthday emails
+		if (!args.customMessage && !recipient.sendAutomaticEmail) {
 			console.log(
-				"Skipping email - recipient not found or automated emails disabled",
+				"Skipping automated birthday email - automated emails disabled",
 				{
-					recipientFound: !!recipient,
-					sendAutomaticEmail: recipient?.sendAutomaticEmail,
+					sendAutomaticEmail: recipient.sendAutomaticEmail,
 				}
 			);
 			return;
@@ -109,14 +116,14 @@ export const sendScheduledEmail = internalAction({
 		try {
 			console.log("Attempting to send email via Resend", {
 				to: recipient.email,
-				from: "Acme <onboarding@resend.dev>",
+				from: "EventPulse <notifications@eventpulse.com>",
 				subject,
 			});
 
 			// Send the email using Resend
 			const resend = new Resend(process.env.RESEND_API_KEY);
 			const result = await resend.emails.send({
-				from: "Acme <onboarding@resend.dev>",
+				from: "EventPulse <notifications@eventpulse.com>",
 				to: recipient.email,
 				subject: subject,
 				html: `
@@ -139,7 +146,7 @@ export const sendScheduledEmail = internalAction({
 									${message}
 								</p>
 								<p style="color: #6b7280; font-size: 14px; margin: 20px 0 0; padding: 20px 0 0; border-top: 1px solid #e5e7eb; text-align: center;">
-									Sent with ❤️ from AnimGreet
+									Sent with ❤️ from EventPulse
 								</p>
 							</div>
 						</body>

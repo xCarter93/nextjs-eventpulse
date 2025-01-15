@@ -43,7 +43,7 @@ export default function EmailTemplate({
 						)}
 					</Section>
 					<Text style={text}>{bodyText}</Text>
-					<Text style={footer}>Sent with ❤️ from AnimGreet</Text>
+					<Text style={footer}>Sent with ❤️ from EventPulse</Text>
 				</Container>
 			</Body>
 		</Html>

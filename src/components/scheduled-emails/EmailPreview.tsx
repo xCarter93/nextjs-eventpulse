@@ -2,7 +2,6 @@
 
 import { Id } from "../../../convex/_generated/dataModel";
 import Animation from "../animations/LottieAnimation";
-import Link from "next/link";
 
 interface EmailPreviewProps {
 	heading?: string;
@@ -47,13 +46,15 @@ export function EmailPreview({
 				</p>
 			)}
 			<div className="w-full text-center text-sm text-[#666666] mt-8 pt-6 border-t border-[#eaeaea]">
-				Sent with ❤️ from{" "}
-				<Link
-					href="https://animgreet.com"
-					className="text-black no-underline font-medium"
-				>
-					AnimGreet
-				</Link>
+				<p className="text-sm text-gray-500 mt-4 pt-4 border-t">
+					Sent with ❤️ from{" "}
+					<a
+						href="https://eventpulse.com"
+						className="text-blue-600 hover:text-blue-800"
+					>
+						EventPulse
+					</a>
+				</p>
 			</div>
 		</div>
 	);

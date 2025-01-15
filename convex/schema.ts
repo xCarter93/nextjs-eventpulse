@@ -30,6 +30,21 @@ export default defineSchema({
 		name: v.string(),
 		email: v.string(),
 		birthday: v.number(),
-		sendAutomaticEmail: v.boolean(),
+		metadata: v.optional(
+			v.object({
+				relation: v.optional(
+					v.union(
+						v.literal("friend"),
+						v.literal("parent"),
+						v.literal("spouse"),
+						v.literal("sibling")
+					)
+				),
+				anniversaryDate: v.optional(v.number()),
+				notes: v.optional(v.string()),
+				nickname: v.optional(v.string()),
+				phoneNumber: v.optional(v.string()),
+			})
+		),
 	}).index("by_userId", ["userId"]),
 });

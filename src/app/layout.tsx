@@ -10,8 +10,9 @@ import { Navbar } from "@/components/layout/navbar";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-	title: "AnimGreet",
-	description: "Send animated greetings to your loved ones",
+	title: "EventPulse",
+	description:
+		"Stay connected with your loved ones through timely event reminders and personalized messages.",
 };
 
 export default function RootLayout({

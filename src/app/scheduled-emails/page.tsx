@@ -6,7 +6,7 @@ import { Plus } from "lucide-react";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-	title: "Scheduled Emails | AnimGreet",
+	title: "Scheduled Emails | EventPulse",
 	description: "Manage your scheduled emails and automated birthday greetings.",
 };
 

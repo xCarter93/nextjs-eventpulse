@@ -20,9 +20,9 @@ export function CustomAnimationUploader() {
 		const file = e.target.files?.[0];
 		if (!file) return;
 
-		// Verify file is a GIF
-		if (!file.type.startsWith("image/gif")) {
-			toast.error("Please upload a GIF file");
+		// Verify file is an accepted image type
+		if (!file.type.match(/^image\/(gif|jpeg|png)$/)) {
+			toast.error("Please upload a GIF, JPG, or PNG file");
 			return;
 		}
 
@@ -30,7 +30,7 @@ export function CustomAnimationUploader() {
 		try {
 			// Read the file content
 			const fileContent = await file.arrayBuffer();
-			const fileBlob = new Blob([fileContent], { type: "image/gif" });
+			const fileBlob = new Blob([fileContent], { type: file.type });
 
 			// Step 1: Get a short-lived upload URL
 			const postUrl = await generateUploadUrl();
@@ -39,7 +39,7 @@ export function CustomAnimationUploader() {
 			const result = await fetch(postUrl, {
 				method: "POST",
 				headers: {
-					"Content-Type": "image/gif",
+					"Content-Type": file.type,
 				},
 				body: fileBlob,
 			});
@@ -84,8 +84,8 @@ export function CustomAnimationUploader() {
 					<h3 className="font-semibold">Custom Animation</h3>
 					<p className="text-sm text-muted-foreground">
 						{isUploading
-							? "Uploading animation..."
-							: "Click to upload your GIF animation"}
+							? "Uploading image..."
+							: "Click to upload your image (GIF, JPG, or PNG)"}
 					</p>
 					{user?.subscription.tier === "free" && (
 						<p className="text-sm text-yellow-600 dark:text-yellow-500">
@@ -110,7 +110,7 @@ export function CustomAnimationUploader() {
 							Browse free animations at LottieFiles
 						</a>
 						<p className="text-xs text-muted-foreground">
-							Export your Lottie animation as GIF before uploading
+							Export your Lottie animation as GIF, or upload any JPG/PNG image
 						</p>
 					</div>
 				</div>
@@ -118,7 +118,7 @@ export function CustomAnimationUploader() {
 			<Input
 				id="file-upload"
 				type="file"
-				accept=".gif"
+				accept=".gif,.jpg,.jpeg,.png"
 				onChange={handleFileChange}
 				className="hidden"
 			/>
