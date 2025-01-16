@@ -63,6 +63,7 @@ export function ColorSchemeSelector({
 									className="w-full h-10"
 									onClick={() => setActiveColor(key as keyof ColorScheme)}
 									style={{ backgroundColor: color }}
+									type="button"
 								>
 									<span className="sr-only">Pick a {key} color</span>
 								</Button>
@@ -96,6 +97,7 @@ export function ColorSchemeSelector({
 							variant="outline"
 							className="p-2 h-auto hover:bg-accent"
 							onClick={() => onChange(scheme)}
+							type="button"
 						>
 							<div className="grid grid-cols-4 gap-1 w-full h-6">
 								{Object.values(scheme).map((color, colorIndex) => (

@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalQuery } from "./_generated/server";
 import { ConvexError } from "convex/values";
 import { internal } from "./_generated/api";
 
@@ -190,6 +190,15 @@ export const deleteRecipient = mutation({
 	},
 });
 
+// Internal query for system use
+export const getRecipientInternal = internalQuery({
+	args: { id: v.id("recipients") },
+	handler: async (ctx, args) => {
+		return await ctx.db.get(args.id);
+	},
+});
+
+// Public query with auth checks
 export const getRecipient = query({
 	args: { id: v.id("recipients") },
 	async handler(ctx, args) {

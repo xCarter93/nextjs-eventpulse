@@ -13,13 +13,24 @@ export const sendScheduledEmail = internalAction({
 		subject: v.optional(v.string()),
 		animationId: v.optional(v.id("animations")),
 		animationUrl: v.optional(v.string()),
+		colorScheme: v.optional(
+			v.object({
+				primary: v.string(),
+				secondary: v.string(),
+				accent: v.string(),
+				background: v.string(),
+			})
+		),
 	},
 	async handler(ctx, args) {
 		console.log("Starting email send process", { args });
 
-		const recipient = await ctx.runQuery(internal.recipients.getRecipient, {
-			id: args.recipientId,
-		});
+		const recipient = await ctx.runQuery(
+			internal.recipients.getRecipientInternal,
+			{
+				id: args.recipientId,
+			}
+		);
 
 		console.log("Recipient data:", { recipient });
 
@@ -27,17 +38,6 @@ export const sendScheduledEmail = internalAction({
 			console.log("Skipping email - recipient not found", {
 				recipientFound: false,
 			});
-			return;
-		}
-
-		// Only check sendAutomaticEmail for automated birthday emails
-		if (!args.customMessage && !recipient.sendAutomaticEmail) {
-			console.log(
-				"Skipping automated birthday email - automated emails disabled",
-				{
-					sendAutomaticEmail: recipient.sendAutomaticEmail,
-				}
-			);
 			return;
 		}
 
@@ -116,14 +116,14 @@ export const sendScheduledEmail = internalAction({
 		try {
 			console.log("Attempting to send email via Resend", {
 				to: recipient.email,
-				from: "EventPulse <notifications@eventpulse.com>",
+				from: "EventPulse <onboarding@resend.dev>",
 				subject,
 			});
 
 			// Send the email using Resend
 			const resend = new Resend(process.env.RESEND_API_KEY);
 			const result = await resend.emails.send({
-				from: "EventPulse <notifications@eventpulse.com>",
+				from: "EventPulse <onboarding@resend.dev>",
 				to: recipient.email,
 				subject: subject,
 				html: `
@@ -134,20 +134,22 @@ export const sendScheduledEmail = internalAction({
 							<meta name="viewport" content="width=device-width, initial-scale=1.0">
 							<title>${subject}</title>
 						</head>
-						<body style="background-color: #f9fafb; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;">
-							<div style="max-width: 600px; margin: 20px auto; padding: 20px; background-color: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
-								<h1 style="color: #111827; font-size: 24px; font-weight: 600; line-height: 32px; margin: 0 0 20px; text-align: center;">
+						<body style="background-color: ${args.colorScheme?.background || "#f9fafb"}; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;">
+							<div style="max-width: 600px; margin: 20px auto; padding: 24px; background-color: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
+								<h1 style="color: ${args.colorScheme?.primary || "#111827"}; font-size: 30px; font-weight: 700; line-height: 1.3; margin: 0 0 32px 0; text-align: center;">
 									${subject}
 								</h1>
-								<div style="text-align: center; margin: 20px 0;">
-									<img src="${animationUrl}" alt="Animation" style="max-width: 400px; width: 100%; height: auto; margin: 0 auto;">
+								<div style="margin: 32px 0; text-align: center;">
+									<img src="${animationUrl}" alt="Animation" style="max-width: 400px; width: 100%; height: auto; margin: 0 auto; display: block;">
 								</div>
-								<p style="color: #374151; font-size: 16px; line-height: 24px; margin: 20px 0; text-align: center;">
+								<p style="color: ${args.colorScheme?.secondary || "#374151"}; font-size: 18px; line-height: 1.6; margin: 32px 0; text-align: center;">
 									${message}
 								</p>
-								<p style="color: #6b7280; font-size: 14px; margin: 20px 0 0; padding: 20px 0 0; border-top: 1px solid #e5e7eb; text-align: center;">
-									Sent with ❤️ from EventPulse
-								</p>
+								<div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid ${args.colorScheme?.accent || "#e5e7eb"}; text-align: center;">
+									<p style="color: ${args.colorScheme?.secondary || "#6b7280"}; font-size: 14px; margin: 16px 0 0; padding: 16px 0 0; text-align: center; border-top: 1px solid ${args.colorScheme?.accent || "#e5e7eb"};">
+										Sent with ❤️ from <a href="https://eventpulse.com" style="color: ${args.colorScheme?.primary || "#3B82F6"}; text-decoration: none;">EventPulse</a>
+									</p>
+								</div>
 							</div>
 						</body>
 					</html>`,

@@ -12,6 +12,14 @@ export const scheduleCustomEmail = mutation({
 		subject: v.string(),
 		animationId: v.optional(v.id("animations")),
 		animationUrl: v.optional(v.string()),
+		colorScheme: v.optional(
+			v.object({
+				primary: v.string(),
+				secondary: v.string(),
+				accent: v.string(),
+				background: v.string(),
+			})
+		),
 	},
 	async handler(ctx, args) {
 		const identity = await ctx.auth.getUserIdentity();
@@ -56,6 +64,7 @@ export const scheduleCustomEmail = mutation({
 				subject: args.subject,
 				animationId: args.animationId,
 				animationUrl: args.animationUrl,
+				colorScheme: args.colorScheme,
 			}
 		);
 	},

@@ -2,12 +2,14 @@
 
 import { Id } from "../../../convex/_generated/dataModel";
 import Animation from "../animations/LottieAnimation";
+import { type ColorScheme } from "@/types";
 
 interface EmailPreviewProps {
 	heading?: string;
 	animationId?: string;
 	animationUrl?: string;
 	body?: string;
+	colorScheme?: ColorScheme;
 }
 
 export function EmailPreview({
@@ -15,11 +17,35 @@ export function EmailPreview({
 	animationId,
 	animationUrl,
 	body,
+	colorScheme,
 }: EmailPreviewProps) {
+	const previewStyle = {
+		backgroundColor: colorScheme?.background || "#F3F4F6",
+	};
+
+	const headingStyle = {
+		color: colorScheme?.primary || "#484848",
+	};
+
+	const bodyStyle = {
+		color: colorScheme?.secondary || "#484848",
+	};
+
+	const footerStyle = {
+		borderColor: colorScheme?.accent || "#eaeaea",
+		color: colorScheme?.secondary || "#666666",
+	};
+
 	return (
-		<div className="flex flex-col items-center gap-8 p-6 font-sans text-[#484848] max-w-[600px] mx-auto">
+		<div
+			className="flex flex-col items-center gap-8 p-6 font-sans max-w-[600px] mx-auto rounded-lg"
+			style={previewStyle}
+		>
 			{heading && (
-				<h2 className="text-3xl font-bold leading-[1.3] text-center w-full">
+				<h2
+					className="text-3xl font-bold leading-[1.3] text-center w-full"
+					style={headingStyle}
+				>
 					{heading}
 				</h2>
 			)}
@@ -38,19 +64,28 @@ export function EmailPreview({
 				)}
 			</div>
 			{body && (
-				<p className="text-lg leading-[1.6] text-center w-full">{body}</p>
+				<p
+					className="text-lg leading-[1.6] text-center w-full"
+					style={bodyStyle}
+				>
+					{body}
+				</p>
 			)}
 			{!heading && !body && (
 				<p className="text-muted-foreground text-center">
 					Start filling out the form to see a preview of your email
 				</p>
 			)}
-			<div className="w-full text-center text-sm text-[#666666] mt-8 pt-6 border-t border-[#eaeaea]">
-				<p className="text-sm text-gray-500 mt-4 pt-4 border-t">
+			<div
+				className="w-full text-center text-sm mt-8 pt-6 border-t"
+				style={footerStyle}
+			>
+				<p className="text-sm mt-4 pt-4 border-t" style={footerStyle}>
 					Sent with ❤️ from{" "}
 					<a
 						href="https://eventpulse.com"
-						className="text-blue-600 hover:text-blue-800"
+						className="hover:text-blue-800"
+						style={{ color: colorScheme?.primary || "#3B82F6" }}
 					>
 						EventPulse
 					</a>

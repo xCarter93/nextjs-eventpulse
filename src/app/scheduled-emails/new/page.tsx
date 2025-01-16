@@ -32,7 +32,7 @@ const NewScheduledEmailPage = () => {
 						onFormChange={setPreview}
 						initialDate={dateParam ? new Date(parseInt(dateParam)) : undefined}
 					/>
-					<div className="rounded-lg border bg-card p-6">
+					<div className="h-fit rounded-lg border bg-card p-6">
 						<h2 className="text-lg font-semibold mb-4">Email Preview</h2>
 						<EmailPreview {...preview} />
 					</div>

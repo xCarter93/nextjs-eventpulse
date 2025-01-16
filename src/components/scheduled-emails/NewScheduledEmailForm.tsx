@@ -31,18 +31,29 @@ import { Doc, Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { type ColorScheme } from "@/types";
+import { ColorSchemeSelector } from "@/components/animations/ColorSchemeSelector";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 interface PreviewData {
 	heading?: string;
 	animationId?: string;
 	animationUrl?: string;
 	body?: string;
+	colorScheme?: ColorScheme;
 }
 
 interface NewScheduledEmailFormProps {
 	onFormChange: (data: PreviewData) => void;
 	initialDate?: Date;
 }
+
+const defaultColorScheme: ColorScheme = {
+	primary: "#3B82F6",
+	secondary: "#60A5FA",
+	accent: "#F59E0B",
+	background: "#F3F4F6",
+};
 
 const formSchema = z
 	.object({
@@ -56,6 +67,12 @@ const formSchema = z
 		scheduledDate: z.string().min(1, "Select a date"),
 		heading: z.string().min(1, "Enter a heading"),
 		body: z.string().min(1, "Enter a message"),
+		colorScheme: z.object({
+			primary: z.string(),
+			secondary: z.string(),
+			accent: z.string(),
+			background: z.string(),
+		}),
 	})
 	.refine(
 		(data) => {
@@ -100,6 +117,7 @@ export function NewScheduledEmailForm({
 				: "",
 			heading: "",
 			body: "",
+			colorScheme: defaultColorScheme,
 		},
 	});
 
@@ -113,12 +131,22 @@ export function NewScheduledEmailForm({
 				);
 				previewAnimationId = selectedAnimation?.storageId;
 			}
+
+			const colorScheme: ColorScheme = {
+				primary: value.colorScheme?.primary ?? defaultColorScheme.primary,
+				secondary: value.colorScheme?.secondary ?? defaultColorScheme.secondary,
+				accent: value.colorScheme?.accent ?? defaultColorScheme.accent,
+				background:
+					value.colorScheme?.background ?? defaultColorScheme.background,
+			};
+
 			onFormChange({
 				heading: value.heading,
 				animationId: previewAnimationId,
 				animationUrl:
 					value.animationType === "url" ? value.animationUrl : undefined,
 				body: value.body,
+				colorScheme,
 			});
 		});
 		return () => subscription.unsubscribe();
@@ -141,6 +169,7 @@ export function NewScheduledEmailForm({
 								: undefined,
 						animationUrl:
 							values.animationType === "url" ? values.animationUrl : undefined,
+						colorScheme: values.colorScheme,
 					});
 				})
 			);
@@ -345,6 +374,32 @@ export function NewScheduledEmailForm({
 						</FormItem>
 					)}
 				/>
+
+				<Card>
+					<CardHeader>
+						<CardTitle>Color Scheme</CardTitle>
+					</CardHeader>
+					<CardContent>
+						<FormField
+							control={form.control}
+							name="colorScheme"
+							render={({ field }) => (
+								<FormItem>
+									<FormControl>
+										<ColorSchemeSelector
+											value={field.value}
+											onChange={field.onChange}
+										/>
+									</FormControl>
+									<FormDescription>
+										Customize the colors of your email.
+									</FormDescription>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+					</CardContent>
+				</Card>
 
 				<Button type="submit" disabled={isSubmitting}>
 					{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
