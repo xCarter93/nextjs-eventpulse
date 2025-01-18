@@ -7,6 +7,7 @@ import { Id } from "../../../convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
+import { useEffect, useRef } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -50,6 +51,22 @@ const formSchema = z.object({
 	notes: z.string().optional(),
 	nickname: z.string().optional(),
 	phoneNumber: z.string().optional(),
+	address: z
+		.object({
+			line1: z.string().optional(),
+			line2: z.string().optional(),
+			city: z.string().optional(),
+			state: z.string().optional(),
+			postalCode: z.string().optional(),
+			country: z.string().optional(),
+			coordinates: z
+				.object({
+					latitude: z.number(),
+					longitude: z.number(),
+				})
+				.optional(),
+		})
+		.optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -63,13 +80,39 @@ interface RecipientMetadataFormProps {
 			notes?: string;
 			nickname?: string;
 			phoneNumber?: string;
+			address?: {
+				line1?: string;
+				line2?: string;
+				city?: string;
+				state?: string;
+				postalCode?: string;
+				country?: string;
+				coordinates?: {
+					latitude: number;
+					longitude: number;
+				};
+			};
 		};
 	};
+}
+
+interface MapboxFeature {
+	place_name: string;
+	text: string;
+	properties: Record<string, unknown>;
+	context: Array<{
+		id: string;
+		text: string;
+		wikidata?: string;
+		short_code?: string;
+	}>;
+	center: [number, number]; // [longitude, latitude]
 }
 
 export function RecipientMetadataForm({
 	recipient,
 }: RecipientMetadataFormProps) {
+	const addressInputRef = useRef<HTMLInputElement>(null);
 	const updateRecipientMetadata = useMutation(
 		api.recipients.updateRecipientMetadata
 	);
@@ -84,10 +127,104 @@ export function RecipientMetadataForm({
 			notes: recipient.metadata?.notes || "",
 			nickname: recipient.metadata?.nickname || "",
 			phoneNumber: recipient.metadata?.phoneNumber || "",
+			address: {
+				line1: recipient.metadata?.address?.line1 || "",
+				line2: recipient.metadata?.address?.line2 || "",
+				city: recipient.metadata?.address?.city || "",
+				state: recipient.metadata?.address?.state || "",
+				postalCode: recipient.metadata?.address?.postalCode || "",
+				country: recipient.metadata?.address?.country || "",
+				coordinates: recipient.metadata?.address?.coordinates,
+			},
 		},
 	});
 
 	const relation = form.watch("relation");
+
+	useEffect(() => {
+		if (addressInputRef.current && process.env.NEXT_PUBLIC_MAPBOX_API_KEY) {
+			const input = addressInputRef.current;
+
+			// Create a custom container for suggestions
+			const suggestionsContainer = document.createElement("div");
+			suggestionsContainer.className = "absolute z-50 w-full";
+			input.parentElement?.appendChild(suggestionsContainer);
+
+			let debounceTimeout: NodeJS.Timeout;
+			input.addEventListener("input", (e: Event) => {
+				const target = e.target as HTMLInputElement;
+				clearTimeout(debounceTimeout);
+				debounceTimeout = setTimeout(async () => {
+					if (target.value) {
+						try {
+							const response = await fetch(
+								`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
+									target.value
+								)}.json?access_token=${
+									process.env.NEXT_PUBLIC_MAPBOX_API_KEY
+								}&types=address&limit=5`
+							);
+							const data = await response.json();
+							if (data.features && data.features.length > 0) {
+								suggestionsContainer.innerHTML = "";
+								suggestionsContainer.className =
+									"absolute z-50 w-full bg-background shadow-lg mt-0 border-x border-b rounded-b-md";
+								data.features.forEach((feature: MapboxFeature) => {
+									const div = document.createElement("div");
+									div.className = "p-2 hover:bg-accent cursor-pointer";
+									div.textContent = feature.place_name;
+									div.onclick = () => {
+										// Find country from context
+										const country = feature.context?.find((ctx) =>
+											ctx.id.startsWith("country.")
+										);
+										const region = feature.context?.find((ctx) =>
+											ctx.id.startsWith("region.")
+										);
+										const postcode = feature.context?.find((ctx) =>
+											ctx.id.startsWith("postcode.")
+										);
+										const place = feature.context?.find((ctx) =>
+											ctx.id.startsWith("place.")
+										);
+
+										form.setValue("address.line1", feature.text || "");
+										form.setValue("address.city", place?.text || "");
+										form.setValue("address.state", region?.text || "");
+										form.setValue("address.postalCode", postcode?.text || "");
+										form.setValue("address.country", country?.text || "");
+										form.setValue("address.coordinates", {
+											latitude: feature.center[1],
+											longitude: feature.center[0],
+										});
+
+										suggestionsContainer.innerHTML = "";
+										suggestionsContainer.className = "absolute z-50 w-full";
+									};
+									suggestionsContainer.appendChild(div);
+								});
+							} else {
+								suggestionsContainer.innerHTML = "";
+								suggestionsContainer.className = "absolute z-50 w-full";
+							}
+						} catch (error) {
+							console.error("Error fetching addresses:", error);
+							suggestionsContainer.innerHTML = "";
+							suggestionsContainer.className = "absolute z-50 w-full";
+						}
+					} else {
+						suggestionsContainer.innerHTML = "";
+						suggestionsContainer.className = "absolute z-50 w-full";
+					}
+				}, 300);
+			});
+
+			return () => {
+				clearTimeout(debounceTimeout);
+				suggestionsContainer.remove();
+			};
+		}
+	}, [form]);
 
 	async function onSubmit(data: FormValues) {
 		try {
@@ -99,6 +236,7 @@ export function RecipientMetadataForm({
 					notes: data.notes,
 					nickname: data.nickname,
 					phoneNumber: data.phoneNumber,
+					address: data.address,
 				},
 			});
 			toast.success("Recipient metadata updated successfully");
@@ -194,6 +332,104 @@ export function RecipientMetadataForm({
 							</FormItem>
 						)}
 					/>
+				</div>
+
+				<div className="space-y-4">
+					<h3 className="font-medium">Address Information</h3>
+					<div className="grid gap-4">
+						<FormField
+							control={form.control}
+							name="address.line1"
+							render={({ field: { onChange, value, ...fieldProps } }) => (
+								<FormItem className="relative">
+									<FormLabel>Address Line 1</FormLabel>
+									<FormControl>
+										<Input
+											{...fieldProps}
+											ref={addressInputRef}
+											value={value}
+											onChange={onChange}
+											placeholder="Start typing to search address..."
+											className="focus-visible:ring-2"
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+
+						<FormField
+							control={form.control}
+							name="address.line2"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Address Line 2</FormLabel>
+									<FormControl>
+										<Input placeholder="Apartment, suite, etc." {...field} />
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+
+						<div className="grid grid-cols-3 gap-4">
+							<FormField
+								control={form.control}
+								name="address.city"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>City</FormLabel>
+										<FormControl>
+											<Input placeholder="City" {...field} />
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+
+							<FormField
+								control={form.control}
+								name="address.state"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>State/Province</FormLabel>
+										<FormControl>
+											<Input placeholder="State/Province" {...field} />
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+
+							<FormField
+								control={form.control}
+								name="address.postalCode"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Postal Code</FormLabel>
+										<FormControl>
+											<Input placeholder="Postal code" {...field} />
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+						</div>
+
+						<FormField
+							control={form.control}
+							name="address.country"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Country</FormLabel>
+									<FormControl>
+										<Input placeholder="Country" {...field} readOnly />
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+					</div>
 				</div>
 
 				<FormField

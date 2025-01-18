@@ -96,12 +96,9 @@ export const listScheduledEmails = query({
 			.filter((q) => q.eq(q.field("name"), "emails.js:sendScheduledEmail"))
 			.collect();
 
-		console.log("Found scheduled emails:", scheduledEmails);
-
 		// Enrich emails with recipient details
 		const enrichedEmails = await Promise.all(
 			scheduledEmails.map(async (email) => {
-				console.log("Processing email:", email);
 				const args = email.args[0] as {
 					recipientId: Id<"recipients">;
 					date: number;
@@ -114,11 +111,8 @@ export const listScheduledEmails = query({
 					args.recipientId
 				)) as Doc<"recipients"> | null;
 
-				console.log("Found recipient:", recipient);
-
 				// Only include emails for recipients that belong to this user
 				if (!recipient || recipient.userId !== user._id) {
-					console.log("Skipping email - recipient not found or access denied");
 					return null;
 				}
 
@@ -137,7 +131,6 @@ export const listScheduledEmails = query({
 					error: email.state.kind === "failed" ? email.state.error : undefined,
 				};
 
-				console.log("Enriched email:", enrichedEmail);
 				return enrichedEmail;
 			})
 		);
@@ -147,7 +140,6 @@ export const listScheduledEmails = query({
 			.filter((email): email is NonNullable<typeof email> => email !== null)
 			.sort((a, b) => b.scheduledTime - a.scheduledTime);
 
-		console.log("Final filtered emails:", filteredEmails);
 		return filteredEmails;
 	},
 });

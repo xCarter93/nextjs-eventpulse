@@ -23,8 +23,6 @@ export const sendScheduledEmail = internalAction({
 		),
 	},
 	async handler(ctx, args) {
-		console.log("Starting email send process", { args });
-
 		const recipient = await ctx.runQuery(
 			internal.recipients.getRecipientInternal,
 			{
@@ -32,12 +30,7 @@ export const sendScheduledEmail = internalAction({
 			}
 		);
 
-		console.log("Recipient data:", { recipient });
-
 		if (!recipient) {
-			console.log("Skipping email - recipient not found", {
-				recipientFound: false,
-			});
 			return;
 		}
 
@@ -45,9 +38,7 @@ export const sendScheduledEmail = internalAction({
 		let animationUrl = args.animationUrl;
 		if (!animationUrl && args.animationId) {
 			// For custom emails, use the specified animation
-			console.log("Getting custom animation", {
-				animationId: args.animationId,
-			});
+
 			const animation = await ctx.runQuery(internal.animations.getAnimation, {
 				id: args.animationId,
 			});
@@ -78,7 +69,6 @@ export const sendScheduledEmail = internalAction({
 			animationUrl = fetchedUrl;
 		} else if (!animationUrl) {
 			// For automated emails, get a random base animation
-			console.log("Getting random base animation");
 			const animation = await ctx.runQuery(
 				internal.animations.getBaseAnimation
 			);
@@ -103,23 +93,13 @@ export const sendScheduledEmail = internalAction({
 			animationUrl = fetchedUrl;
 		}
 
-		console.log("Animation URL:", { animationUrl });
-
 		// Create the email content
 		const subject = args.subject || `Happy Birthday ${recipient.name}!`;
 		const message =
 			args.customMessage ||
 			`Wishing you a fantastic birthday filled with joy and celebration!`;
 
-		console.log("Email content prepared:", { subject, message });
-
 		try {
-			console.log("Attempting to send email via Resend", {
-				to: recipient.email,
-				from: "EventPulse <onboarding@resend.dev>",
-				subject,
-			});
-
 			// Send the email using Resend
 			const resend = new Resend(process.env.RESEND_API_KEY);
 			const result = await resend.emails.send({
@@ -165,10 +145,6 @@ export const sendScheduledEmail = internalAction({
 		if (!args.customMessage) {
 			const nextYear = new Date(args.date);
 			nextYear.setFullYear(nextYear.getFullYear() + 1);
-
-			console.log("Scheduling next year's email", {
-				nextDate: nextYear.toISOString(),
-			});
 
 			await ctx.scheduler.runAt(
 				nextYear.getTime(),
