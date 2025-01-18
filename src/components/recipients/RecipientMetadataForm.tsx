@@ -188,7 +188,10 @@ export function RecipientMetadataForm({
 											ctx.id.startsWith("place.")
 										);
 
-										form.setValue("address.line1", feature.text || "");
+										// Extract the street address from the full place name
+										const streetAddress = feature.place_name.split(",")[0];
+
+										form.setValue("address.line1", streetAddress);
 										form.setValue("address.city", place?.text || "");
 										form.setValue("address.state", region?.text || "");
 										form.setValue("address.postalCode", postcode?.text || "");

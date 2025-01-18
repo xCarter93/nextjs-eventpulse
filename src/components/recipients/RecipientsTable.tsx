@@ -1,15 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogHeader,
-	DialogTitle,
-	DialogTrigger,
-} from "@/components/ui/dialog";
 import { AgGridReact } from "ag-grid-react";
 import {
 	type ColDef,
@@ -34,7 +26,6 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
-import { RecipientForm } from "./RecipientForm";
 
 // Register AG Grid Modules
 ModuleRegistry.registerModules([
@@ -86,11 +77,6 @@ export function RecipientsTable() {
 	const recipients = useQuery(api.recipients.getRecipients);
 	const updateRecipient = useMutation(api.recipients.updateRecipient);
 	const deleteRecipient = useMutation(api.recipients.deleteRecipient);
-
-	const [isEditing, setIsEditing] = useState(false);
-	const [editingRecipient, setEditingRecipient] = useState<Recipient | null>(
-		null
-	);
 
 	const gridTheme = themeQuartz.withPart(
 		theme === "dark" ? colorSchemeDarkBlue : colorSchemeLightCold
@@ -204,54 +190,19 @@ export function RecipientsTable() {
 	];
 
 	return (
-		<div className="space-y-6">
-			<div className="flex justify-end">
-				<Dialog
-					open={isEditing}
-					onOpenChange={(open) => {
-						setIsEditing(open);
-						if (!open) {
-							setEditingRecipient(null);
-						}
-					}}
-				>
-					<DialogTrigger asChild>
-						<Button
-							onClick={() => {
-								setEditingRecipient(null);
-							}}
-						>
-							Add Recipient
-						</Button>
-					</DialogTrigger>
-					<DialogContent>
-						<DialogHeader>
-							<DialogTitle>
-								{editingRecipient ? "Edit Recipient" : "Add Recipient"}
-							</DialogTitle>
-						</DialogHeader>
-						<RecipientForm
-							recipient={editingRecipient ?? undefined}
-							onSuccess={() => setIsEditing(false)}
-						/>
-					</DialogContent>
-				</Dialog>
-			</div>
-
-			<div style={{ height: "500px" }}>
-				{recipients && (
-					<AgGridReact
-						gridOptions={gridOptions}
-						rowData={recipients}
-						columnDefs={columnDefs}
-						defaultColDef={defaultColDef}
-						theme={gridTheme}
-						pagination={true}
-						paginationAutoPageSize={true}
-						onCellValueChanged={handleCellValueChanged}
-					/>
-				)}
-			</div>
+		<div style={{ height: "500px" }}>
+			{recipients && (
+				<AgGridReact
+					gridOptions={gridOptions}
+					rowData={recipients}
+					columnDefs={columnDefs}
+					defaultColDef={defaultColDef}
+					theme={gridTheme}
+					pagination={true}
+					paginationAutoPageSize={true}
+					onCellValueChanged={handleCellValueChanged}
+				/>
+			)}
 		</div>
 	);
 }
