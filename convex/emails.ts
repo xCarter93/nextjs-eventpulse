@@ -134,8 +134,8 @@ export const sendScheduledEmail = internalAction({
 							<meta name="viewport" content="width=device-width, initial-scale=1.0">
 							<title>${subject}</title>
 						</head>
-						<body style="background-color: ${args.colorScheme?.background || "#f9fafb"}; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;">
-							<div style="max-width: 600px; margin: 20px auto; padding: 24px; background-color: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
+						<body style="background-color: #f9fafb; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;">
+							<div style="max-width: 600px; margin: 20px auto; padding: 24px; background-color: ${args.colorScheme?.background || "#ffffff"}; border-radius: 8px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
 								<h1 style="color: ${args.colorScheme?.primary || "#111827"}; font-size: 30px; font-weight: 700; line-height: 1.3; margin: 0 0 32px 0; text-align: center;">
 									${subject}
 								</h1>
@@ -146,7 +146,7 @@ export const sendScheduledEmail = internalAction({
 									${message}
 								</p>
 								<div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid ${args.colorScheme?.accent || "#e5e7eb"}; text-align: center;">
-									<p style="color: ${args.colorScheme?.secondary || "#6b7280"}; font-size: 14px; margin: 16px 0 0; padding: 16px 0 0; text-align: center; border-top: 1px solid ${args.colorScheme?.accent || "#e5e7eb"};">
+									<p style="color: ${args.colorScheme?.secondary || "#6b7280"}; font-size: 14px; margin: 16px 0 0; text-align: center;">
 										Sent with ❤️ from <a href="https://eventpulse.com" style="color: ${args.colorScheme?.primary || "#3B82F6"}; text-decoration: none;">EventPulse</a>
 									</p>
 								</div>

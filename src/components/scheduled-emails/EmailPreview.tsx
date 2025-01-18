@@ -80,7 +80,7 @@ export function EmailPreview({
 				className="w-full text-center text-sm mt-8 pt-6 border-t"
 				style={footerStyle}
 			>
-				<p className="text-sm mt-4 pt-4 border-t" style={footerStyle}>
+				<p className="text-sm mt-4" style={footerStyle}>
 					Sent with ❤️ from{" "}
 					<a
 						href="https://eventpulse.com"

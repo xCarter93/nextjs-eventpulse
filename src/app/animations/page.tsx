@@ -33,16 +33,18 @@ export default function AnimationsPage() {
 	return (
 		<div className="space-y-8">
 			<div>
-				<h1 className="text-2xl font-bold text-foreground">Create Animation</h1>
+				<h1 className="text-2xl font-bold text-foreground">
+					Custom Animations & Images
+				</h1>
 				<p className="mt-2 text-muted-foreground">
-					Choose a template and customize your celebration animation
+					Upload and manage your custom GIFs and images for email greetings
 				</p>
 			</div>
 
 			<div className="space-y-6">
 				<Card>
 					<CardHeader>
-						<CardTitle>Choose Template</CardTitle>
+						<CardTitle>Your Uploads</CardTitle>
 					</CardHeader>
 					<CardContent>
 						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
