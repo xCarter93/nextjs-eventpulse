@@ -104,7 +104,7 @@ export function RecipientsMap() {
 			<MapContainer
 				center={defaultCenter as [number, number]}
 				zoom={3}
-				scrollWheelZoom={true}
+				scrollWheelZoom={false}
 				style={{ height: "100%", width: "100%" }}
 			>
 				<TileLayer
