@@ -38,7 +38,7 @@ export function EmailPreview({
 
 	return (
 		<div
-			className="flex flex-col items-center gap-8 p-6 font-sans max-w-[600px] mx-auto rounded-lg"
+			className="flex flex-col items-center gap-4 p-6 font-sans max-w-[600px] mx-auto rounded-lg"
 			style={previewStyle}
 		>
 			{heading && (
@@ -49,7 +49,7 @@ export function EmailPreview({
 					{heading}
 				</h2>
 			)}
-			<div className="w-full my-8 text-center">
+			<div className="w-full my-4 text-center">
 				{animationId || animationUrl ? (
 					<div className="relative w-full aspect-square max-w-[400px] mx-auto">
 						<Animation
@@ -77,10 +77,10 @@ export function EmailPreview({
 				</p>
 			)}
 			<div
-				className="w-full text-center text-sm mt-8 pt-6 border-t"
+				className="w-full text-center text-sm mt-4 pt-4 border-t"
 				style={footerStyle}
 			>
-				<p className="text-sm mt-4" style={footerStyle}>
+				<p className="text-sm mt-2" style={footerStyle}>
 					Sent with ❤️ from{" "}
 					<a
 						href="https://eventpulse.com"
