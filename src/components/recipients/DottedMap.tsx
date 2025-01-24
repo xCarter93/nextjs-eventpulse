@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useMemo } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import DottedMap from "dotted-map";
 import Image from "next/image";
 import { useTheme } from "next-themes";
@@ -40,7 +40,6 @@ export function DottedMapComponent() {
 				lng: recipient.metadata?.address?.coordinates?.longitude || 0,
 				label: recipient.name,
 			},
-			// For this example, we'll use a central point (e.g., San Francisco) as the end point
 			end: {
 				lat: 37.7749,
 				lng: -122.4194,
@@ -58,10 +57,9 @@ export function DottedMapComponent() {
 		);
 	}
 
-	// Simple coordinate projection with slight vertical offset
 	const projectPoint = (lat: number, lng: number) => {
 		const x = (lng + 180) * (800 / 360);
-		const y = (90 - lat) * (400 / 180) + 20; // Added 20px offset
+		const y = (90 - lat) * (400 / 180) + 20;
 		return { x, y };
 	};
 
@@ -89,30 +87,123 @@ export function DottedMapComponent() {
 				viewBox="0 0 800 400"
 				className="w-full h-full absolute inset-0 pointer-events-none select-none"
 			>
-				<AnimatePresence>
-					{dots.map((dot, i) => {
-						const startPoint = projectPoint(dot.start.lat, dot.start.lng);
-						const endPoint = projectPoint(dot.end.lat, dot.end.lng);
-						return (
-							<g key={`path-group-${i}`}>
-								<motion.path
-									d={createCurvedPath(startPoint, endPoint)}
-									fill="none"
-									stroke="url(#path-gradient)"
-									strokeWidth="1"
-									initial={{ pathLength: 0, opacity: 0 }}
-									animate={{ pathLength: 1, opacity: 1 }}
-									transition={{
-										duration: 2,
-										delay: 0.2 * i,
-										ease: "easeInOut",
-									}}
+				{dots.map((dot, i) => {
+					const startPoint = projectPoint(dot.start.lat, dot.start.lng);
+					const endPoint = projectPoint(dot.end.lat, dot.end.lng);
+					return (
+						<g key={`path-group-${i}`}>
+							<motion.path
+								d={createCurvedPath(startPoint, endPoint)}
+								fill="none"
+								stroke="url(#path-gradient)"
+								strokeWidth="1"
+								initial={{ pathLength: 0, opacity: 0 }}
+								animate={{ pathLength: 1, opacity: 1 }}
+								transition={{
+									duration: 1.5,
+									delay: 0.1 * i,
+									ease: "easeOut",
+								}}
+							/>
+							<motion.g
+								initial={{ scale: 0, opacity: 0 }}
+								animate={{ scale: 1, opacity: 1 }}
+								transition={{ delay: 0.1 * i, duration: 0.3 }}
+							>
+								<circle
+									cx={startPoint.x}
+									cy={startPoint.y}
+									r="2"
+									fill="hsl(var(--primary))"
 								/>
-							</g>
-						);
-					})}
-				</AnimatePresence>
-
+								<circle
+									cx={startPoint.x}
+									cy={startPoint.y}
+									r="2"
+									fill="hsl(var(--primary))"
+									opacity="0.5"
+								>
+									<animate
+										attributeName="r"
+										from="2"
+										to="8"
+										dur="1.5s"
+										begin="0s"
+										repeatCount="indefinite"
+									/>
+									<animate
+										attributeName="opacity"
+										from="0.5"
+										to="0"
+										dur="1.5s"
+										begin="0s"
+										repeatCount="indefinite"
+									/>
+								</circle>
+								{dot.start.label && (
+									<motion.text
+										x={startPoint.x + 10}
+										y={startPoint.y}
+										className="text-[10px] fill-current"
+										initial={{ opacity: 0 }}
+										animate={{ opacity: 1 }}
+										transition={{ delay: 0.1 * i + 0.3 }}
+									>
+										{dot.start.label}
+									</motion.text>
+								)}
+							</motion.g>
+							<motion.g
+								initial={{ scale: 0, opacity: 0 }}
+								animate={{ scale: 1, opacity: 1 }}
+								transition={{ delay: 0.1 * i + 0.8, duration: 0.3 }}
+							>
+								<circle
+									cx={endPoint.x}
+									cy={endPoint.y}
+									r="2"
+									fill="hsl(var(--primary))"
+								/>
+								<circle
+									cx={endPoint.x}
+									cy={endPoint.y}
+									r="2"
+									fill="hsl(var(--primary))"
+									opacity="0.5"
+								>
+									<animate
+										attributeName="r"
+										from="2"
+										to="8"
+										dur="1.5s"
+										begin="0s"
+										repeatCount="indefinite"
+									/>
+									<animate
+										attributeName="opacity"
+										from="0.5"
+										to="0"
+										dur="1.5s"
+										begin="0s"
+										repeatCount="indefinite"
+									/>
+								</circle>
+								{dot.end.label && (
+									<motion.text
+										x={endPoint.x + 10}
+										y={endPoint.y}
+										className="text-[10px] fill-current"
+										initial={{ opacity: 0 }}
+										animate={{ opacity: 1 }}
+										transition={{ delay: 0.1 * i + 1 }}
+									>
+										{dot.end.label}
+									</motion.text>
+								)}
+							</motion.g>
+						</g>
+					);
+				})}
 				<defs>
 					<linearGradient id="path-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
 						<stop offset="0%" stopColor="white" stopOpacity="0" />
@@ -125,87 +216,6 @@ export function DottedMapComponent() {
 						<stop offset="100%" stopColor="white" stopOpacity="0" />
 					</linearGradient>
 				</defs>
-
-				<AnimatePresence>
-					{dots.map((dot, i) => (
-						<g key={`points-group-${i}`}>
-							<motion.g
-								key={`start-${i}`}
-								initial={{ scale: 0, opacity: 0 }}
-								animate={{ scale: 1, opacity: 1 }}
-								transition={{ delay: 0.2 * i, duration: 0.5 }}
-							>
-								<circle
-									cx={projectPoint(dot.start.lat, dot.start.lng).x}
-									cy={projectPoint(dot.start.lat, dot.start.lng).y}
-									r="2"
-									fill="hsl(var(--primary))"
-								/>
-								<circle
-									cx={projectPoint(dot.start.lat, dot.start.lng).x}
-									cy={projectPoint(dot.start.lat, dot.start.lng).y}
-									r="2"
-									fill="hsl(var(--primary))"
-									opacity="0.5"
-								>
-									<animate
-										attributeName="r"
-										from="2"
-										to="8"
-										dur="1.5s"
-										begin="0s"
-										repeatCount="indefinite"
-									/>
-									<animate
-										attributeName="opacity"
-										from="0.5"
-										to="0"
-										dur="1.5s"
-										begin="0s"
-										repeatCount="indefinite"
-									/>
-								</circle>
-							</motion.g>
-							<motion.g
-								key={`end-${i}`}
-								initial={{ scale: 0, opacity: 0 }}
-								animate={{ scale: 1, opacity: 1 }}
-								transition={{ delay: 0.2 * i + 1, duration: 0.5 }}
-							>
-								<circle
-									cx={projectPoint(dot.end.lat, dot.end.lng).x}
-									cy={projectPoint(dot.end.lat, dot.end.lng).y}
-									r="2"
-									fill="hsl(var(--primary))"
-								/>
-								<circle
-									cx={projectPoint(dot.end.lat, dot.end.lng).x}
-									cy={projectPoint(dot.end.lat, dot.end.lng).y}
-									r="2"
-									fill="hsl(var(--primary))"
-									opacity="0.5"
-								>
-									<animate
-										attributeName="r"
-										from="2"
-										to="8"
-										dur="1.5s"
-										begin="0s"
-										repeatCount="indefinite"
-									/>
-									<animate
-										attributeName="opacity"
-										from="0.5"
-										to="0"
-										dur="1.5s"
-										begin="0s"
-										repeatCount="indefinite"
-									/>
-								</circle>
-							</motion.g>
-						</g>
-					))}
-				</AnimatePresence>
 			</svg>
 		</div>
 	);
