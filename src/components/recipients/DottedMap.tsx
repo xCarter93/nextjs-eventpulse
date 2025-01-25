@@ -13,8 +13,9 @@ export function DottedMapComponent() {
 	const svgRef = useRef<SVGSVGElement>(null);
 	const { theme } = useTheme();
 
-	// Fetch recipients data
+	// Fetch recipients data and user data
 	const recipients = useQuery(api.recipients.getRecipients);
+	const user = useQuery(api.users.getUser);
 
 	// Memoize the SVG to prevent recreation on every render
 	const svgMap = useMemo(() => {
@@ -27,8 +28,21 @@ export function DottedMapComponent() {
 		});
 	}, [theme]);
 
-	if (!recipients) {
+	if (!recipients || !user) {
 		return <Skeleton className="w-full h-[600px] rounded-lg" />;
+	}
+
+	// Get user's coordinates
+	const userCoordinates = user.settings?.address?.coordinates;
+
+	if (!userCoordinates) {
+		return (
+			<div className="flex items-center justify-center h-[600px] border rounded-lg bg-muted/10">
+				<p className="text-muted-foreground">
+					Please set your address in settings to view the map
+				</p>
+			</div>
+		);
 	}
 
 	// Filter recipients with valid coordinates and create dots array
@@ -36,14 +50,12 @@ export function DottedMapComponent() {
 		.filter((recipient) => recipient.metadata?.address?.coordinates)
 		.map((recipient) => ({
 			start: {
-				lat: recipient.metadata?.address?.coordinates?.latitude || 0,
-				lng: recipient.metadata?.address?.coordinates?.longitude || 0,
-				label: recipient.name,
+				lat: userCoordinates.latitude,
+				lng: userCoordinates.longitude,
 			},
 			end: {
-				lat: 37.7749,
-				lng: -122.4194,
-				label: "San Francisco",
+				lat: recipient.metadata?.address?.coordinates?.latitude || 0,
+				lng: recipient.metadata?.address?.coordinates?.longitude || 0,
 			},
 		}));
 
@@ -140,18 +152,6 @@ export function DottedMapComponent() {
 										repeatCount="indefinite"
 									/>
 								</circle>
-								{dot.start.label && (
-									<motion.text
-										x={startPoint.x + 10}
-										y={startPoint.y}
-										className="text-[10px] fill-current"
-										initial={{ opacity: 0 }}
-										animate={{ opacity: 1 }}
-										transition={{ delay: 0.1 * i + 0.3 }}
-									>
-										{dot.start.label}
-									</motion.text>
-								)}
 							</motion.g>
 							<motion.g
 								initial={{ scale: 0, opacity: 0 }}
@@ -188,18 +188,6 @@ export function DottedMapComponent() {
 										repeatCount="indefinite"
 									/>
 								</circle>
-								{dot.end.label && (
-									<motion.text
-										x={endPoint.x + 10}
-										y={endPoint.y}
-										className="text-[10px] fill-current"
-										initial={{ opacity: 0 }}
-										animate={{ opacity: 1 }}
-										transition={{ delay: 0.1 * i + 1 }}
-									>
-										{dot.end.label}
-									</motion.text>
-								)}
 							</motion.g>
 						</g>
 					);

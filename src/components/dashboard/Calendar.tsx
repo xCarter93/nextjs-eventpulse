@@ -1,12 +1,24 @@
 "use client";
 
 import React, { useState } from "react";
-import { ChevronLeft, ChevronRight, Mail } from "lucide-react";
+import { ChevronLeft, ChevronRight, Mail, X, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import { Id } from "../../../convex/_generated/dataModel";
 import { useRouter } from "next/navigation";
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { CalendarIcon } from "lucide-react";
 
 interface Holiday {
 	date: string;
@@ -23,21 +35,30 @@ export function Calendar({ holidays }: CalendarProps) {
 	const [currentDate, setCurrentDate] = useState(new Date());
 	const [showBirthdays, setShowBirthdays] = useState(true);
 	const [showHolidays, setShowHolidays] = useState(true);
-	const today = new Date();
+	const [showEvents, setShowEvents] = useState(true);
+	const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+	const [isDialogOpen, setIsDialogOpen] = useState(false);
+	const [showEventForm, setShowEventForm] = useState(false);
+	const [eventName, setEventName] = useState("");
+	const [isRecurring, setIsRecurring] = useState(false);
 	const router = useRouter();
 
-	// Fetch recipients and scheduled emails
+	// Fetch user settings and other data
+	const user = useQuery(api.users.getUser);
 	const recipients = useQuery(api.recipients.getRecipients) || [];
 	const scheduledEmails =
 		useQuery(api.scheduledEmails.listScheduledEmails) || [];
+	const customEvents = useQuery(api.events.getEvents) || [];
+	const createEvent = useMutation(api.events.createEvent);
+	const deleteEvent = useMutation(api.events.deleteEvent);
+
+	const hasAddress = user?.settings?.address?.countryCode;
+	const showHolidaysEnabled = user?.settings?.calendar?.showHolidays ?? true;
+
 	const birthdays = recipients.map((r) => ({
 		date: new Date(r.birthday),
 		name: r.name,
 	}));
-
-	const isCurrentMonth =
-		currentDate.getMonth() === today.getMonth() &&
-		currentDate.getFullYear() === today.getFullYear();
 
 	const daysInMonth = new Date(
 		currentDate.getFullYear(),
@@ -79,12 +100,54 @@ export function Calendar({ holidays }: CalendarProps) {
 	};
 
 	const handleDayClick = (day: number) => {
-		const selectedDate = new Date(
+		const date = new Date(
 			currentDate.getFullYear(),
 			currentDate.getMonth(),
 			day
 		);
-		router.push(`/scheduled-emails/new?date=${selectedDate.getTime()}`);
+		setSelectedDate(date);
+		setShowEventForm(false);
+		setIsDialogOpen(true);
+	};
+
+	const handleCreateEvent = async () => {
+		if (selectedDate && eventName) {
+			await createEvent({
+				name: eventName,
+				date: selectedDate.getTime(),
+				isRecurring,
+			});
+			setEventName("");
+			setIsRecurring(false);
+			setShowEventForm(false);
+			setIsDialogOpen(false);
+		}
+	};
+
+	const handleScheduleEmail = () => {
+		if (selectedDate) {
+			router.push(`/scheduled-emails/new?date=${selectedDate.getTime()}`);
+		}
+	};
+
+	const startEventCreation = () => {
+		setShowEventForm(true);
+	};
+
+	const handleDeleteEvent = async (eventId: Id<"customEvents">) => {
+		await deleteEvent({ id: eventId });
+	};
+
+	const getSelectedDayEvents = () => {
+		if (!selectedDate) return [];
+		return customEvents.filter((event) => {
+			const eventDate = new Date(event.date);
+			return (
+				eventDate.getDate() === selectedDate.getDate() &&
+				eventDate.getMonth() === selectedDate.getMonth() &&
+				eventDate.getFullYear() === selectedDate.getFullYear()
+			);
+		});
 	};
 
 	const getDayEvents = (day: number) => {
@@ -106,8 +169,20 @@ export function Calendar({ holidays }: CalendarProps) {
 				})
 			: [];
 
-		const dayHolidays = showHolidays
-			? holidays.filter((holiday) => holiday.date === currentDateStr)
+		const dayHolidays =
+			showHolidays && hasAddress && showHolidaysEnabled
+				? holidays.filter((holiday) => holiday.date === currentDateStr)
+				: [];
+
+		const dayCustomEvents = showEvents
+			? customEvents.filter((event) => {
+					const eventDate = new Date(event.date);
+					return (
+						eventDate.getDate() === day &&
+						eventDate.getMonth() === currentDate.getMonth() &&
+						eventDate.getFullYear() === currentDate.getFullYear()
+					);
+				})
 			: [];
 
 		const dayScheduledEmails = scheduledEmails.filter((email) => {
@@ -123,12 +198,31 @@ export function Calendar({ holidays }: CalendarProps) {
 		return {
 			birthdays: dayBirthdays,
 			holidays: dayHolidays,
+			customEvents: dayCustomEvents,
 			scheduledEmails: dayScheduledEmails,
 		};
 	};
 
 	return (
 		<div className="w-full rounded-lg bg-card shadow-sm">
+			{/* Address Required Banner */}
+			{!hasAddress && showHolidays && showHolidaysEnabled && (
+				<Alert className="mb-4">
+					<MapPin className="h-4 w-4" />
+					<AlertDescription>
+						To see holidays for your country, please{" "}
+						<Button
+							variant="link"
+							className="h-auto p-0"
+							onClick={() => router.push("/settings")}
+						>
+							set your home address
+						</Button>{" "}
+						in settings.
+					</AlertDescription>
+				</Alert>
+			)}
+
 			{/* Calendar Header */}
 			<div className="flex items-center justify-between p-4 border-b">
 				<div>
@@ -146,15 +240,27 @@ export function Calendar({ holidays }: CalendarProps) {
 							<div className="w-2 h-2 rounded-full bg-pink-500" />
 							<span className="text-muted-foreground">Birthdays</span>
 						</button>
+						{(hasAddress || !showHolidaysEnabled) && (
+							<button
+								onClick={() => setShowHolidays(!showHolidays)}
+								className={cn(
+									"flex items-center gap-2 text-sm transition-opacity",
+									!showHolidays && "opacity-50"
+								)}
+							>
+								<div className="w-2 h-2 rounded-full bg-blue-500" />
+								<span className="text-muted-foreground">Holidays</span>
+							</button>
+						)}
 						<button
-							onClick={() => setShowHolidays(!showHolidays)}
+							onClick={() => setShowEvents(!showEvents)}
 							className={cn(
 								"flex items-center gap-2 text-sm transition-opacity",
-								!showHolidays && "opacity-50"
+								!showEvents && "opacity-50"
 							)}
 						>
-							<div className="w-2 h-2 rounded-full bg-blue-500" />
-							<span className="text-muted-foreground">Holidays</span>
+							<div className="w-2 h-2 rounded-full bg-green-500" />
+							<span className="text-muted-foreground">Events</span>
 						</button>
 					</div>
 				</div>
@@ -163,7 +269,6 @@ export function Calendar({ holidays }: CalendarProps) {
 						variant="outline"
 						size="icon"
 						onClick={() => navigateMonth("prev")}
-						disabled={isCurrentMonth}
 					>
 						<ChevronLeft className="h-4 w-4" />
 					</Button>
@@ -220,13 +325,17 @@ export function Calendar({ holidays }: CalendarProps) {
 								)}
 							>
 								{(events.birthdays.length > 0 ||
-									events.holidays.length > 0) && (
+									events.holidays.length > 0 ||
+									events.customEvents.length > 0) && (
 									<div className="absolute top-0 inset-x-0 flex h-1">
 										{events.birthdays.length > 0 && (
 											<div className="flex-1 bg-pink-500 rounded-t-sm" />
 										)}
 										{events.holidays.length > 0 && (
 											<div className="flex-1 bg-blue-500 rounded-t-sm" />
+										)}
+										{events.customEvents.length > 0 && (
+											<div className="flex-1 bg-green-500 rounded-t-sm" />
 										)}
 									</div>
 								)}
@@ -242,6 +351,7 @@ export function Calendar({ holidays }: CalendarProps) {
 								{/* Event tooltip */}
 								{(events.birthdays.length > 0 ||
 									events.holidays.length > 0 ||
+									events.customEvents.length > 0 ||
 									events.scheduledEmails.length > 0) && (
 									<div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50">
 										<div className="bg-popover text-popover-foreground text-sm rounded-md shadow-lg p-2 whitespace-nowrap">
@@ -259,6 +369,15 @@ export function Calendar({ holidays }: CalendarProps) {
 													</div>
 													<span className="text-xs text-muted-foreground pl-4 capitalize">
 														{holiday.type.replace(/_/g, " ")}
+													</span>
+												</div>
+											))}
+											{events.customEvents.map((event, i) => (
+												<div key={i} className="flex items-center gap-2">
+													<span className="w-2 h-2 rounded-full bg-green-500" />
+													<span>
+														{event.name}
+														{event.isRecurring && " (Recurring)"}
 													</span>
 												</div>
 											))}
@@ -288,6 +407,112 @@ export function Calendar({ holidays }: CalendarProps) {
 					})}
 				</div>
 			</div>
+
+			{/* Event Dialog */}
+			<Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>{selectedDate?.toLocaleDateString()}</DialogTitle>
+					</DialogHeader>
+					<div className="grid gap-4 py-4">
+						{!showEventForm ? (
+							<>
+								<div className="grid grid-cols-2 gap-4">
+									<Button
+										onClick={startEventCreation}
+										variant="outline"
+										className="flex items-center gap-2 h-24 text-lg"
+									>
+										<CalendarIcon className="h-5 w-5" />
+										Create Event
+									</Button>
+									<Button
+										onClick={handleScheduleEmail}
+										variant="outline"
+										className="flex items-center gap-2 h-24 text-lg"
+									>
+										<Mail className="h-5 w-5" />
+										Schedule Email
+									</Button>
+								</div>
+								{getSelectedDayEvents().length > 0 && (
+									<div className="space-y-2">
+										<div className="text-sm font-medium text-muted-foreground">
+											Existing Events
+										</div>
+										<div className="space-y-1">
+											{getSelectedDayEvents().map((event) => (
+												<div
+													key={event._id}
+													className="flex items-center justify-between rounded-md border px-4 py-2"
+												>
+													<div className="flex items-center gap-2">
+														<div className="w-2 h-2 rounded-full bg-green-500" />
+														<span>
+															{event.name}
+															{event.isRecurring && (
+																<span className="text-xs text-muted-foreground ml-2">
+																	(Recurring)
+																</span>
+															)}
+														</span>
+													</div>
+													<Button
+														variant="ghost"
+														size="icon"
+														className="h-8 w-8 text-muted-foreground hover:text-destructive"
+														onClick={() => handleDeleteEvent(event._id)}
+													>
+														<X className="h-4 w-4" />
+													</Button>
+												</div>
+											))}
+										</div>
+									</div>
+								)}
+							</>
+						) : (
+							<div className="space-y-4 animate-in fade-in zoom-in duration-200">
+								<div className="space-y-2">
+									<Label htmlFor="event-name">Event Name</Label>
+									<Input
+										id="event-name"
+										value={eventName}
+										onChange={(e) => setEventName(e.target.value)}
+										placeholder="Enter event name"
+									/>
+								</div>
+								<div className="flex items-center space-x-2">
+									<Checkbox
+										id="recurring"
+										checked={isRecurring}
+										onCheckedChange={(checked) =>
+											setIsRecurring(checked as boolean)
+										}
+									/>
+									<Label htmlFor="recurring">Recurring event</Label>
+								</div>
+								<div className="flex justify-end gap-2 pt-4">
+									<Button
+										type="button"
+										variant="outline"
+										onClick={() => setShowEventForm(false)}
+									>
+										Back
+									</Button>
+									<Button
+										type="button"
+										onClick={handleCreateEvent}
+										disabled={!eventName}
+									>
+										Create Event
+									</Button>
+								</div>
+							</div>
+						)}
+					</div>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }

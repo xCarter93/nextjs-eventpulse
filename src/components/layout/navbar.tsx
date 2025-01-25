@@ -6,7 +6,7 @@ import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { SignInButton, UserButton } from "@clerk/nextjs";
 import { useUser } from "@clerk/nextjs";
-import { LayoutDashboard, Users, Sparkles, Mail } from "lucide-react";
+import { LayoutDashboard, Users, Sparkles, Mail, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const routes = [
@@ -29,6 +29,11 @@ const routes = [
 		label: "Scheduled Emails",
 		href: "/scheduled-emails",
 		icon: Mail,
+	},
+	{
+		label: "Settings",
+		href: "/settings",
+		icon: Settings,
 	},
 ];
 

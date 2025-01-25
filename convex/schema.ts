@@ -16,6 +16,46 @@ export default defineSchema({
 				hasAdvancedTemplates: v.boolean(),
 			}),
 		}),
+		settings: v.optional(
+			v.object({
+				address: v.optional(
+					v.object({
+						line1: v.string(),
+						line2: v.optional(v.string()),
+						city: v.string(),
+						state: v.string(),
+						postalCode: v.string(),
+						country: v.string(),
+						countryCode: v.string(),
+						coordinates: v.object({
+							latitude: v.number(),
+							longitude: v.number(),
+						}),
+					})
+				),
+				calendar: v.optional(
+					v.object({
+						showHolidays: v.boolean(),
+					})
+				),
+				upcomingEvents: v.optional(
+					v.object({
+						daysToShow: v.number(),
+						maxEvents: v.number(),
+					})
+				),
+				notifications: v.optional(
+					v.object({
+						reminderDays: v.number(),
+						emailReminders: v.object({
+							events: v.boolean(),
+							birthdays: v.boolean(),
+							holidays: v.boolean(),
+						}),
+					})
+				),
+			})
+		),
 	}).index("by_tokenIdentifier", ["tokenIdentifier"]),
 	animations: defineTable({
 		userId: v.optional(v.id("users")),
@@ -62,5 +102,11 @@ export default defineSchema({
 				),
 			})
 		),
+	}).index("by_userId", ["userId"]),
+	customEvents: defineTable({
+		userId: v.id("users"),
+		name: v.string(),
+		date: v.number(),
+		isRecurring: v.boolean(),
 	}).index("by_userId", ["userId"]),
 });

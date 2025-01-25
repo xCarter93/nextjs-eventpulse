@@ -17,6 +17,7 @@ import type * as animations from "../animations.js";
 import type * as clerk from "../clerk.js";
 import type * as crons from "../crons.js";
 import type * as emails from "../emails.js";
+import type * as events from "../events.js";
 import type * as http from "../http.js";
 import type * as recipients from "../recipients.js";
 import type * as scheduledEmails from "../scheduledEmails.js";
@@ -35,6 +36,7 @@ declare const fullApi: ApiFromModules<{
   clerk: typeof clerk;
   crons: typeof crons;
   emails: typeof emails;
+  events: typeof events;
   http: typeof http;
   recipients: typeof recipients;
   scheduledEmails: typeof scheduledEmails;
