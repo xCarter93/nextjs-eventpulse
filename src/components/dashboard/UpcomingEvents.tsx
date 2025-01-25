@@ -17,8 +17,11 @@ interface Event {
 export function UpcomingEvents() {
 	const recipients = useQuery(api.recipients.getRecipients);
 	const customEvents = useQuery(api.events.getEvents);
+	const user = useQuery(api.users.getUser);
 
 	if (!recipients || !customEvents) return null;
+
+	const daysToShow = user?.settings?.upcomingEvents?.daysToShow ?? 30;
 
 	const getDaysUntil = (date: Date) => {
 		const today = new Date();
@@ -58,7 +61,7 @@ export function UpcomingEvents() {
 
 	// Combine and sort all events
 	const allEvents = [...birthdayEvents, ...customEventsList]
-		.filter((event) => event.daysUntil >= 0 && event.daysUntil <= 30)
+		.filter((event) => event.daysUntil >= 0 && event.daysUntil <= daysToShow)
 		.sort((a, b) => a.daysUntil - b.daysUntil);
 
 	return (
@@ -99,7 +102,7 @@ export function UpcomingEvents() {
 					</div>
 				) : (
 					<div className="text-sm text-muted-foreground">
-						No upcoming events in the next 30 days
+						No upcoming events in the next {daysToShow} days
 					</div>
 				)}
 			</CardContent>

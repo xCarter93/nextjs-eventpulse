@@ -1,4 +1,5 @@
 import { type ComponentType, type ReactNode } from "react";
+import { Id } from "../../convex/_generated/dataModel";
 
 export interface Recipient {
 	id: string;
@@ -9,12 +10,14 @@ export interface Recipient {
 }
 
 export interface AnimationTemplate {
-	id: string;
+	id: Id<"animations">;
 	name: string;
 	description: string | ReactNode;
 	previewUrl?: string;
 	previewComponent?: ComponentType<{ isPreview?: boolean }>;
 	isPremium?: boolean;
+	isCustom?: boolean;
+	createdAt?: number;
 }
 
 export interface ColorScheme {

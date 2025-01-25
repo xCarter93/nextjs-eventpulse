@@ -1,5 +1,10 @@
 import { ConvexError, v } from "convex/values";
-import { internalMutation, mutation, query } from "./_generated/server";
+import {
+	internalMutation,
+	mutation,
+	query,
+	internalQuery,
+} from "./_generated/server";
 
 const DEFAULT_SUBSCRIPTION = {
 	tier: "free" as const,
@@ -31,26 +36,28 @@ const DEFAULT_SETTINGS = {
 
 export const createUser = internalMutation({
 	args: {
-		tokenIdentifier: v.string(),
 		name: v.string(),
+		tokenIdentifier: v.string(),
 		image: v.string(),
 		email: v.string(),
 	},
 	async handler(ctx, args) {
-		const existing = await ctx.db
+		// Check if user already exists
+		const existingUser = await ctx.db
 			.query("users")
 			.withIndex("by_tokenIdentifier", (q) =>
 				q.eq("tokenIdentifier", args.tokenIdentifier)
 			)
 			.first();
 
-		if (existing) {
-			return existing._id;
+		if (existingUser) {
+			throw new ConvexError("User already exists");
 		}
 
+		// Create new user with default subscription tier and settings
 		return await ctx.db.insert("users", {
-			tokenIdentifier: args.tokenIdentifier,
 			name: args.name,
+			tokenIdentifier: args.tokenIdentifier,
 			image: args.image,
 			email: args.email,
 			subscription: DEFAULT_SUBSCRIPTION,
@@ -153,5 +160,12 @@ export const getUser = query({
 		}
 
 		return user;
+	},
+});
+
+export const listUsers = internalQuery({
+	args: {},
+	async handler(ctx) {
+		return await ctx.db.query("users").collect();
 	},
 });

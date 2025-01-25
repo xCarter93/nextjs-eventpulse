@@ -10,4 +10,11 @@ crons.daily(
 	internal.animations.cleanupFreeUserAnimations
 );
 
+// Run every day at midnight UTC to send reminder emails
+crons.daily(
+	"send-reminder-emails",
+	{ hourUTC: 0, minuteUTC: 0 },
+	internal.emails.sendReminderEmails
+);
+
 export default crons;

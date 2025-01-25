@@ -249,3 +249,15 @@ export const getRecipient = query({
 		return recipient;
 	},
 });
+
+export const listRecipients = internalQuery({
+	args: {
+		userId: v.id("users"),
+	},
+	async handler(ctx, args) {
+		return await ctx.db
+			.query("recipients")
+			.filter((q) => q.eq(q.field("userId"), args.userId))
+			.collect();
+	},
+});

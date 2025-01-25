@@ -18,7 +18,7 @@ export default function AnimationsPage() {
 	const baseAnimations = useQuery(api.animations.getBaseAnimations);
 	const user = useQuery(api.users.getUser);
 
-	const templates =
+	const templates: AnimationTemplate[] =
 		baseAnimations?.map((animation) => ({
 			id: animation._id,
 			name: animation.name || "Untitled Animation",

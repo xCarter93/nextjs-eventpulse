@@ -217,3 +217,40 @@ export const getAnimation = internalQuery({
 		return await ctx.db.get(args.id);
 	},
 });
+
+export const deleteUserAnimation = mutation({
+	args: {
+		id: v.id("animations"),
+	},
+	async handler(ctx, args) {
+		const identity = await ctx.auth.getUserIdentity();
+
+		if (!identity) {
+			throw new ConvexError("Not authenticated");
+		}
+
+		const user = await ctx.db
+			.query("users")
+			.withIndex("by_tokenIdentifier", (q) =>
+				q.eq("tokenIdentifier", identity.tokenIdentifier)
+			)
+			.first();
+
+		if (!user) {
+			throw new ConvexError("User not found");
+		}
+
+		const animation = await ctx.db.get(args.id);
+		if (!animation || animation.userId !== user._id) {
+			throw new ConvexError("Animation not found or access denied");
+		}
+
+		// Delete the file from storage if it exists
+		if (animation.storageId) {
+			await ctx.storage.delete(animation.storageId);
+		}
+
+		// Delete the animation record
+		await ctx.db.delete(args.id);
+	},
+});

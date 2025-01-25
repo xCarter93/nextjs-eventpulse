@@ -1,9 +1,13 @@
 import { Resend } from "resend";
-import { internalAction } from "./_generated/server";
+import { internalAction, internalQuery } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import { ConvexError } from "convex/values";
 import { Id } from "./_generated/dataModel";
+import { getBirthdayEmailHtml } from "../src/email-templates/birthday";
+import { getReminderEmailHtml } from "../src/email-templates/reminder";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const sendScheduledEmail = internalAction({
 	args: {
@@ -38,7 +42,6 @@ export const sendScheduledEmail = internalAction({
 		let animationUrl = args.animationUrl;
 		if (!animationUrl && args.animationId) {
 			// For custom emails, use the specified animation
-
 			const animation = await ctx.runQuery(internal.animations.getAnimation, {
 				id: args.animationId,
 			});
@@ -101,59 +104,171 @@ export const sendScheduledEmail = internalAction({
 
 		try {
 			// Send the email using Resend
-			const resend = new Resend(process.env.RESEND_API_KEY);
-			const result = await resend.emails.send({
+			await resend.emails.send({
 				from: "EventPulse <onboarding@resend.dev>",
 				to: recipient.email,
 				subject: subject,
-				html: `
-					<!DOCTYPE html>
-					<html>
-						<head>
-							<meta charset="utf-8">
-							<meta name="viewport" content="width=device-width, initial-scale=1.0">
-							<title>${subject}</title>
-						</head>
-						<body style="background-color: #f9fafb; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;">
-							<div style="max-width: 600px; margin: 20px auto; padding: 24px; background-color: ${args.colorScheme?.background || "#ffffff"}; border-radius: 8px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
-								<h1 style="color: ${args.colorScheme?.primary || "#111827"}; font-size: 30px; font-weight: 700; line-height: 1.3; margin: 0 0 32px 0; text-align: center;">
-									${subject}
-								</h1>
-								<div style="margin: 32px 0; text-align: center;">
-									<img src="${animationUrl}" alt="Animation" style="max-width: 400px; width: 100%; height: auto; margin: 0 auto; display: block;">
-								</div>
-								<p style="color: ${args.colorScheme?.secondary || "#374151"}; font-size: 18px; line-height: 1.6; margin: 32px 0; text-align: center;">
-									${message}
-								</p>
-								<div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid ${args.colorScheme?.accent || "#e5e7eb"}; text-align: center;">
-									<p style="color: ${args.colorScheme?.secondary || "#6b7280"}; font-size: 14px; margin: 16px 0 0; text-align: center;">
-										Sent with ❤️ from <a href="https://eventpulse.com" style="color: ${args.colorScheme?.primary || "#3B82F6"}; text-decoration: none;">EventPulse</a>
-									</p>
-								</div>
-							</div>
-						</body>
-					</html>`,
+				html: getBirthdayEmailHtml({
+					subject,
+					message,
+					animationUrl,
+					colorScheme: args.colorScheme,
+				}),
 			});
-
-			console.log("Email sent successfully", { result });
 		} catch (error) {
 			console.error("Failed to send email:", error);
 			throw error;
 		}
+	},
+});
 
-		// If this was an automated birthday email, schedule the next one for next year
-		if (!args.customMessage) {
-			const nextYear = new Date(args.date);
-			nextYear.setFullYear(nextYear.getFullYear() + 1);
+// Helper function to get upcoming events for a user
+export const getUpcomingEvents = internalQuery({
+	args: {
+		userId: v.id("users"),
+		startDate: v.number(),
+		endDate: v.number(),
+		includeEvents: v.boolean(),
+		includeBirthdays: v.boolean(),
+		includeHolidays: v.boolean(),
+	},
+	async handler(ctx, args) {
+		const events: Array<{
+			type: "birthday" | "event" | "holiday";
+			name: string;
+			date: Date;
+			description?: string;
+		}> = [];
 
-			await ctx.scheduler.runAt(
-				nextYear.getTime(),
-				internal.emails.sendScheduledEmail,
+		// Get birthdays if enabled
+		if (args.includeBirthdays) {
+			const recipients = await ctx.runQuery(
+				internal.recipients.listRecipients,
 				{
-					recipientId: args.recipientId,
-					date: nextYear.getTime(),
+					userId: args.userId,
 				}
 			);
+
+			for (const recipient of recipients) {
+				const birthdayDate = new Date(recipient.birthday);
+				const thisYearBirthday = new Date(
+					new Date().getFullYear(),
+					birthdayDate.getMonth(),
+					birthdayDate.getDate()
+				);
+
+				if (
+					thisYearBirthday.getTime() >= args.startDate &&
+					thisYearBirthday.getTime() <= args.endDate
+				) {
+					events.push({
+						type: "birthday",
+						name: recipient.name,
+						date: thisYearBirthday,
+						description: `Birthday celebration`,
+					});
+				}
+			}
+		}
+
+		// Get custom events if enabled
+		if (args.includeEvents) {
+			const customEvents = await ctx.runQuery(internal.events.listEvents, {
+				userId: args.userId,
+			});
+
+			for (const event of customEvents) {
+				const eventDate = new Date(event.date);
+				if (
+					eventDate.getTime() >= args.startDate &&
+					eventDate.getTime() <= args.endDate
+				) {
+					events.push({
+						type: "event",
+						name: event.name,
+						date: eventDate,
+					});
+				}
+			}
+		}
+
+		// Get holidays if enabled
+		if (args.includeHolidays) {
+			const holidays = await ctx.runQuery(internal.holidays.listHolidays, {
+				startDate: args.startDate,
+				endDate: args.endDate,
+			});
+
+			for (const holiday of holidays) {
+				events.push({
+					type: "holiday",
+					name: holiday.name,
+					date: new Date(holiday.date),
+					description: holiday.description,
+				});
+			}
+		}
+
+		return events.sort((a, b) => a.date.getTime() - b.date.getTime());
+	},
+});
+
+// Daily cron job to send reminder emails
+export const sendReminderEmails = internalAction({
+	args: {},
+	async handler(ctx) {
+		const users = await ctx.runQuery(internal.users.listUsers);
+
+		for (const user of users) {
+			// Skip if user doesn't have notification settings
+			if (!user.settings?.notifications) continue;
+
+			const { reminderDays, emailReminders } = user.settings.notifications;
+
+			// Skip if no reminders are enabled
+			if (
+				!emailReminders.events &&
+				!emailReminders.birthdays &&
+				!emailReminders.holidays
+			) {
+				continue;
+			}
+
+			const now = new Date();
+			const targetDate = new Date(
+				now.getTime() + reminderDays * 24 * 60 * 60 * 1000
+			);
+			// Set the time to midnight UTC for consistent comparison
+			targetDate.setUTCHours(0, 0, 0, 0);
+
+			const upcomingEvents = await ctx.runQuery(
+				internal.emails.getUpcomingEvents,
+				{
+					userId: user._id,
+					startDate: targetDate.getTime(),
+					endDate: targetDate.getTime() + 24 * 60 * 60 * 1000 - 1, // End of the target day
+					includeEvents: emailReminders.events,
+					includeBirthdays: emailReminders.birthdays,
+					includeHolidays: emailReminders.holidays,
+				}
+			);
+
+			// Skip if no upcoming events
+			if (upcomingEvents.length === 0) continue;
+
+			try {
+				await resend.emails.send({
+					from: "EventPulse <onboarding@resend.dev>",
+					to: user.email,
+					subject: `Events happening in ${reminderDays} days`,
+					html: getReminderEmailHtml({
+						userName: user.name,
+						events: upcomingEvents,
+					}),
+				});
+			} catch (error) {
+				console.error(`Failed to send reminder email to ${user.email}:`, error);
+			}
 		}
 	},
 });

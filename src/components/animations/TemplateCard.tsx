@@ -10,6 +10,11 @@ import {
 } from "@/components/ui/dialog";
 import { useState } from "react";
 import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
+import { useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { toast } from "sonner";
 
 interface TemplateCardProps {
 	template: AnimationTemplate;
@@ -30,6 +35,7 @@ export function TemplateCard({
 }: TemplateCardProps) {
 	const [showPreview, setShowPreview] = useState(false);
 	const PreviewComponent = template.previewComponent;
+	const deleteAnimation = useMutation(api.animations.deleteUserAnimation);
 
 	// Calculate days until deletion for free tier users
 	const getDaysUntilDeletion = () => {
@@ -46,6 +52,17 @@ export function TemplateCard({
 
 	const daysUntilDeletion = getDaysUntilDeletion();
 
+	const handleDelete = async (e: React.MouseEvent) => {
+		e.stopPropagation();
+		try {
+			await deleteAnimation({ id: template.id });
+			toast.success("Animation deleted successfully");
+		} catch (error) {
+			toast.error("Failed to delete animation");
+			console.error(error);
+		}
+	};
+
 	return (
 		<>
 			<Card
@@ -54,6 +71,16 @@ export function TemplateCard({
 				}`}
 				onClick={() => onSelect(template)}
 			>
+				{isCustom && (
+					<Button
+						variant="ghost"
+						size="icon"
+						className="absolute top-2 right-2 z-10 bg-background/80 hover:bg-background/90"
+						onClick={handleDelete}
+					>
+						<Trash2 className="h-4 w-4 text-destructive" />
+					</Button>
+				)}
 				<CardContent className="p-4">
 					<div
 						className="aspect-video bg-muted rounded-lg mb-4 overflow-hidden relative"

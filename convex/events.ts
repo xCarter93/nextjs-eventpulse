@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalQuery } from "./_generated/server";
 import { ConvexError } from "convex/values";
 
 export const createEvent = mutation({
@@ -88,6 +88,18 @@ export const getEvents = query({
 		return await ctx.db
 			.query("customEvents")
 			.withIndex("by_userId", (q) => q.eq("userId", user._id))
+			.collect();
+	},
+});
+
+export const listEvents = internalQuery({
+	args: {
+		userId: v.id("users"),
+	},
+	async handler(ctx, args) {
+		return await ctx.db
+			.query("customEvents")
+			.withIndex("by_userId", (q) => q.eq("userId", args.userId))
 			.collect();
 	},
 });
