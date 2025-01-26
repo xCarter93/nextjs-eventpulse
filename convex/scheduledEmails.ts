@@ -3,6 +3,8 @@ import { mutation, query, internalMutation } from "./_generated/server";
 import { ConvexError } from "convex/values";
 import { internal } from "./_generated/api";
 import { Doc, Id } from "./_generated/dataModel";
+import { canScheduleForDate } from "../src/lib/permissions";
+import { api } from "./_generated/api";
 
 export const scheduleCustomEmail = mutation({
 	args: {
@@ -41,6 +43,18 @@ export const scheduleCustomEmail = mutation({
 
 		if (!user) {
 			throw new ConvexError("User not found");
+		}
+
+		// Get user's subscription level
+		const subscriptionLevel = await ctx.runQuery(
+			api.subscriptions.getUserSubscriptionLevel
+		);
+
+		// Check if user can schedule for this date
+		if (!canScheduleForDate(new Date(args.scheduledDate), subscriptionLevel)) {
+			throw new ConvexError(
+				"Free users can only schedule emails up to 7 days in advance. Upgrade to Pro to schedule emails further ahead."
+			);
 		}
 
 		const recipient = await ctx.db.get(args.recipientId);

@@ -6,15 +6,9 @@ import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { SignInButton, UserButton } from "@clerk/nextjs";
 import { useUser } from "@clerk/nextjs";
-import {
-	LayoutDashboard,
-	Users,
-	Sparkles,
-	Mail,
-	Settings,
-	SquareActivity,
-} from "lucide-react";
+import { LayoutDashboard, Users, Sparkles, Mail, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 const routes = [
 	{
@@ -52,9 +46,15 @@ export function Navbar() {
 		<header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
 			<div className="container flex h-14 items-center">
 				<div className="mr-4 flex items-center flex-1">
-					<Link href="/" className="mr-6 flex items-center space-x-2">
-						<SquareActivity className="h-5 w-5" />
-						<span className="font-bold lg:inline">EventPulse</span>
+					<Link href="/" className="mr-6 flex items-center">
+						<Image
+							src="/EventPulse Logo-Photoroom.png"
+							alt="EventPulse Logo"
+							width={56}
+							height={56}
+							className="h-14 w-14"
+						/>
+						<span className="font-bold hidden lg:inline">EventPulse</span>
 					</Link>
 					{isSignedIn && (
 						<nav className="flex items-center space-x-1 lg:space-x-4 text-sm font-medium">

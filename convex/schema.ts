@@ -7,15 +7,6 @@ export default defineSchema({
 		tokenIdentifier: v.string(),
 		image: v.string(),
 		email: v.string(),
-		subscription: v.object({
-			tier: v.union(v.literal("free"), v.literal("pro")),
-			features: v.object({
-				maxRecipients: v.number(),
-				maxAnimations: v.number(),
-				hasAutoSend: v.boolean(),
-				hasAdvancedTemplates: v.boolean(),
-			}),
-		}),
 		settings: v.optional(
 			v.object({
 				address: v.optional(
@@ -57,6 +48,17 @@ export default defineSchema({
 			})
 		),
 	}).index("by_tokenIdentifier", ["tokenIdentifier"]),
+	subscriptions: defineTable({
+		userId: v.id("users"),
+		stripeCustomerId: v.string(),
+		stripeSubscriptionId: v.string(),
+		stripePriceId: v.string(),
+		stripeCurrentPeriodEnd: v.number(),
+		stripeCancelAtPeriodEnd: v.boolean(),
+	})
+		.index("by_userId", ["userId"])
+		.index("by_stripeCustomerId", ["stripeCustomerId"])
+		.index("by_stripeSubscriptionId", ["stripeSubscriptionId"]),
 	animations: defineTable({
 		userId: v.optional(v.id("users")),
 		storageId: v.optional(v.id("_storage")),

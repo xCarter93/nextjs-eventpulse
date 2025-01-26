@@ -1,5 +1,7 @@
 "use server";
 
+import { env } from "@/env";
+
 interface Holiday {
 	name: string;
 	date: string;
@@ -14,7 +16,7 @@ export async function getPublicHolidays(
 	Array<{ date: string; name: string; localName: string; type: string }>
 > {
 	try {
-		const apiKey = process.env.API_NINJA_API_KEY;
+		const apiKey = env.API_NINJA_API_KEY;
 		if (!apiKey) {
 			throw new Error("API key not found");
 		}

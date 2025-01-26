@@ -15,6 +15,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { emailContentSchema } from "@/lib/validation";
 import * as z from "zod";
+import { useQuery } from "convex/react";
+import { api } from "../../../../../convex/_generated/api";
+import { canScheduleForDate } from "@/lib/permissions";
 
 interface EmailContentFormProps {
 	defaultValues?: z.infer<typeof emailContentSchema>;
@@ -25,6 +28,21 @@ export default function EmailContentForm({
 	defaultValues,
 	onFormChange,
 }: EmailContentFormProps) {
+	const subscriptionLevel = useQuery(
+		api.subscriptions.getUserSubscriptionLevel
+	);
+
+	// Calculate min and max dates for scheduling
+	const minDate = new Date();
+	minDate.setHours(0, 0, 0, 0);
+
+	const maxDate = new Date();
+	if (subscriptionLevel === "pro") {
+		maxDate.setFullYear(maxDate.getFullYear() + 100); // Pro users can schedule 100 years ahead
+	} else {
+		maxDate.setDate(maxDate.getDate() + 7); // Free users can schedule 7 days ahead
+	}
+
 	const form = useForm<z.infer<typeof emailContentSchema>>({
 		resolver: zodResolver(emailContentSchema),
 		defaultValues: defaultValues || {
@@ -35,8 +53,20 @@ export default function EmailContentForm({
 		},
 	});
 
-	// Watch form fields for preview
+	// Watch form fields for preview and validate date
 	form.watch((value) => {
+		if (value.scheduledDate) {
+			const date = new Date(value.scheduledDate);
+			if (!canScheduleForDate(date, subscriptionLevel ?? "free")) {
+				form.setError("scheduledDate", {
+					type: "manual",
+					message:
+						"Free users can only schedule emails up to 7 days in advance. Upgrade to Pro to schedule emails further ahead.",
+				});
+			} else {
+				form.clearErrors("scheduledDate");
+			}
+		}
 		onFormChange(value);
 	});
 
@@ -64,9 +94,18 @@ export default function EmailContentForm({
 						<FormItem>
 							<FormLabel>Send Date</FormLabel>
 							<FormControl>
-								<Input type="datetime-local" {...field} />
+								<Input
+									type="datetime-local"
+									min={minDate.toISOString().slice(0, 16)}
+									max={maxDate.toISOString().slice(0, 16)}
+									{...field}
+								/>
 							</FormControl>
-							<FormDescription>Choose when to send the email.</FormDescription>
+							<FormDescription>
+								{subscriptionLevel === "pro"
+									? "Choose when to send the email."
+									: "Free users can only schedule emails up to 7 days in advance."}
+							</FormDescription>
 							<FormMessage />
 						</FormItem>
 					)}

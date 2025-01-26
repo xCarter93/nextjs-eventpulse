@@ -5,16 +5,7 @@ import {
 	query,
 	internalQuery,
 } from "./_generated/server";
-
-const DEFAULT_SUBSCRIPTION = {
-	tier: "free" as const,
-	features: {
-		maxRecipients: 5,
-		maxAnimations: 10,
-		hasAutoSend: false,
-		hasAdvancedTemplates: false,
-	},
-};
+import { DEFAULT_FREE_FEATURES } from "./subscriptions";
 
 const DEFAULT_SETTINGS = {
 	calendar: {
@@ -54,15 +45,49 @@ export const createUser = internalMutation({
 			throw new ConvexError("User already exists");
 		}
 
-		// Create new user with default subscription tier and settings
+		// Create new user with default settings
 		return await ctx.db.insert("users", {
 			name: args.name,
 			tokenIdentifier: args.tokenIdentifier,
 			image: args.image,
 			email: args.email,
-			subscription: DEFAULT_SUBSCRIPTION,
 			settings: DEFAULT_SETTINGS,
 		});
+	},
+});
+
+export const getUser = query({
+	async handler(ctx) {
+		const identity = await ctx.auth.getUserIdentity();
+
+		if (!identity) {
+			return null;
+		}
+
+		const user = await ctx.db
+			.query("users")
+			.withIndex("by_tokenIdentifier", (q) =>
+				q.eq("tokenIdentifier", identity.tokenIdentifier)
+			)
+			.first();
+
+		if (!user) {
+			return null;
+		}
+
+		// Get subscription
+		const subscription = await ctx.db
+			.query("subscriptions")
+			.withIndex("by_userId", (q) => q.eq("userId", user._id))
+			.first();
+
+		return {
+			...user,
+			subscription: {
+				tier: subscription ? "pro" : "free",
+				features: subscription ? subscription.features : DEFAULT_FREE_FEATURES,
+			},
+		};
 	},
 });
 
@@ -137,29 +162,6 @@ export const updateSettings = mutation({
 		});
 
 		return newSettings;
-	},
-});
-
-export const getUser = query({
-	async handler(ctx) {
-		const identity = await ctx.auth.getUserIdentity();
-
-		if (!identity) {
-			throw new ConvexError("Not authenticated");
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
-
-		if (!user) {
-			throw new ConvexError("User not found");
-		}
-
-		return user;
 	},
 });
 

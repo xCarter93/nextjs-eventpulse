@@ -22,6 +22,7 @@ import type * as holidays from "../holidays.js";
 import type * as http from "../http.js";
 import type * as recipients from "../recipients.js";
 import type * as scheduledEmails from "../scheduledEmails.js";
+import type * as subscriptions from "../subscriptions.js";
 import type * as users from "../users.js";
 
 /**
@@ -42,6 +43,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   recipients: typeof recipients;
   scheduledEmails: typeof scheduledEmails;
+  subscriptions: typeof subscriptions;
   users: typeof users;
 }>;
 export declare const api: FilterApi<

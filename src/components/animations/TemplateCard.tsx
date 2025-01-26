@@ -42,8 +42,8 @@ export function TemplateCard({
 		if (!createdAt || !isCustom || userTier !== "free") return null;
 		const creationDate = new Date(createdAt);
 		const deletionDate = new Date(
-			creationDate.getTime() + 30 * 24 * 60 * 60 * 1000
-		); // 30 days
+			creationDate.getTime() + 10 * 24 * 60 * 60 * 1000
+		); // 10 days
 		const daysLeft = Math.ceil(
 			(deletionDate.getTime() - Date.now()) / (24 * 60 * 60 * 1000)
 		);

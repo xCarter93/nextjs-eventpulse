@@ -1,7 +1,8 @@
 import { v } from "convex/values";
 import { mutation, query, internalQuery } from "./_generated/server";
 import { ConvexError } from "convex/values";
-import { internal } from "./_generated/api";
+import { api, internal } from "./_generated/api";
+import { getSubscriptionLimits } from "../src/lib/subscriptions";
 
 export const getRecipients = query({
 	async handler(ctx) {
@@ -53,6 +54,24 @@ export const addRecipient = mutation({
 
 		if (!user) {
 			throw new ConvexError("User not found");
+		}
+
+		// Get current recipient count and subscription level
+		const recipients = await ctx.db
+			.query("recipients")
+			.withIndex("by_userId", (q) => q.eq("userId", user._id))
+			.collect();
+
+		const subscriptionLevel = await ctx.runQuery(
+			api.subscriptions.getUserSubscriptionLevel
+		);
+		const limits = getSubscriptionLimits(subscriptionLevel);
+
+		// Check if user has reached their recipient limit
+		if (recipients.length >= limits.maxRecipients) {
+			throw new ConvexError(
+				"You have reached your recipient limit. Upgrade to Pro for unlimited recipients."
+			);
 		}
 
 		const recipientId = await ctx.db.insert("recipients", {
@@ -159,6 +178,16 @@ export const updateRecipientMetadata = mutation({
 		const existing = await ctx.db.get(args.id);
 		if (!existing || existing.userId !== user._id) {
 			throw new ConvexError("Recipient not found or access denied");
+		}
+
+		// Get user's subscription level
+		const subscriptionLevel = await ctx.runQuery(
+			api.subscriptions.getUserSubscriptionLevel
+		);
+
+		// If user is not on pro plan and trying to update address, throw error
+		if (subscriptionLevel !== "pro" && args.metadata.address) {
+			throw new ConvexError("Address management requires a Pro subscription");
 		}
 
 		await ctx.db.patch(args.id, {

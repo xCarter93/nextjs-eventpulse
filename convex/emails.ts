@@ -136,7 +136,7 @@ export const getUpcomingEvents = internalQuery({
 		const events: Array<{
 			type: "birthday" | "event" | "holiday";
 			name: string;
-			date: Date;
+			date: number;
 			description?: string;
 		}> = [];
 
@@ -164,7 +164,7 @@ export const getUpcomingEvents = internalQuery({
 					events.push({
 						type: "birthday",
 						name: recipient.name,
-						date: thisYearBirthday,
+						date: thisYearBirthday.getTime(),
 						description: `Birthday celebration`,
 					});
 				}
@@ -186,7 +186,7 @@ export const getUpcomingEvents = internalQuery({
 					events.push({
 						type: "event",
 						name: event.name,
-						date: eventDate,
+						date: eventDate.getTime(),
 					});
 				}
 			}
@@ -203,13 +203,13 @@ export const getUpcomingEvents = internalQuery({
 				events.push({
 					type: "holiday",
 					name: holiday.name,
-					date: new Date(holiday.date),
+					date: new Date(holiday.date).getTime(),
 					description: holiday.description,
 				});
 			}
 		}
 
-		return events.sort((a, b) => a.date.getTime() - b.date.getTime());
+		return events.sort((a, b) => a.date - b.date);
 	},
 });
 

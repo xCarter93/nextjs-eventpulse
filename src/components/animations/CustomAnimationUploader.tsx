@@ -90,7 +90,7 @@ export function CustomAnimationUploader() {
 					{user?.subscription.tier === "free" && (
 						<p className="text-sm text-yellow-600 dark:text-yellow-500">
 							Note: On the free plan, custom animations are automatically
-							deleted after 30 days.{" "}
+							deleted after 10 days.{" "}
 							<Link
 								href="/upgrade"
 								className="underline hover:text-yellow-700 dark:hover:text-yellow-400"

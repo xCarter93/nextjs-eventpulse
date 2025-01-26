@@ -1,6 +1,11 @@
+"use client";
+
 import React, { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
+import { createCheckoutSession } from "../premium/actions";
+import { toast } from "sonner";
+import { env } from "@/env";
 
 export default function SlidePricing() {
 	const [selected, setSelected] = useState<"M" | "A">("M");
@@ -107,252 +112,286 @@ interface PriceCardProps {
 	selected: "M" | "A";
 }
 
-const PriceCards = ({ selected }: PriceCardProps) => (
-	<div className="flex flex-col lg:flex-row gap-8 lg:gap-4 w-full max-w-6xl mx-auto relative z-10">
-		{/* FREE */}
-		<div className="w-full bg-card p-6 border border-border rounded-xl">
-			<p className="text-2xl font-bold mb-2 text-foreground">Free</p>
-			<p className="text-lg mb-6 text-muted-foreground">
-				Get started with animations
-			</p>
-			<p className="text-6xl font-bold mb-8 text-foreground">
-				$0
-				<span className="font-normal text-xl text-muted-foreground">
-					/month
-				</span>
-			</p>
-			<div className="flex items-center gap-2 mb-2">
-				<svg
-					width="20"
-					height="15"
-					viewBox="0 0 20 15"
-					fill="none"
-					xmlns="http://www.w3.org/2000/svg"
-					className="shrink-0"
-				>
-					<path
-						d="M6.35588 11.8345L1.61455 7.17002L0 8.7472L6.35588 15L20 1.57718L18.3968 0L6.35588 11.8345Z"
-						fill="currentColor"
-						className="text-foreground"
-					/>
-				</svg>
-				<span className="text-base text-muted-foreground">
-					Up to 5 recipients
-				</span>
-			</div>
-			<div className="flex items-center gap-2 mb-2">
-				<svg
-					width="20"
-					height="15"
-					viewBox="0 0 20 15"
-					fill="none"
-					xmlns="http://www.w3.org/2000/svg"
-					className="shrink-0"
-				>
-					<path
-						d="M6.35588 11.8345L1.61455 7.17002L0 8.7472L6.35588 15L20 1.57718L18.3968 0L6.35588 11.8345Z"
-						fill="currentColor"
-						className="text-foreground"
-					/>
-				</svg>
-				<span className="text-base text-muted-foreground">
-					Basic animation templates
-				</span>
-			</div>
-			<div className="flex items-center gap-2 mb-2">
-				<svg
-					width="20"
-					height="15"
-					viewBox="0 0 20 15"
-					fill="none"
-					xmlns="http://www.w3.org/2000/svg"
-					className="shrink-0"
-				>
-					<path
-						d="M6.35588 11.8345L1.61455 7.17002L0 8.7472L6.35588 15L20 1.57718L18.3968 0L6.35588 11.8345Z"
-						fill="currentColor"
-						className="text-foreground"
-					/>
-				</svg>
-				<span className="text-base text-muted-foreground">Email reminders</span>
-			</div>
-			<div className="flex items-center gap-2 mb-2">
-				<svg
-					width="20"
-					height="15"
-					viewBox="0 0 20 15"
-					fill="none"
-					xmlns="http://www.w3.org/2000/svg"
-					className="shrink-0"
-				>
-					<path
-						d="M6.35588 11.8345L1.61455 7.17002L0 8.7472L6.35588 15L20 1.57718L18.3968 0L6.35588 11.8345Z"
-						fill="currentColor"
-						className="text-foreground"
-					/>
-				</svg>
-				<span className="text-base text-muted-foreground">
-					Custom animations (30-day storage)
-				</span>
-			</div>
+const PriceCards = ({ selected }: PriceCardProps) => {
+	const [isLoading, setIsLoading] = useState(false);
 
-			<motion.button
-				whileHover={{ scale: 1.015 }}
-				whileTap={{ scale: 0.985 }}
-				className="w-full py-4 mt-8 font-semibold bg-primary text-primary-foreground rounded-lg uppercase"
-			>
-				<Link href="/dashboard">Get Started</Link>
-			</motion.button>
-		</div>
+	const handleUpgradeClick = async () => {
+		try {
+			setIsLoading(true);
+			const priceId =
+				selected === "M"
+					? env.NEXT_PUBLIC_STRIPE_PRICE_ID_PRO_MONTHLY
+					: env.NEXT_PUBLIC_STRIPE_PRICE_ID_PRO_ANNUAL;
 
-		{/* PRO  */}
-		<div className="w-full bg-card p-6 border border-border rounded-xl">
-			<p className="text-2xl font-bold mb-2 text-foreground">Pro</p>
-			<p className="text-lg mb-6 text-muted-foreground">For power users</p>
-			<div className="overflow-hidden mb-8">
-				<AnimatePresence mode="wait">
-					{selected === "M" ? (
-						<motion.p
-							key="monthly1"
-							initial={{ y: -50, opacity: 0 }}
-							animate={{ y: 0, opacity: 1 }}
-							exit={{ y: 50, opacity: 0 }}
-							transition={{ ease: "linear", duration: 0.25 }}
-							className="text-6xl font-bold text-primary"
-						>
-							<span>$5</span>
-							<span className="font-normal text-xl text-muted-foreground">
-								/month
-							</span>
-						</motion.p>
-					) : (
-						<motion.p
-							key="monthly2"
-							initial={{ y: -50, opacity: 0 }}
-							animate={{ y: 0, opacity: 1 }}
-							exit={{ y: 50, opacity: 0 }}
-							transition={{ ease: "linear", duration: 0.25 }}
-							className="text-6xl font-bold text-primary"
-						>
-							<span>$3.75</span>
-							<span className="font-normal text-xl text-muted-foreground">
-								/month
-							</span>
-						</motion.p>
-					)}
-				</AnimatePresence>
-			</div>
-			<div className="flex items-center gap-2 mb-2">
-				<svg
-					width="20"
-					height="15"
-					viewBox="0 0 20 15"
-					fill="none"
-					xmlns="http://www.w3.org/2000/svg"
-					className="shrink-0"
-				>
-					<path
-						d="M6.35588 11.8345L1.61455 7.17002L0 8.7472L6.35588 15L20 1.57718L18.3968 0L6.35588 11.8345Z"
-						fill="currentColor"
-						className="text-foreground"
-					/>
-				</svg>
-				<span className="text-base text-muted-foreground">
-					Unlimited recipients
-				</span>
-			</div>
-			<div className="flex items-center gap-2 mb-2">
-				<svg
-					width="20"
-					height="15"
-					viewBox="0 0 20 15"
-					fill="none"
-					xmlns="http://www.w3.org/2000/svg"
-					className="shrink-0"
-				>
-					<path
-						d="M6.35588 11.8345L1.61455 7.17002L0 8.7472L6.35588 15L20 1.57718L18.3968 0L6.35588 11.8345Z"
-						fill="currentColor"
-						className="text-foreground"
-					/>
-				</svg>
-				<span className="text-base text-muted-foreground">
-					All premium templates
-				</span>
-			</div>
-			<div className="flex items-center gap-2 mb-2">
-				<svg
-					width="20"
-					height="15"
-					viewBox="0 0 20 15"
-					fill="none"
-					xmlns="http://www.w3.org/2000/svg"
-					className="shrink-0"
-				>
-					<path
-						d="M6.35588 11.8345L1.61455 7.17002L0 8.7472L6.35588 15L20 1.57718L18.3968 0L6.35588 11.8345Z"
-						fill="currentColor"
-						className="text-foreground"
-					/>
-				</svg>
-				<span className="text-base text-muted-foreground">
-					Automatic sending
-				</span>
-			</div>
-			<div className="flex items-center gap-2 mb-2">
-				<svg
-					width="20"
-					height="15"
-					viewBox="0 0 20 15"
-					fill="none"
-					xmlns="http://www.w3.org/2000/svg"
-					className="shrink-0"
-				>
-					<path
-						d="M6.35588 11.8345L1.61455 7.17002L0 8.7472L6.35588 15L20 1.57718L18.3968 0L6.35588 11.8345Z"
-						fill="currentColor"
-						className="text-foreground"
-					/>
-				</svg>
-				<span className="text-base text-muted-foreground">
-					Priority support
-				</span>
-			</div>
-			<div className="flex items-center gap-2 mb-2">
-				<svg
-					width="20"
-					height="15"
-					viewBox="0 0 20 15"
-					fill="none"
-					xmlns="http://www.w3.org/2000/svg"
-					className="shrink-0"
-				>
-					<path
-						d="M6.35588 11.8345L1.61455 7.17002L0 8.7472L6.35588 15L20 1.57718L18.3968 0L6.35588 11.8345Z"
-						fill="currentColor"
-						className="text-foreground"
-					/>
-				</svg>
-				<span className="text-base text-muted-foreground">
-					Permanent custom animation storage
-				</span>
-			</div>
+			if (!priceId) {
+				throw new Error("Configuration error: Price ID not found");
+			}
 
-			<motion.button
-				whileHover={{ scale: 1.015 }}
-				whileTap={{ scale: 0.985 }}
-				className="w-full py-4 mt-8 font-semibold bg-primary text-primary-foreground rounded-lg uppercase"
-			>
-				<Link href="/upgrade">Upgrade Now</Link>
-			</motion.button>
-			{selected === "A" && (
-				<p className="text-sm text-center mt-4 text-muted-foreground">
-					Billed annually (${(3.75 * 12).toFixed(2)}/year)
+			const checkoutUrl = await createCheckoutSession(priceId);
+			window.location.href = checkoutUrl;
+		} catch (error) {
+			console.error("Error creating checkout session:", error);
+			toast.error(
+				error instanceof Error
+					? error.message
+					: "Failed to start checkout process. Please try again later."
+			);
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
+	return (
+		<div className="flex flex-col lg:flex-row gap-8 lg:gap-4 w-full max-w-6xl mx-auto relative z-10">
+			{/* FREE */}
+			<div className="w-full bg-card p-6 border border-border rounded-xl">
+				<p className="text-2xl font-bold mb-2 text-foreground">Free</p>
+				<p className="text-lg mb-6 text-muted-foreground">
+					Get started with animations
 				</p>
-			)}
+				<p className="text-6xl font-bold mb-8 text-foreground">
+					$0
+					<span className="font-normal text-xl text-muted-foreground">
+						/month
+					</span>
+				</p>
+				<div className="flex items-center gap-2 mb-2">
+					<svg
+						width="20"
+						height="15"
+						viewBox="0 0 20 15"
+						fill="none"
+						xmlns="http://www.w3.org/2000/svg"
+						className="shrink-0"
+					>
+						<path
+							d="M6.35588 11.8345L1.61455 7.17002L0 8.7472L6.35588 15L20 1.57718L18.3968 0L6.35588 11.8345Z"
+							fill="currentColor"
+							className="text-foreground"
+						/>
+					</svg>
+					<span className="text-base text-muted-foreground">
+						Up to 5 recipients
+					</span>
+				</div>
+				<div className="flex items-center gap-2 mb-2">
+					<svg
+						width="20"
+						height="15"
+						viewBox="0 0 20 15"
+						fill="none"
+						xmlns="http://www.w3.org/2000/svg"
+						className="shrink-0"
+					>
+						<path
+							d="M6.35588 11.8345L1.61455 7.17002L0 8.7472L6.35588 15L20 1.57718L18.3968 0L6.35588 11.8345Z"
+							fill="currentColor"
+							className="text-foreground"
+						/>
+					</svg>
+					<span className="text-base text-muted-foreground">
+						Basic animation templates
+					</span>
+				</div>
+				<div className="flex items-center gap-2 mb-2">
+					<svg
+						width="20"
+						height="15"
+						viewBox="0 0 20 15"
+						fill="none"
+						xmlns="http://www.w3.org/2000/svg"
+						className="shrink-0"
+					>
+						<path
+							d="M6.35588 11.8345L1.61455 7.17002L0 8.7472L6.35588 15L20 1.57718L18.3968 0L6.35588 11.8345Z"
+							fill="currentColor"
+							className="text-foreground"
+						/>
+					</svg>
+					<span className="text-base text-muted-foreground">
+						Email reminders
+					</span>
+				</div>
+				<div className="flex items-center gap-2 mb-2">
+					<svg
+						width="20"
+						height="15"
+						viewBox="0 0 20 15"
+						fill="none"
+						xmlns="http://www.w3.org/2000/svg"
+						className="shrink-0"
+					>
+						<path
+							d="M6.35588 11.8345L1.61455 7.17002L0 8.7472L6.35588 15L20 1.57718L18.3968 0L6.35588 11.8345Z"
+							fill="currentColor"
+							className="text-foreground"
+						/>
+					</svg>
+					<span className="text-base text-muted-foreground">
+						Custom animations (30-day storage)
+					</span>
+				</div>
+
+				<motion.button
+					whileHover={{ scale: 1.015 }}
+					whileTap={{ scale: 0.985 }}
+					className="w-full py-4 mt-8 font-semibold bg-primary text-primary-foreground rounded-lg uppercase"
+				>
+					<Link href="/dashboard">Get Started</Link>
+				</motion.button>
+			</div>
+
+			{/* PRO  */}
+			<div className="w-full bg-card p-6 border border-border rounded-xl">
+				<p className="text-2xl font-bold mb-2 text-foreground">Pro</p>
+				<p className="text-lg mb-6 text-muted-foreground">For power users</p>
+				<div className="overflow-hidden mb-8">
+					<AnimatePresence mode="wait">
+						{selected === "M" ? (
+							<motion.p
+								key="monthly1"
+								initial={{ y: -50, opacity: 0 }}
+								animate={{ y: 0, opacity: 1 }}
+								exit={{ y: 50, opacity: 0 }}
+								transition={{ ease: "linear", duration: 0.25 }}
+								className="text-6xl font-bold text-primary"
+							>
+								<span>$5</span>
+								<span className="font-normal text-xl text-muted-foreground">
+									/month
+								</span>
+							</motion.p>
+						) : (
+							<motion.p
+								key="monthly2"
+								initial={{ y: -50, opacity: 0 }}
+								animate={{ y: 0, opacity: 1 }}
+								exit={{ y: 50, opacity: 0 }}
+								transition={{ ease: "linear", duration: 0.25 }}
+								className="text-6xl font-bold text-primary"
+							>
+								<span>$3.75</span>
+								<span className="font-normal text-xl text-muted-foreground">
+									/month
+								</span>
+							</motion.p>
+						)}
+					</AnimatePresence>
+				</div>
+				<div className="flex items-center gap-2 mb-2">
+					<svg
+						width="20"
+						height="15"
+						viewBox="0 0 20 15"
+						fill="none"
+						xmlns="http://www.w3.org/2000/svg"
+						className="shrink-0"
+					>
+						<path
+							d="M6.35588 11.8345L1.61455 7.17002L0 8.7472L6.35588 15L20 1.57718L18.3968 0L6.35588 11.8345Z"
+							fill="currentColor"
+							className="text-foreground"
+						/>
+					</svg>
+					<span className="text-base text-muted-foreground">
+						Unlimited recipients
+					</span>
+				</div>
+				<div className="flex items-center gap-2 mb-2">
+					<svg
+						width="20"
+						height="15"
+						viewBox="0 0 20 15"
+						fill="none"
+						xmlns="http://www.w3.org/2000/svg"
+						className="shrink-0"
+					>
+						<path
+							d="M6.35588 11.8345L1.61455 7.17002L0 8.7472L6.35588 15L20 1.57718L18.3968 0L6.35588 11.8345Z"
+							fill="currentColor"
+							className="text-foreground"
+						/>
+					</svg>
+					<span className="text-base text-muted-foreground">
+						All premium templates
+					</span>
+				</div>
+				<div className="flex items-center gap-2 mb-2">
+					<svg
+						width="20"
+						height="15"
+						viewBox="0 0 20 15"
+						fill="none"
+						xmlns="http://www.w3.org/2000/svg"
+						className="shrink-0"
+					>
+						<path
+							d="M6.35588 11.8345L1.61455 7.17002L0 8.7472L6.35588 15L20 1.57718L18.3968 0L6.35588 11.8345Z"
+							fill="currentColor"
+							className="text-foreground"
+						/>
+					</svg>
+					<span className="text-base text-muted-foreground">
+						Automatic sending
+					</span>
+				</div>
+				<div className="flex items-center gap-2 mb-2">
+					<svg
+						width="20"
+						height="15"
+						viewBox="0 0 20 15"
+						fill="none"
+						xmlns="http://www.w3.org/2000/svg"
+						className="shrink-0"
+					>
+						<path
+							d="M6.35588 11.8345L1.61455 7.17002L0 8.7472L6.35588 15L20 1.57718L18.3968 0L6.35588 11.8345Z"
+							fill="currentColor"
+							className="text-foreground"
+						/>
+					</svg>
+					<span className="text-base text-muted-foreground">
+						Priority support
+					</span>
+				</div>
+				<div className="flex items-center gap-2 mb-2">
+					<svg
+						width="20"
+						height="15"
+						viewBox="0 0 20 15"
+						fill="none"
+						xmlns="http://www.w3.org/2000/svg"
+						className="shrink-0"
+					>
+						<path
+							d="M6.35588 11.8345L1.61455 7.17002L0 8.7472L6.35588 15L20 1.57718L18.3968 0L6.35588 11.8345Z"
+							fill="currentColor"
+							className="text-foreground"
+						/>
+					</svg>
+					<span className="text-base text-muted-foreground">
+						Permanent custom animation storage
+					</span>
+				</div>
+
+				<motion.button
+					whileHover={{ scale: 1.015 }}
+					whileTap={{ scale: 0.985 }}
+					className="w-full py-4 mt-8 font-semibold bg-primary text-primary-foreground rounded-lg uppercase disabled:opacity-50 disabled:cursor-not-allowed"
+					onClick={() => handleUpgradeClick()}
+					disabled={isLoading}
+				>
+					{isLoading ? "Loading..." : "Upgrade Now"}
+				</motion.button>
+				{selected === "A" && (
+					<p className="text-sm text-center mt-4 text-muted-foreground">
+						Billed annually (${(3.75 * 12).toFixed(2)}/year)
+					</p>
+				)}
+			</div>
 		</div>
-	</div>
-);
+	);
+};
 
 const TopLeftCircle = () => {
 	return (

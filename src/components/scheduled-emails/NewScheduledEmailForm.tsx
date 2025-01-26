@@ -39,6 +39,9 @@ export function NewScheduledEmailForm({
 }: NewScheduledEmailFormProps) {
 	const scheduleEmail = useMutation(api.scheduledEmails.scheduleCustomEmail);
 	const animations = useQuery(api.animations.getBaseAnimations);
+	const subscriptionLevel = useQuery(
+		api.subscriptions.getUserSubscriptionLevel
+	);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const router = useRouter();
 	const searchParams = useSearchParams();
@@ -70,6 +73,17 @@ export function NewScheduledEmailForm({
 	// Get current step from URL or default to first step
 	const currentStep = searchParams.get("step") || steps[0].key;
 
+	// Calculate min and max dates for scheduling
+	const minDate = new Date();
+	minDate.setHours(0, 0, 0, 0);
+
+	const maxDate = new Date();
+	if (subscriptionLevel === "pro") {
+		maxDate.setFullYear(maxDate.getFullYear() + 100); // Pro users can schedule 100 years ahead
+	} else {
+		maxDate.setDate(maxDate.getDate() + 7); // Free users can schedule 7 days ahead
+	}
+
 	// Update URL when step changes
 	const setCurrentStep = (step: string) => {
 		const params = new URLSearchParams(searchParams);
@@ -80,7 +94,7 @@ export function NewScheduledEmailForm({
 	// Handle form changes from child components
 	const handleFormChange = (data: Partial<FormData>) => {
 		const newFormData = { ...formData, ...data };
-		setFormData(newFormData as FormData); // Cast is safe because we initialized with all required fields
+		setFormData(newFormData as FormData);
 
 		// Update preview
 		const selectedAnimation = animations?.find(

@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Id } from "../../../convex/_generated/dataModel";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
 import { useEffect, useRef } from "react";
@@ -28,6 +28,8 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { env } from "@/env";
+import { LockedFeature } from "@/components/premium/LockedFeature";
 
 const formatPhoneNumber = (value: string) => {
 	// Remove all non-digits
@@ -116,6 +118,9 @@ export function RecipientMetadataForm({
 	const updateRecipientMetadata = useMutation(
 		api.recipients.updateRecipientMetadata
 	);
+	const subscriptionLevel = useQuery(
+		api.subscriptions.getUserSubscriptionLevel
+	);
 
 	const form = useForm<FormValues>({
 		resolver: zodResolver(formSchema),
@@ -142,7 +147,7 @@ export function RecipientMetadataForm({
 	const relation = form.watch("relation");
 
 	useEffect(() => {
-		if (addressInputRef.current && process.env.NEXT_PUBLIC_MAPBOX_API_KEY) {
+		if (addressInputRef.current && env.NEXT_PUBLIC_MAPBOX_API_KEY) {
 			const input = addressInputRef.current;
 
 			// Create a custom container for suggestions
@@ -161,7 +166,7 @@ export function RecipientMetadataForm({
 								`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
 									target.value
 								)}.json?access_token=${
-									process.env.NEXT_PUBLIC_MAPBOX_API_KEY
+									env.NEXT_PUBLIC_MAPBOX_API_KEY
 								}&types=address&limit=5`
 							);
 							const data = await response.json();
@@ -339,51 +344,23 @@ export function RecipientMetadataForm({
 
 				<div className="space-y-4">
 					<h3 className="font-medium">Address Information</h3>
-					<div className="grid gap-4">
-						<FormField
-							control={form.control}
-							name="address.line1"
-							render={({ field: { onChange, value, ...fieldProps } }) => (
-								<FormItem className="relative">
-									<FormLabel>Address Line 1</FormLabel>
-									<FormControl>
-										<Input
-											{...fieldProps}
-											ref={addressInputRef}
-											value={value}
-											onChange={onChange}
-											placeholder="Start typing to search address..."
-											className="focus-visible:ring-2"
-										/>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
-
-						<FormField
-							control={form.control}
-							name="address.line2"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Address Line 2</FormLabel>
-									<FormControl>
-										<Input placeholder="Apartment, suite, etc." {...field} />
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
-
-						<div className="grid grid-cols-3 gap-4">
+					{subscriptionLevel === "pro" ? (
+						<div className="grid gap-4">
 							<FormField
 								control={form.control}
-								name="address.city"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>City</FormLabel>
+								name="address.line1"
+								render={({ field: { onChange, value, ...fieldProps } }) => (
+									<FormItem className="relative">
+										<FormLabel>Address Line 1</FormLabel>
 										<FormControl>
-											<Input placeholder="City" {...field} />
+											<Input
+												{...fieldProps}
+												ref={addressInputRef}
+												value={value}
+												onChange={onChange}
+												placeholder="Start typing to search address..."
+												className="focus-visible:ring-2"
+											/>
 										</FormControl>
 										<FormMessage />
 									</FormItem>
@@ -392,47 +369,149 @@ export function RecipientMetadataForm({
 
 							<FormField
 								control={form.control}
-								name="address.state"
+								name="address.line2"
 								render={({ field }) => (
 									<FormItem>
-										<FormLabel>State/Province</FormLabel>
+										<FormLabel>Address Line 2</FormLabel>
 										<FormControl>
-											<Input placeholder="State/Province" {...field} />
+											<Input placeholder="Apartment, suite, etc." {...field} />
 										</FormControl>
 										<FormMessage />
 									</FormItem>
 								)}
 							/>
 
-							<FormField
-								control={form.control}
-								name="address.postalCode"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Postal Code</FormLabel>
-										<FormControl>
-											<Input placeholder="Postal code" {...field} />
-										</FormControl>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
+							<div className="grid grid-cols-3 gap-4">
+								<FormField
+									control={form.control}
+									name="address.city"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel>City</FormLabel>
+											<FormControl>
+												<Input placeholder="City" {...field} />
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+
+								<FormField
+									control={form.control}
+									name="address.state"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel>State/Province</FormLabel>
+											<FormControl>
+												<Input placeholder="State/Province" {...field} />
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+
+								<FormField
+									control={form.control}
+									name="address.postalCode"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel>Postal Code</FormLabel>
+											<FormControl>
+												<Input placeholder="Postal code" {...field} />
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+							</div>
 						</div>
+					) : (
+						<LockedFeature featureDescription="add recipient addresses and view them on a map">
+							<div className="grid gap-4">
+								<FormField
+									control={form.control}
+									name="address.line1"
+									render={({ field: { onChange, value, ...fieldProps } }) => (
+										<FormItem className="relative">
+											<FormLabel>Address Line 1</FormLabel>
+											<FormControl>
+												<Input
+													{...fieldProps}
+													ref={addressInputRef}
+													value={value}
+													onChange={onChange}
+													placeholder="Start typing to search address..."
+													className="focus-visible:ring-2"
+												/>
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
 
-						<FormField
-							control={form.control}
-							name="address.country"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Country</FormLabel>
-									<FormControl>
-										<Input placeholder="Country" {...field} readOnly />
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
-					</div>
+								<FormField
+									control={form.control}
+									name="address.line2"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel>Address Line 2</FormLabel>
+											<FormControl>
+												<Input
+													placeholder="Apartment, suite, etc."
+													{...field}
+												/>
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+
+								<div className="grid grid-cols-3 gap-4">
+									<FormField
+										control={form.control}
+										name="address.city"
+										render={({ field }) => (
+											<FormItem>
+												<FormLabel>City</FormLabel>
+												<FormControl>
+													<Input placeholder="City" {...field} />
+												</FormControl>
+												<FormMessage />
+											</FormItem>
+										)}
+									/>
+
+									<FormField
+										control={form.control}
+										name="address.state"
+										render={({ field }) => (
+											<FormItem>
+												<FormLabel>State/Province</FormLabel>
+												<FormControl>
+													<Input placeholder="State/Province" {...field} />
+												</FormControl>
+												<FormMessage />
+											</FormItem>
+										)}
+									/>
+
+									<FormField
+										control={form.control}
+										name="address.postalCode"
+										render={({ field }) => (
+											<FormItem>
+												<FormLabel>Postal Code</FormLabel>
+												<FormControl>
+													<Input placeholder="Postal code" {...field} />
+												</FormControl>
+												<FormMessage />
+											</FormItem>
+										)}
+									/>
+								</div>
+							</div>
+						</LockedFeature>
+					)}
 				</div>
 
 				<FormField

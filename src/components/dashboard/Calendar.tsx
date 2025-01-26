@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { ChevronLeft, ChevronRight, Mail, X, MapPin } from "lucide-react";
+import { ChevronLeft, ChevronRight, Mail, X, MapPin, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation } from "convex/react";
@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CalendarIcon } from "lucide-react";
+import { PremiumModal } from "@/components/premium/PremiumModal";
 
 interface Holiday {
 	date: string;
@@ -41,6 +42,7 @@ export function Calendar({ holidays }: CalendarProps) {
 	const [showEventForm, setShowEventForm] = useState(false);
 	const [eventName, setEventName] = useState("");
 	const [isRecurring, setIsRecurring] = useState(false);
+	const [showPremiumModal, setShowPremiumModal] = useState(false);
 	const router = useRouter();
 
 	// Fetch user settings and other data
@@ -51,6 +53,9 @@ export function Calendar({ holidays }: CalendarProps) {
 	const customEvents = useQuery(api.events.getEvents) || [];
 	const createEvent = useMutation(api.events.createEvent);
 	const deleteEvent = useMutation(api.events.deleteEvent);
+	const subscriptionLevel = useQuery(
+		api.subscriptions.getUserSubscriptionLevel
+	);
 
 	const hasAddress = user?.settings?.address?.countryCode;
 	const showHolidaysEnabled = user?.settings?.calendar?.showHolidays ?? true;
@@ -131,7 +136,11 @@ export function Calendar({ holidays }: CalendarProps) {
 	};
 
 	const startEventCreation = () => {
-		setShowEventForm(true);
+		if (subscriptionLevel === "pro") {
+			setShowEventForm(true);
+		} else {
+			setShowPremiumModal(true);
+		}
 	};
 
 	const handleDeleteEvent = async (eventId: Id<"customEvents">) => {
@@ -421,10 +430,15 @@ export function Calendar({ holidays }: CalendarProps) {
 									<Button
 										onClick={startEventCreation}
 										variant="outline"
-										className="flex items-center gap-2 h-24 text-lg"
+										className="flex items-center gap-2 h-24 text-lg relative"
 									>
 										<CalendarIcon className="h-5 w-5" />
 										Create Event
+										{subscriptionLevel !== "pro" && (
+											<div className="absolute top-2 right-2">
+												<Lock className="h-4 w-4" />
+											</div>
+										)}
 									</Button>
 									<Button
 										onClick={handleScheduleEmail}
@@ -513,6 +527,13 @@ export function Calendar({ holidays }: CalendarProps) {
 					</div>
 				</DialogContent>
 			</Dialog>
+
+			{/* Premium Modal */}
+			<PremiumModal
+				isOpen={showPremiumModal}
+				onClose={() => setShowPremiumModal(false)}
+				featureRequested="create custom events"
+			/>
 		</div>
 	);
 }

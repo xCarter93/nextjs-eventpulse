@@ -8,6 +8,8 @@ import {
 import { v } from "convex/values";
 import { ConvexError } from "convex/values";
 import { internal } from "./_generated/api";
+import { api } from "./_generated/api";
+import { Id } from "./_generated/dataModel";
 
 export const generateUploadUrl = mutation(async (ctx) => {
 	return await ctx.storage.generateUploadUrl();
@@ -75,7 +77,7 @@ export const saveAnimation = mutation({
 		name: v.string(),
 		description: v.string(),
 	},
-	handler: async (ctx, args) => {
+	handler: async (ctx, args): Promise<Id<"animations">> => {
 		const identity = await ctx.auth.getUserIdentity();
 
 		if (!identity) {
@@ -93,10 +95,15 @@ export const saveAnimation = mutation({
 			throw new ConvexError("User not found");
 		}
 
-		// Calculate expiration date for free tier users (30 days from now)
-		const expirationDate =
-			user.subscription.tier === "free"
-				? Date.now() + 30 * 24 * 60 * 60 * 1000 // 30 days in milliseconds
+		// Get user's subscription level
+		const subscriptionLevel: "free" | "pro" = await ctx.runQuery(
+			api.subscriptions.getUserSubscriptionLevel
+		);
+
+		// Calculate expiration date for free tier users (10 days from now)
+		const expirationDate: number | undefined =
+			subscriptionLevel === "free"
+				? Date.now() + 10 * 24 * 60 * 60 * 1000 // 10 days in milliseconds
 				: undefined;
 
 		const animationId = await ctx.db.insert("animations", {

@@ -1,7 +1,7 @@
 interface Event {
 	type: "birthday" | "event" | "holiday";
 	name: string;
-	date: Date;
+	date: number;
 	description?: string;
 }
 
@@ -10,7 +10,8 @@ interface ReminderEmailProps {
 	events: Event[];
 }
 
-const formatDate = (date: Date): string => {
+const formatDate = (timestamp: number): string => {
+	const date = new Date(timestamp);
 	return date.toLocaleDateString("en-US", {
 		weekday: "long",
 		month: "long",

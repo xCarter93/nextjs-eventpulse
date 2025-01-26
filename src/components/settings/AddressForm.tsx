@@ -4,6 +4,7 @@ import { useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AddressData } from "@/app/settings/types";
+import { env } from "@/env";
 
 interface MapboxFeature {
 	place_name: string;
@@ -27,7 +28,7 @@ export function AddressForm({ value, onChange }: AddressFormProps) {
 	const addressInputRef = useRef<HTMLInputElement>(null);
 
 	useEffect(() => {
-		if (addressInputRef.current && process.env.NEXT_PUBLIC_MAPBOX_API_KEY) {
+		if (addressInputRef.current && env.NEXT_PUBLIC_MAPBOX_API_KEY) {
 			const cleanup = setupMapboxAutocomplete(addressInputRef.current);
 			return () => cleanup();
 		}
@@ -50,7 +51,7 @@ export function AddressForm({ value, onChange }: AddressFormProps) {
 							`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
 								target.value
 							)}.json?access_token=${
-								process.env.NEXT_PUBLIC_MAPBOX_API_KEY
+								env.NEXT_PUBLIC_MAPBOX_API_KEY
 							}&types=address&limit=5`
 						);
 						const data = await response.json();
