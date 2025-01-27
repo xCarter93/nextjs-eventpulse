@@ -234,15 +234,27 @@ const PriceCards = ({ selected }: PriceCardProps) => {
 					</span>
 				</div>
 
-				<motion.button
+				<motion.div
 					whileHover={{ scale: 1.015 }}
 					whileTap={{ scale: 0.985 }}
-					className="w-full py-4 mt-8 font-semibold bg-primary text-primary-foreground rounded-lg uppercase"
+					className="w-full mt-8"
 				>
-					<Link href={isSignedIn ? "/dashboard" : "/sign-in"}>
-						{isSignedIn ? "Go to Dashboard" : "Get Started"}
-					</Link>
-				</motion.button>
+					{!isSignedIn ? (
+						<Link
+							href="/sign-up"
+							className="block w-full py-4 font-semibold bg-primary text-primary-foreground rounded-lg uppercase text-center"
+						>
+							Get Started
+						</Link>
+					) : (
+						<Link
+							href="/dashboard"
+							className="block w-full py-4 font-semibold bg-primary text-primary-foreground rounded-lg uppercase text-center"
+						>
+							Go to Dashboard
+						</Link>
+					)}
+				</motion.div>
 			</div>
 
 			{/* PRO  */}

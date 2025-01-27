@@ -19,6 +19,7 @@ import {
 	PaginationModule,
 	DateEditorModule,
 	RowStyleModule,
+	ColumnAutoSizeModule,
 } from "ag-grid-community";
 import { format } from "date-fns";
 import { useTheme } from "next-themes";
@@ -26,6 +27,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
+import { useMemo, useCallback } from "react";
 
 // Register AG Grid Modules
 ModuleRegistry.registerModules([
@@ -36,6 +38,7 @@ ModuleRegistry.registerModules([
 	PaginationModule,
 	DateEditorModule,
 	RowStyleModule,
+	ColumnAutoSizeModule,
 ]);
 
 interface Recipient {
@@ -78,45 +81,58 @@ export function RecipientsTable() {
 	const updateRecipient = useMutation(api.recipients.updateRecipient);
 	const deleteRecipient = useMutation(api.recipients.deleteRecipient);
 
-	const gridTheme = themeQuartz.withPart(
-		theme === "dark" ? colorSchemeDarkBlue : colorSchemeLightCold
+	const gridTheme = useMemo(
+		() =>
+			themeQuartz.withPart(
+				theme === "dark" ? colorSchemeDarkBlue : colorSchemeLightCold
+			),
+		[theme]
 	);
 
-	const defaultColDef = {
-		sortable: true,
-		resizable: true,
-		editable: true,
-	};
+	const defaultColDef = useMemo(
+		() => ({
+			sortable: true,
+			resizable: true,
+			editable: true,
+		}),
+		[]
+	);
 
-	const gridOptions: GridOptions<Recipient> = {
-		suppressCellFocus: true,
-		rowHeight: 48,
-		headerHeight: 48,
-		suppressMovableColumns: true,
-		animateRows: true,
-		rowSelection: "single",
-		...defaultColDef,
-		onRowClicked: (event) => {
-			// Check if we're clicking the delete button or its container
-			const target = event.event?.target as HTMLElement;
-			const isDeleteButton = target?.closest("button") !== null;
+	const gridOptions: GridOptions<Recipient> = useMemo(
+		() => ({
+			suppressCellFocus: true,
+			rowHeight: 48,
+			headerHeight: 48,
+			suppressMovableColumns: true,
+			animateRows: true,
+			rowSelection: "single",
+			defaultColDef,
+			onRowClicked: (event) => {
+				// Check if we're clicking the delete button or its container
+				const target = event.event?.target as HTMLElement;
+				const isDeleteButton = target?.closest("button") !== null;
 
-			if (event.data && !isDeleteButton) {
-				router.push(`/recipients/${event.data._id}`);
+				if (event.data && !isDeleteButton) {
+					router.push(`/recipients/${event.data._id}`);
+				}
+			},
+			rowStyle: { cursor: "pointer" },
+		}),
+		[defaultColDef, router]
+	);
+
+	const handleDelete = useCallback(
+		async (id: Id<"recipients">) => {
+			try {
+				await deleteRecipient({ id });
+				toast.success("Recipient deleted successfully");
+			} catch (error) {
+				toast.error("Failed to delete recipient");
+				console.error(error);
 			}
 		},
-		rowStyle: { cursor: "pointer" },
-	};
-
-	const handleDelete = async (id: Id<"recipients">) => {
-		try {
-			await deleteRecipient({ id });
-			toast.success("Recipient deleted successfully");
-		} catch (error) {
-			toast.error("Failed to delete recipient");
-			console.error(error);
-		}
-	};
+		[deleteRecipient]
+	);
 
 	const handleCellValueChanged = async (event: CellValueChangedEvent) => {
 		try {
@@ -133,76 +149,89 @@ export function RecipientsTable() {
 		}
 	};
 
-	const columnDefs: ColDef<Recipient>[] = [
-		{
-			field: "name",
-			headerName: "Name",
-			flex: 1,
-			editable: true,
-			cellEditor: "agTextCellEditor",
-		},
-		{
-			field: "email",
-			headerName: "Email",
-			flex: 1,
-			editable: true,
-			cellEditor: "agTextCellEditor",
-		},
-		{
-			field: "birthday",
-			headerName: "Birthday",
-			flex: 1,
-			editable: true,
-			valueFormatter: (params) => {
-				if (!params.value) return "";
-				const date = new Date(params.value);
-				return format(date, "MMMM d, yyyy");
+	const columnDefs = useMemo<ColDef<Recipient>[]>(
+		() => [
+			{
+				field: "name",
+				headerName: "Name",
+				flex: 1,
+				editable: true,
+				cellEditor: "agTextCellEditor",
 			},
-			valueGetter: (params) => {
-				if (!params.data?.birthday) return null;
-				const date = new Date(params.data.birthday);
-				return date;
+			{
+				field: "email",
+				headerName: "Email",
+				flex: 1,
+				editable: true,
+				cellEditor: "agTextCellEditor",
 			},
-			valueSetter: (params) => {
-				if (!params.data) return false;
-				const newValue = params.newValue;
-				const timestamp =
-					newValue instanceof Date
-						? newValue.getTime()
-						: new Date(newValue).getTime();
-				if (isNaN(timestamp)) return false;
-				params.data.birthday = timestamp;
-				return true;
+			{
+				field: "birthday",
+				headerName: "Birthday",
+				flex: 1,
+				editable: true,
+				valueFormatter: (params) => {
+					if (!params.value) return "";
+					const date = new Date(params.value);
+					return format(date, "MMMM d, yyyy");
+				},
+				valueGetter: (params) => {
+					if (!params.data?.birthday) return null;
+					const date = new Date(params.data.birthday);
+					return date;
+				},
+				valueSetter: (params) => {
+					if (!params.data) return false;
+					const newValue = params.newValue;
+					const timestamp =
+						newValue instanceof Date
+							? newValue.getTime()
+							: new Date(newValue).getTime();
+					if (isNaN(timestamp)) return false;
+					params.data.birthday = timestamp;
+					return true;
+				},
+				cellEditor: "agDateCellEditor",
+				cellEditorParams: {
+					browserDatePicker: true,
+				},
 			},
-			cellEditor: "agDateCellEditor",
-			cellEditorParams: {
-				browserDatePicker: true,
+			{
+				headerName: "Actions",
+				minWidth: 100,
+				cellRenderer: ActionCellRenderer,
+				cellRendererParams: {
+					onDelete: handleDelete,
+				},
 			},
-		},
-		{
-			headerName: "Actions",
-			minWidth: 100,
-			cellRenderer: ActionCellRenderer,
-			cellRendererParams: {
-				onDelete: handleDelete,
-			},
-		},
-	];
+		],
+		[handleDelete]
+	);
+
+	// If no recipients data yet, show loading state
+	if (!recipients) {
+		return (
+			<div style={{ height: "500px" }} className="grid place-items-center">
+				Loading...
+			</div>
+		);
+	}
 
 	return (
 		<div style={{ height: "500px" }}>
-			{recipients && (
-				<AgGridReact
-					gridOptions={gridOptions}
-					rowData={recipients}
-					columnDefs={columnDefs}
-					defaultColDef={defaultColDef}
-					theme={gridTheme}
-					pagination={true}
-					paginationAutoPageSize={true}
-					onCellValueChanged={handleCellValueChanged}
-				/>
-			)}
+			<AgGridReact
+				key={theme} // Force remount when theme changes
+				gridOptions={gridOptions}
+				rowData={recipients}
+				columnDefs={columnDefs}
+				theme={gridTheme}
+				pagination={true}
+				paginationAutoPageSize={true}
+				onCellValueChanged={handleCellValueChanged}
+				onGridReady={(params) => {
+					params.api.sizeColumnsToFit();
+				}}
+			/>
 		</div>
 	);
 }

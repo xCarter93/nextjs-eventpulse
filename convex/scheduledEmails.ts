@@ -85,12 +85,11 @@ export const scheduleCustomEmail = mutation({
 });
 
 export const listScheduledEmails = query({
-	args: {},
 	async handler(ctx) {
 		const identity = await ctx.auth.getUserIdentity();
 
 		if (!identity) {
-			throw new ConvexError("Not authenticated");
+			return [];
 		}
 
 		const user = await ctx.db
@@ -100,8 +99,9 @@ export const listScheduledEmails = query({
 			)
 			.first();
 
+		// If user doesn't exist yet, return empty array instead of throwing
 		if (!user) {
-			throw new ConvexError("User not found");
+			return [];
 		}
 
 		// Get all scheduled emails (both pending and completed)
@@ -121,9 +121,7 @@ export const listScheduledEmails = query({
 					animationId?: Id<"animations">;
 				};
 
-				const recipient = (await ctx.db.get(
-					args.recipientId
-				)) as Doc<"recipients"> | null;
+				const recipient = await ctx.db.get(args.recipientId);
 
 				// Only include emails for recipients that belong to this user
 				if (!recipient || recipient.userId !== user._id) {

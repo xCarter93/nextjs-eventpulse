@@ -6,6 +6,7 @@ import {
 	internalQuery,
 } from "./_generated/server";
 import { DEFAULT_FREE_FEATURES } from "./subscriptions";
+import { PRO_TIER_LIMITS } from "../src/lib/subscriptions";
 
 const DEFAULT_SETTINGS = {
 	calendar: {
@@ -85,7 +86,7 @@ export const getUser = query({
 			...user,
 			subscription: {
 				tier: subscription ? "pro" : "free",
-				features: subscription ? subscription.features : DEFAULT_FREE_FEATURES,
+				features: subscription ? PRO_TIER_LIMITS : DEFAULT_FREE_FEATURES,
 			},
 		};
 	},
