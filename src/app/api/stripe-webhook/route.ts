@@ -9,13 +9,6 @@ import { api } from "../../../../convex/_generated/api";
 const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
 const convex = new ConvexHttpClient(env.NEXT_PUBLIC_CONVEX_URL);
 
-const PRO_PLAN_FEATURES = {
-	maxRecipients: -1, // unlimited
-	maxAnimations: -1, // unlimited
-	hasAutoSend: true,
-	hasAdvancedTemplates: true,
-};
-
 export async function POST(req: NextRequest) {
 	try {
 		const payload = await req.text();
@@ -72,8 +65,11 @@ async function handleSessionCompleted(session: Stripe.Checkout.Session) {
 
 async function handleSubscriptionCreatedOrUpdated(subscriptionId: string) {
 	const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
-		expand: ["customer", "items.data.price"],
+		expand: ["items.data.price"],
 	});
+
+	console.log("Customer type:", typeof subscription.customer);
+	console.log("Customer value:", subscription.customer);
 
 	if (
 		subscription.status === "active" ||
@@ -95,7 +91,6 @@ async function handleSubscriptionCreatedOrUpdated(subscriptionId: string) {
 			stripePriceId: price.id,
 			stripeCurrentPeriodEnd: subscription.current_period_end * 1000, // Convert to milliseconds
 			stripeCancelAtPeriodEnd: subscription.cancel_at_period_end,
-			features: PRO_PLAN_FEATURES,
 		});
 	} else {
 		// Delete subscription if status is not active/trialing/past_due

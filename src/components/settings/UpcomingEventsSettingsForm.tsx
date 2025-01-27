@@ -29,29 +29,24 @@ export function UpcomingEventsSettingsForm({
 	) => {
 		const numValue = parseInt(inputValue);
 		if (!isNaN(numValue) && numValue > 0) {
-			onChange({
-				...value,
-				[field]: numValue,
-			});
+			// For free users, always use default values
+			if (subscriptionLevel === "free") {
+				onChange({
+					daysToShow: DEFAULT_DAYS_TO_SHOW,
+					maxEvents: DEFAULT_MAX_EVENTS,
+				});
+			} else {
+				onChange({
+					...value,
+					[field]: numValue,
+				});
+			}
 		}
 	};
 
 	// Default values for free users
 	const DEFAULT_DAYS_TO_SHOW = 30;
 	const DEFAULT_MAX_EVENTS = 10;
-
-	// If user is on free plan and tries to change values, reset to defaults
-	if (subscriptionLevel === "free") {
-		if (
-			value.daysToShow !== DEFAULT_DAYS_TO_SHOW ||
-			value.maxEvents !== DEFAULT_MAX_EVENTS
-		) {
-			onChange({
-				daysToShow: DEFAULT_DAYS_TO_SHOW,
-				maxEvents: DEFAULT_MAX_EVENTS,
-			});
-		}
-	}
 
 	return (
 		<TooltipProvider>

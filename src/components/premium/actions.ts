@@ -25,10 +25,9 @@ export async function createCheckoutSession(priceId: string) {
 		mode: "subscription",
 		success_url: `${env.NEXT_PUBLIC_BASE_URL}/billing/success`,
 		cancel_url: `${env.NEXT_PUBLIC_BASE_URL}/dashboard`,
-		customer: stripeCustomerId,
-		customer_email: stripeCustomerId
-			? undefined
-			: user.emailAddresses[0].emailAddress,
+		...(stripeCustomerId
+			? { customer: stripeCustomerId }
+			: { customer_email: user.emailAddresses[0].emailAddress }),
 		metadata: {
 			userId: user.id,
 		},

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { createCheckoutSession } from "../premium/actions";
 import { toast } from "sonner";
 import { env } from "@/env";
+import { useUser } from "@clerk/nextjs";
 
 export default function SlidePricing() {
 	const [selected, setSelected] = useState<"M" | "A">("M");
@@ -114,6 +115,7 @@ interface PriceCardProps {
 
 const PriceCards = ({ selected }: PriceCardProps) => {
 	const [isLoading, setIsLoading] = useState(false);
+	const { isSignedIn } = useUser();
 
 	const handleUpgradeClick = async () => {
 		try {
@@ -237,7 +239,9 @@ const PriceCards = ({ selected }: PriceCardProps) => {
 					whileTap={{ scale: 0.985 }}
 					className="w-full py-4 mt-8 font-semibold bg-primary text-primary-foreground rounded-lg uppercase"
 				>
-					<Link href="/dashboard">Get Started</Link>
+					<Link href={isSignedIn ? "/dashboard" : "/sign-in"}>
+						{isSignedIn ? "Go to Dashboard" : "Get Started"}
+					</Link>
 				</motion.button>
 			</div>
 
