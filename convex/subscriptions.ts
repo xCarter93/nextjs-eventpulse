@@ -1,8 +1,11 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, action } from "./_generated/server";
 import { ConvexError } from "convex/values";
 import { getSubscriptionLevel } from "../src/lib/subscriptions";
 import { FREE_TIER_LIMITS } from "../src/lib/subscriptions";
+import Stripe from "stripe";
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export const DEFAULT_FREE_FEATURES = {
 	maxRecipients: 5,
@@ -206,5 +209,12 @@ export const cancelSubscription = mutation({
 		await ctx.db.delete(subscription._id);
 
 		return subscription.stripeSubscriptionId;
+	},
+});
+
+export const getSubscriptionPrice = action({
+	args: { priceId: v.string() },
+	handler: async (ctx, { priceId }) => {
+		return await stripe.prices.retrieve(priceId, { expand: ["product"] });
 	},
 });

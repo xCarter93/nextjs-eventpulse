@@ -6,7 +6,14 @@ import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { SignInButton, UserButton } from "@clerk/nextjs";
 import { useUser } from "@clerk/nextjs";
-import { LayoutDashboard, Users, Sparkles, Mail, Settings } from "lucide-react";
+import {
+	LayoutDashboard,
+	Users,
+	Sparkles,
+	Mail,
+	Settings,
+	CreditCard,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 
@@ -80,7 +87,24 @@ export function Navbar() {
 				<div className="flex items-center space-x-2">
 					<ThemeToggle />
 					{isSignedIn ? (
-						<UserButton afterSignOutUrl="/" />
+						<UserButton
+							appearance={{
+								elements: {
+									avatarBox: {
+										width: 35,
+										height: 35,
+									},
+								},
+							}}
+						>
+							<UserButton.MenuItems>
+								<UserButton.Link
+									label="Billing"
+									labelIcon={<CreditCard className="size-4" />}
+									href="/billing"
+								/>
+							</UserButton.MenuItems>
+						</UserButton>
 					) : (
 						<SignInButton mode="modal">
 							<Button variant="outline" size="sm">

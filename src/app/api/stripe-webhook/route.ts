@@ -1,12 +1,11 @@
 import { env } from "@/env";
 import stripe from "@/lib/stripe";
-import { createClerkClient } from "@clerk/nextjs/server";
+import { clerkClient } from "@clerk/nextjs/server";
 import { NextRequest } from "next/server";
 import Stripe from "stripe";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../convex/_generated/api";
 
-const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
 const convex = new ConvexHttpClient(env.NEXT_PUBLIC_CONVEX_URL);
 
 export async function POST(req: NextRequest) {
@@ -56,7 +55,9 @@ async function handleSessionCompleted(session: Stripe.Checkout.Session) {
 		throw new Error("User ID is missing in session metadata");
 	}
 
-	await clerk.users.updateUser(userId, {
+	await (
+		await clerkClient()
+	).users.updateUserMetadata(userId, {
 		privateMetadata: {
 			stripeCustomerId: session.customer as string,
 		},

@@ -21,6 +21,8 @@ export const env = createEnv({
 		NEXT_PUBLIC_STRIPE_PRICE_ID_PRO_ANNUAL: z.string().min(1),
 		NEXT_PUBLIC_BASE_URL: z.string().min(1).url(),
 		NEXT_PUBLIC_MAPBOX_API_KEY: z.string().min(1),
+		NEXT_PUBLIC_CLERK_SIGN_IN_URL: z.string().min(1),
+		NEXT_PUBLIC_CLERK_SIGN_UP_URL: z.string().min(1),
 	},
 	experimental__runtimeEnv: {
 		NEXT_PUBLIC_CONVEX_URL: process.env.NEXT_PUBLIC_CONVEX_URL,
@@ -35,5 +37,7 @@ export const env = createEnv({
 			process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_PRO_ANNUAL,
 		NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
 		NEXT_PUBLIC_MAPBOX_API_KEY: process.env.NEXT_PUBLIC_MAPBOX_API_KEY,
+		NEXT_PUBLIC_CLERK_SIGN_IN_URL: process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL,
+		NEXT_PUBLIC_CLERK_SIGN_UP_URL: process.env.NEXT_PUBLIC_CLERK_SIGN_UP_URL,
 	},
 });
