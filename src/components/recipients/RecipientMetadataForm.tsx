@@ -118,9 +118,9 @@ export function RecipientMetadataForm({
 	const updateRecipientMetadata = useMutation(
 		api.recipients.updateRecipientMetadata
 	);
-	const subscriptionLevel = useQuery(
-		api.subscriptions.getUserSubscriptionLevel
-	);
+	const subscription = useQuery(api.subscriptions.getUserSubscription);
+	const isSubscriptionActive =
+		subscription && new Date(subscription.stripeCurrentPeriodEnd) > new Date();
 
 	const form = useForm<FormValues>({
 		resolver: zodResolver(formSchema),
@@ -147,7 +147,11 @@ export function RecipientMetadataForm({
 	const relation = form.watch("relation");
 
 	useEffect(() => {
-		if (addressInputRef.current && env.NEXT_PUBLIC_MAPBOX_API_KEY) {
+		if (
+			addressInputRef.current &&
+			env.NEXT_PUBLIC_MAPBOX_API_KEY &&
+			isSubscriptionActive
+		) {
 			const input = addressInputRef.current;
 
 			// Create a custom container for suggestions
@@ -156,7 +160,7 @@ export function RecipientMetadataForm({
 			input.parentElement?.appendChild(suggestionsContainer);
 
 			let debounceTimeout: NodeJS.Timeout;
-			input.addEventListener("input", (e: Event) => {
+			const handleInput = async (e: Event) => {
 				const target = e.target as HTMLInputElement;
 				clearTimeout(debounceTimeout);
 				debounceTimeout = setTimeout(async () => {
@@ -225,14 +229,17 @@ export function RecipientMetadataForm({
 						suggestionsContainer.className = "absolute z-50 w-full";
 					}
 				}, 300);
-			});
+			};
+
+			input.addEventListener("input", handleInput);
 
 			return () => {
 				clearTimeout(debounceTimeout);
+				input.removeEventListener("input", handleInput);
 				suggestionsContainer.remove();
 			};
 		}
-	}, [form]);
+	}, [form, isSubscriptionActive]);
 
 	async function onSubmit(data: FormValues) {
 		try {
@@ -344,7 +351,7 @@ export function RecipientMetadataForm({
 
 				<div className="space-y-4">
 					<h3 className="font-medium">Address Information</h3>
-					{subscriptionLevel === "pro" ? (
+					{isSubscriptionActive ? (
 						<div className="grid gap-4">
 							<FormField
 								control={form.control}

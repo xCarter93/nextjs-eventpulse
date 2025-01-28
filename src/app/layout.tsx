@@ -7,6 +7,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "sonner";
 import { Navbar } from "@/components/layout/navbar";
 import type { Metadata } from "next";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -27,13 +28,15 @@ export default function RootLayout({
 				<body suppressHydrationWarning className={inter.className}>
 					<ThemeProvider>
 						<ConvexClientProvider>
-							<Navbar />
-							<main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-								{children}
-							</main>
-							<Toaster />
+							<TooltipProvider>
+								<Navbar />
+								<main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+									{children}
+								</main>
+							</TooltipProvider>
 						</ConvexClientProvider>
 					</ThemeProvider>
+					<Toaster />
 				</body>
 			</html>
 		</ClerkProvider>

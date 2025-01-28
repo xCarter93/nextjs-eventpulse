@@ -45,7 +45,8 @@ export default function Page() {
 	];
 
 	// A subscription is active if it exists and hasn't expired yet
-	const isSubscriptionActive = subscription !== null;
+	const isSubscriptionActive =
+		subscription && new Date(subscription.stripeCurrentPeriodEnd) > new Date();
 
 	return (
 		<div className="container py-10">

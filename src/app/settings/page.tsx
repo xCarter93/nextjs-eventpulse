@@ -49,13 +49,9 @@ export default function SettingsPage() {
 				notifications:
 					user.settings.notifications || DEFAULT_SETTINGS.notifications,
 			};
-
-			// Only update if settings actually changed
-			if (JSON.stringify(newSettings) !== JSON.stringify(settings)) {
-				setSettings(newSettings);
-			}
+			setSettings(newSettings);
 		}
-	}, [user?.settings, settings]);
+	}, [user?.settings]);
 
 	const handleSubmit = async () => {
 		setIsLoading(true);
