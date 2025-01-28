@@ -105,7 +105,11 @@ export function RecipientsTable() {
 			headerHeight: 48,
 			suppressMovableColumns: true,
 			animateRows: true,
-			rowSelection: "single",
+			rowSelection: {
+				mode: "singleRow",
+				checkboxes: false,
+				enableClickSelection: true,
+			},
 			defaultColDef,
 			onRowClicked: (event) => {
 				// Check if we're clicking the delete button or its container

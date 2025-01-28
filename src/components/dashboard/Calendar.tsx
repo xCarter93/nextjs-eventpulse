@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Mail, X, MapPin, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -20,6 +20,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CalendarIcon } from "lucide-react";
 import { PremiumModal } from "@/components/premium/PremiumModal";
+import { getPublicHolidays } from "@/app/actions/holidays";
 
 interface Holiday {
 	date: string;
@@ -28,11 +29,7 @@ interface Holiday {
 	type: string;
 }
 
-interface CalendarProps {
-	holidays: Holiday[];
-}
-
-export function Calendar({ holidays }: CalendarProps) {
+export function Calendar() {
 	const [currentDate, setCurrentDate] = useState(new Date());
 	const [showBirthdays, setShowBirthdays] = useState(true);
 	const [showHolidays, setShowHolidays] = useState(true);
@@ -43,6 +40,7 @@ export function Calendar({ holidays }: CalendarProps) {
 	const [eventName, setEventName] = useState("");
 	const [isRecurring, setIsRecurring] = useState(false);
 	const [showPremiumModal, setShowPremiumModal] = useState(false);
+	const [holidays, setHolidays] = useState<Holiday[]>([]);
 	const router = useRouter();
 
 	// Fetch user settings and other data
@@ -59,6 +57,29 @@ export function Calendar({ holidays }: CalendarProps) {
 
 	const hasAddress = user?.settings?.address?.countryCode;
 	const showHolidaysEnabled = user?.settings?.calendar?.showHolidays ?? true;
+
+	// Fetch holidays when the year changes or when the user's country code changes
+	useEffect(() => {
+		async function fetchHolidays() {
+			const year = currentDate.getFullYear();
+			const countryCode = user?.settings?.address?.countryCode;
+			if (!countryCode) return;
+
+			const fetchedHolidays = await getPublicHolidays(year, countryCode);
+			setHolidays(fetchedHolidays);
+		}
+
+		if (hasAddress && showHolidaysEnabled) {
+			fetchHolidays();
+		} else {
+			setHolidays([]);
+		}
+	}, [
+		currentDate,
+		hasAddress,
+		showHolidaysEnabled,
+		user?.settings?.address?.countryCode,
+	]);
 
 	const birthdays = recipients.map((r) => ({
 		date: new Date(r.birthday),

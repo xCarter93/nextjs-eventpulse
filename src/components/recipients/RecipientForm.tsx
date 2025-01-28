@@ -81,11 +81,10 @@ export function RecipientForm({ recipient, onSuccess }: RecipientFormProps) {
 				toast.success("Recipient added successfully");
 			}
 			onSuccess();
-		} catch (error) {
+		} catch {
 			toast.error(
 				recipient ? "Failed to update recipient" : "Failed to add recipient"
 			);
-			console.error(error);
 		}
 	}
 

@@ -94,6 +94,7 @@ export default defineSchema({
 						state: v.optional(v.string()),
 						postalCode: v.optional(v.string()),
 						country: v.optional(v.string()),
+						countryCode: v.optional(v.string()),
 						coordinates: v.optional(
 							v.object({
 								latitude: v.number(),

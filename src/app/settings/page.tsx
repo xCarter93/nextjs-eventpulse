@@ -136,7 +136,7 @@ export default function SettingsPage() {
 							</CardHeader>
 							<CardContent>
 								<AddressForm
-									value={
+									defaultAddress={
 										settings.address || {
 											line1: "",
 											city: "",

@@ -7,7 +7,7 @@ import { Id } from "../../../convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -28,8 +28,9 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { env } from "@/env";
 import { LockedFeature } from "@/components/premium/LockedFeature";
+import { AddressAutofillForm } from "@/components/address-autofill/AddressAutofillForm";
+import { RecipientAddressData } from "@/app/settings/types";
 
 const formatPhoneNumber = (value: string) => {
 	// Remove all non-digits
@@ -47,28 +48,26 @@ const formatPhoneNumber = (value: string) => {
 	return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
 };
 
+const addressSchema = z.object({
+	line1: z.string(),
+	line2: z.string().optional(),
+	city: z.string(),
+	state: z.string(),
+	postalCode: z.string(),
+	country: z.string(),
+	coordinates: z.object({
+		latitude: z.number(),
+		longitude: z.number(),
+	}),
+});
+
 const formSchema = z.object({
 	relation: z.enum(["friend", "parent", "spouse", "sibling"]).optional(),
 	anniversaryDate: z.date().optional(),
 	notes: z.string().optional(),
 	nickname: z.string().optional(),
 	phoneNumber: z.string().optional(),
-	address: z
-		.object({
-			line1: z.string().optional(),
-			line2: z.string().optional(),
-			city: z.string().optional(),
-			state: z.string().optional(),
-			postalCode: z.string().optional(),
-			country: z.string().optional(),
-			coordinates: z
-				.object({
-					latitude: z.number(),
-					longitude: z.number(),
-				})
-				.optional(),
-		})
-		.optional(),
+	address: addressSchema,
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -82,39 +81,14 @@ interface RecipientMetadataFormProps {
 			notes?: string;
 			nickname?: string;
 			phoneNumber?: string;
-			address?: {
-				line1?: string;
-				line2?: string;
-				city?: string;
-				state?: string;
-				postalCode?: string;
-				country?: string;
-				coordinates?: {
-					latitude: number;
-					longitude: number;
-				};
-			};
+			address?: RecipientAddressData;
 		};
 	};
-}
-
-interface MapboxFeature {
-	place_name: string;
-	text: string;
-	properties: Record<string, unknown>;
-	context: Array<{
-		id: string;
-		text: string;
-		wikidata?: string;
-		short_code?: string;
-	}>;
-	center: [number, number]; // [longitude, latitude]
 }
 
 export function RecipientMetadataForm({
 	recipient,
 }: RecipientMetadataFormProps) {
-	const addressInputRef = useRef<HTMLInputElement>(null);
 	const updateRecipientMetadata = useMutation(
 		api.recipients.updateRecipientMetadata
 	);
@@ -122,9 +96,36 @@ export function RecipientMetadataForm({
 	const isSubscriptionActive =
 		subscription && new Date(subscription.stripeCurrentPeriodEnd) > new Date();
 
+	const defaultAddress: RecipientAddressData = {
+		line1: recipient.metadata?.address?.line1 || "",
+		line2: recipient.metadata?.address?.line2 || "",
+		city: recipient.metadata?.address?.city || "",
+		state: recipient.metadata?.address?.state || "",
+		postalCode: recipient.metadata?.address?.postalCode || "",
+		country: recipient.metadata?.address?.country || "",
+		coordinates: recipient.metadata?.address?.coordinates || {
+			latitude: 0,
+			longitude: 0,
+		},
+	};
+
 	const form = useForm<FormValues>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
+			relation: recipient.metadata?.relation,
+			anniversaryDate: recipient.metadata?.anniversaryDate
+				? new Date(recipient.metadata.anniversaryDate)
+				: undefined,
+			notes: recipient.metadata?.notes || "",
+			nickname: recipient.metadata?.nickname || "",
+			phoneNumber: recipient.metadata?.phoneNumber || "",
+			address: defaultAddress,
+		},
+	});
+
+	// Update form when recipient metadata changes
+	useEffect(() => {
+		form.reset({
 			relation: recipient.metadata?.relation,
 			anniversaryDate: recipient.metadata?.anniversaryDate
 				? new Date(recipient.metadata.anniversaryDate)
@@ -139,107 +140,15 @@ export function RecipientMetadataForm({
 				state: recipient.metadata?.address?.state || "",
 				postalCode: recipient.metadata?.address?.postalCode || "",
 				country: recipient.metadata?.address?.country || "",
-				coordinates: recipient.metadata?.address?.coordinates,
+				coordinates: recipient.metadata?.address?.coordinates || {
+					latitude: 0,
+					longitude: 0,
+				},
 			},
-		},
-	});
+		});
+	}, [form, recipient.metadata]);
 
 	const relation = form.watch("relation");
-
-	useEffect(() => {
-		if (
-			addressInputRef.current &&
-			env.NEXT_PUBLIC_MAPBOX_API_KEY &&
-			isSubscriptionActive
-		) {
-			const input = addressInputRef.current;
-
-			// Create a custom container for suggestions
-			const suggestionsContainer = document.createElement("div");
-			suggestionsContainer.className = "absolute z-50 w-full";
-			input.parentElement?.appendChild(suggestionsContainer);
-
-			let debounceTimeout: NodeJS.Timeout;
-			const handleInput = async (e: Event) => {
-				const target = e.target as HTMLInputElement;
-				clearTimeout(debounceTimeout);
-				debounceTimeout = setTimeout(async () => {
-					if (target.value) {
-						try {
-							const response = await fetch(
-								`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
-									target.value
-								)}.json?access_token=${
-									env.NEXT_PUBLIC_MAPBOX_API_KEY
-								}&types=address&limit=5`
-							);
-							const data = await response.json();
-							if (data.features && data.features.length > 0) {
-								suggestionsContainer.innerHTML = "";
-								suggestionsContainer.className =
-									"absolute z-50 w-full bg-background shadow-lg mt-0 border-x border-b rounded-b-md";
-								data.features.forEach((feature: MapboxFeature) => {
-									const div = document.createElement("div");
-									div.className = "p-2 hover:bg-accent cursor-pointer";
-									div.textContent = feature.place_name;
-									div.onclick = () => {
-										// Find country from context
-										const country = feature.context?.find((ctx) =>
-											ctx.id.startsWith("country.")
-										);
-										const region = feature.context?.find((ctx) =>
-											ctx.id.startsWith("region.")
-										);
-										const postcode = feature.context?.find((ctx) =>
-											ctx.id.startsWith("postcode.")
-										);
-										const place = feature.context?.find((ctx) =>
-											ctx.id.startsWith("place.")
-										);
-
-										// Extract the street address from the full place name
-										const streetAddress = feature.place_name.split(",")[0];
-
-										form.setValue("address.line1", streetAddress);
-										form.setValue("address.city", place?.text || "");
-										form.setValue("address.state", region?.text || "");
-										form.setValue("address.postalCode", postcode?.text || "");
-										form.setValue("address.country", country?.text || "");
-										form.setValue("address.coordinates", {
-											latitude: feature.center[1],
-											longitude: feature.center[0],
-										});
-
-										suggestionsContainer.innerHTML = "";
-										suggestionsContainer.className = "absolute z-50 w-full";
-									};
-									suggestionsContainer.appendChild(div);
-								});
-							} else {
-								suggestionsContainer.innerHTML = "";
-								suggestionsContainer.className = "absolute z-50 w-full";
-							}
-						} catch (error) {
-							console.error("Error fetching addresses:", error);
-							suggestionsContainer.innerHTML = "";
-							suggestionsContainer.className = "absolute z-50 w-full";
-						}
-					} else {
-						suggestionsContainer.innerHTML = "";
-						suggestionsContainer.className = "absolute z-50 w-full";
-					}
-				}, 300);
-			};
-
-			input.addEventListener("input", handleInput);
-
-			return () => {
-				clearTimeout(debounceTimeout);
-				input.removeEventListener("input", handleInput);
-				suggestionsContainer.remove();
-			};
-		}
-	}, [form, isSubscriptionActive]);
 
 	async function onSubmit(data: FormValues) {
 		try {
@@ -251,13 +160,12 @@ export function RecipientMetadataForm({
 					notes: data.notes,
 					nickname: data.nickname,
 					phoneNumber: data.phoneNumber,
-					address: data.address,
+					...(isSubscriptionActive ? { address: data.address } : {}),
 				},
 			});
 			toast.success("Recipient metadata updated successfully");
-		} catch (error) {
+		} catch {
 			toast.error("Failed to update recipient metadata");
-			console.error(error);
 		}
 	}
 
@@ -352,171 +260,22 @@ export function RecipientMetadataForm({
 				<div className="space-y-4">
 					<h3 className="font-medium">Address Information</h3>
 					{isSubscriptionActive ? (
-						<div className="grid gap-4">
-							<FormField
-								control={form.control}
-								name="address.line1"
-								render={({ field: { onChange, value, ...fieldProps } }) => (
-									<FormItem className="relative">
-										<FormLabel>Address Line 1</FormLabel>
-										<FormControl>
-											<Input
-												{...fieldProps}
-												ref={addressInputRef}
-												value={value}
-												onChange={onChange}
-												placeholder="Start typing to search address..."
-												className="focus-visible:ring-2"
-											/>
-										</FormControl>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
-
-							<FormField
-								control={form.control}
-								name="address.line2"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Address Line 2</FormLabel>
-										<FormControl>
-											<Input placeholder="Apartment, suite, etc." {...field} />
-										</FormControl>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
-
-							<div className="grid grid-cols-3 gap-4">
-								<FormField
-									control={form.control}
-									name="address.city"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>City</FormLabel>
-											<FormControl>
-												<Input placeholder="City" {...field} />
-											</FormControl>
-											<FormMessage />
-										</FormItem>
-									)}
-								/>
-
-								<FormField
-									control={form.control}
-									name="address.state"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>State/Province</FormLabel>
-											<FormControl>
-												<Input placeholder="State/Province" {...field} />
-											</FormControl>
-											<FormMessage />
-										</FormItem>
-									)}
-								/>
-
-								<FormField
-									control={form.control}
-									name="address.postalCode"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>Postal Code</FormLabel>
-											<FormControl>
-												<Input placeholder="Postal code" {...field} />
-											</FormControl>
-											<FormMessage />
-										</FormItem>
-									)}
-								/>
-							</div>
-						</div>
+						<AddressAutofillForm
+							form={form}
+							onAddressChange={(address) => {
+								form.setValue("address", address as RecipientAddressData);
+							}}
+							isRecipientForm={true}
+						/>
 					) : (
 						<LockedFeature featureDescription="add recipient addresses and view them on a map">
-							<div className="grid gap-4">
-								<FormField
-									control={form.control}
-									name="address.line1"
-									render={({ field: { onChange, value, ...fieldProps } }) => (
-										<FormItem className="relative">
-											<FormLabel>Address Line 1</FormLabel>
-											<FormControl>
-												<Input
-													{...fieldProps}
-													ref={addressInputRef}
-													value={value}
-													onChange={onChange}
-													placeholder="Start typing to search address..."
-													className="focus-visible:ring-2"
-												/>
-											</FormControl>
-											<FormMessage />
-										</FormItem>
-									)}
-								/>
-
-								<FormField
-									control={form.control}
-									name="address.line2"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>Address Line 2</FormLabel>
-											<FormControl>
-												<Input
-													placeholder="Apartment, suite, etc."
-													{...field}
-												/>
-											</FormControl>
-											<FormMessage />
-										</FormItem>
-									)}
-								/>
-
-								<div className="grid grid-cols-3 gap-4">
-									<FormField
-										control={form.control}
-										name="address.city"
-										render={({ field }) => (
-											<FormItem>
-												<FormLabel>City</FormLabel>
-												<FormControl>
-													<Input placeholder="City" {...field} />
-												</FormControl>
-												<FormMessage />
-											</FormItem>
-										)}
-									/>
-
-									<FormField
-										control={form.control}
-										name="address.state"
-										render={({ field }) => (
-											<FormItem>
-												<FormLabel>State/Province</FormLabel>
-												<FormControl>
-													<Input placeholder="State/Province" {...field} />
-												</FormControl>
-												<FormMessage />
-											</FormItem>
-										)}
-									/>
-
-									<FormField
-										control={form.control}
-										name="address.postalCode"
-										render={({ field }) => (
-											<FormItem>
-												<FormLabel>Postal Code</FormLabel>
-												<FormControl>
-													<Input placeholder="Postal code" {...field} />
-												</FormControl>
-												<FormMessage />
-											</FormItem>
-										)}
-									/>
-								</div>
-							</div>
+							<AddressAutofillForm
+								form={form}
+								onAddressChange={(address) => {
+									form.setValue("address", address as RecipientAddressData);
+								}}
+								isRecipientForm={true}
+							/>
 						</LockedFeature>
 					)}
 				</div>
