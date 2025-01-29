@@ -88,6 +88,7 @@ export function Navbar() {
 					<ThemeToggle />
 					{isSignedIn ? (
 						<UserButton
+							afterSignOutUrl="/"
 							appearance={{
 								elements: {
 									avatarBox: {
