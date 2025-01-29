@@ -57,9 +57,13 @@ export const getAnimationUrl = query({
 
 // Public queries
 export const list = query({
-	args: { userId: v.id("users") },
+	args: { userId: v.optional(v.id("users")) },
 	handler: async (ctx, args) => {
 		await authenticateUser(ctx);
+
+		if (!args.userId) {
+			return [];
+		}
 
 		return await ctx.db
 			.query("animations")
