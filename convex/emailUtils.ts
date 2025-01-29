@@ -1,5 +1,4 @@
 import { Resend } from "resend";
-import { env } from "@/env";
 import { Id } from "./_generated/dataModel";
 import { ConvexError } from "convex/values";
 import { QueryCtx, MutationCtx } from "./_generated/server";
@@ -33,13 +32,14 @@ export type EmailRecipient = {
 	userId: Id<"users">;
 };
 
-// Initialize Resend with error handling
+// Initialize Resend with environment variable
 let resend: Resend;
 try {
-	if (!env.RESEND_API_KEY) {
-		throw new Error("RESEND_API_KEY is not defined");
+	const RESEND_API_KEY = process.env.RESEND_API_KEY;
+	if (!RESEND_API_KEY) {
+		throw new Error("RESEND_API_KEY is not defined in environment variables");
 	}
-	resend = new Resend(env.RESEND_API_KEY);
+	resend = new Resend(RESEND_API_KEY);
 } catch (error) {
 	if (error instanceof Error) {
 		console.error("Failed to initialize Resend:", error.message);
