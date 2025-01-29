@@ -8,6 +8,7 @@ import { Toaster } from "sonner";
 import { Navbar } from "@/components/layout/navbar";
 import type { Metadata } from "next";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { env } from "@/env";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,7 +24,7 @@ export default function RootLayout({
 	children: React.ReactNode;
 }) {
 	return (
-		<ClerkProvider afterSignOutUrl="/">
+		<ClerkProvider afterSignOutUrl={env.NEXT_PUBLIC_BASE_URL}>
 			<html lang="en" suppressHydrationWarning>
 				<body suppressHydrationWarning className={inter.className}>
 					<ThemeProvider>
