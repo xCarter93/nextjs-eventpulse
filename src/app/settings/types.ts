@@ -13,13 +13,13 @@ export interface AddressData {
 }
 
 export interface RecipientAddressData {
-	line1: string;
+	line1?: string;
 	line2?: string;
-	city: string;
-	state: string;
-	postalCode: string;
-	country: string;
-	coordinates: {
+	city?: string;
+	state?: string;
+	postalCode?: string;
+	country?: string;
+	coordinates?: {
 		latitude: number;
 		longitude: number;
 	};

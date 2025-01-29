@@ -56,7 +56,7 @@ export default function AnimationsPage() {
 									onSelect={setSelectedTemplate}
 									createdAt={template.createdAt}
 									isCustom={template.isCustom}
-									userTier={user?.subscription.tier}
+									userTier={user?.subscription.tier as "pro" | "free"}
 								/>
 							))}
 							<CustomAnimationUploader />

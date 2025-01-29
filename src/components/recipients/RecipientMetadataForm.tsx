@@ -49,16 +49,18 @@ const formatPhoneNumber = (value: string) => {
 };
 
 const addressSchema = z.object({
-	line1: z.string(),
+	line1: z.string().optional(),
 	line2: z.string().optional(),
-	city: z.string(),
-	state: z.string(),
-	postalCode: z.string(),
-	country: z.string(),
-	coordinates: z.object({
-		latitude: z.number(),
-		longitude: z.number(),
-	}),
+	city: z.string().optional(),
+	state: z.string().optional(),
+	postalCode: z.string().optional(),
+	country: z.string().optional(),
+	coordinates: z
+		.object({
+			latitude: z.number(),
+			longitude: z.number(),
+		})
+		.optional(),
 });
 
 const formSchema = z.object({
@@ -97,16 +99,13 @@ export function RecipientMetadataForm({
 		subscription && new Date(subscription.stripeCurrentPeriodEnd) > new Date();
 
 	const defaultAddress: RecipientAddressData = {
-		line1: recipient.metadata?.address?.line1 || "",
-		line2: recipient.metadata?.address?.line2 || "",
-		city: recipient.metadata?.address?.city || "",
-		state: recipient.metadata?.address?.state || "",
-		postalCode: recipient.metadata?.address?.postalCode || "",
-		country: recipient.metadata?.address?.country || "",
-		coordinates: recipient.metadata?.address?.coordinates || {
-			latitude: 0,
-			longitude: 0,
-		},
+		line1: recipient.metadata?.address?.line1 || undefined,
+		line2: recipient.metadata?.address?.line2 || undefined,
+		city: recipient.metadata?.address?.city || undefined,
+		state: recipient.metadata?.address?.state || undefined,
+		postalCode: recipient.metadata?.address?.postalCode || undefined,
+		country: recipient.metadata?.address?.country || undefined,
+		coordinates: recipient.metadata?.address?.coordinates || undefined,
 	};
 
 	const form = useForm<FormValues>({
@@ -134,16 +133,13 @@ export function RecipientMetadataForm({
 			nickname: recipient.metadata?.nickname || "",
 			phoneNumber: recipient.metadata?.phoneNumber || "",
 			address: {
-				line1: recipient.metadata?.address?.line1 || "",
-				line2: recipient.metadata?.address?.line2 || "",
-				city: recipient.metadata?.address?.city || "",
-				state: recipient.metadata?.address?.state || "",
-				postalCode: recipient.metadata?.address?.postalCode || "",
-				country: recipient.metadata?.address?.country || "",
-				coordinates: recipient.metadata?.address?.coordinates || {
-					latitude: 0,
-					longitude: 0,
-				},
+				line1: recipient.metadata?.address?.line1 || undefined,
+				line2: recipient.metadata?.address?.line2 || undefined,
+				city: recipient.metadata?.address?.city || undefined,
+				state: recipient.metadata?.address?.state || undefined,
+				postalCode: recipient.metadata?.address?.postalCode || undefined,
+				country: recipient.metadata?.address?.country || undefined,
+				coordinates: recipient.metadata?.address?.coordinates || undefined,
 			},
 		});
 	}, [form, recipient.metadata]);
