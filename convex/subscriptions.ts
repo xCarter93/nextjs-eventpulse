@@ -199,7 +199,6 @@ export const cancelSubscription = mutation({
 					emailReminders: user.settings?.notifications?.emailReminders || {
 						events: true,
 						birthdays: true,
-						holidays: false,
 					},
 				},
 			},

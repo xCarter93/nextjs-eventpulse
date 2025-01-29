@@ -144,25 +144,6 @@ export function EmailNotificationsForm({
 								}
 							/>
 						</div>
-
-						<div className="flex items-center justify-between space-x-2">
-							<Label
-								htmlFor="holidays-reminders"
-								className="flex flex-col space-y-1"
-							>
-								<span>Holiday Reminders</span>
-								<span className="font-normal text-sm text-muted-foreground">
-									Receive reminders for upcoming holidays
-								</span>
-							</Label>
-							<Switch
-								id="holidays-reminders"
-								checked={value.emailReminders.holidays}
-								onCheckedChange={(checked) =>
-									handleToggleChange("holidays", checked)
-								}
-							/>
-						</div>
 					</div>
 				</div>
 			</div>

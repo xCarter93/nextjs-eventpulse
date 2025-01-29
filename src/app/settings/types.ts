@@ -30,7 +30,6 @@ export interface NotificationSettings {
 	emailReminders: {
 		events: boolean;
 		birthdays: boolean;
-		holidays: boolean;
 	};
 }
 

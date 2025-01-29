@@ -27,7 +27,6 @@ const DEFAULT_SETTINGS: SettingsFormData = {
 		emailReminders: {
 			events: true,
 			birthdays: true,
-			holidays: false,
 		},
 	},
 };

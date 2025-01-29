@@ -4,9 +4,17 @@ import {
 	mutation,
 	query,
 	internalQuery,
+	QueryCtx,
+	MutationCtx,
 } from "./_generated/server";
 import { DEFAULT_FREE_FEATURES } from "./subscriptions";
 import { PRO_TIER_LIMITS } from "../src/lib/subscriptions";
+
+const USER_ERRORS = {
+	NOT_AUTHENTICATED: "Not authenticated",
+	USER_NOT_FOUND: "User not found",
+	USER_EXISTS: "User already exists",
+} as const;
 
 const DEFAULT_SETTINGS = {
 	calendar: {
@@ -21,11 +29,67 @@ const DEFAULT_SETTINGS = {
 		emailReminders: {
 			events: true,
 			birthdays: true,
-			holidays: false,
 		},
 	},
 };
 
+/**
+ * Helper function to authenticate and retrieve the current user.
+ * Throws an error if user is not authenticated or not found.
+ */
+async function authenticateUser(ctx: QueryCtx | MutationCtx) {
+	const identity = await ctx.auth.getUserIdentity();
+	if (!identity) {
+		throw new ConvexError(USER_ERRORS.NOT_AUTHENTICATED);
+	}
+
+	const user = await ctx.db
+		.query("users")
+		.withIndex("by_tokenIdentifier", (q) =>
+			q.eq("tokenIdentifier", identity.tokenIdentifier)
+		)
+		.first();
+
+	if (!user) {
+		throw new ConvexError(USER_ERRORS.USER_NOT_FOUND);
+	}
+
+	return { identity, user };
+}
+
+/**
+ * Helper function to get the current user without throwing.
+ * Returns null if user is not authenticated or not found.
+ */
+export async function getCurrentUser(ctx: QueryCtx | MutationCtx) {
+	const identity = await ctx.auth.getUserIdentity();
+	if (!identity) {
+		return null;
+	}
+
+	return await ctx.db
+		.query("users")
+		.withIndex("by_tokenIdentifier", (q) =>
+			q.eq("tokenIdentifier", identity.tokenIdentifier)
+		)
+		.first();
+}
+
+/**
+ * Helper function to get the current user, throwing if not found.
+ */
+export async function getCurrentUserOrThrow(ctx: QueryCtx | MutationCtx) {
+	const user = await getCurrentUser(ctx);
+	if (!user) {
+		throw new ConvexError(USER_ERRORS.NOT_AUTHENTICATED);
+	}
+	return user;
+}
+
+/**
+ * Creates a new user with default settings.
+ * Used internally by the auth webhook.
+ */
 export const createUser = internalMutation({
 	args: {
 		name: v.string(),
@@ -43,7 +107,7 @@ export const createUser = internalMutation({
 			.first();
 
 		if (existingUser) {
-			throw new ConvexError("User already exists");
+			throw new ConvexError(USER_ERRORS.USER_EXISTS);
 		}
 
 		// Create new user with default settings
@@ -57,21 +121,13 @@ export const createUser = internalMutation({
 	},
 });
 
+/**
+ * Gets the current user's information including subscription status.
+ * Returns null if user is not authenticated.
+ */
 export const getUser = query({
 	async handler(ctx) {
-		const identity = await ctx.auth.getUserIdentity();
-
-		if (!identity) {
-			return null;
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
-
+		const user = await getCurrentUser(ctx);
 		if (!user) {
 			return null;
 		}
@@ -92,6 +148,9 @@ export const getUser = query({
 	},
 });
 
+/**
+ * Updates user settings, merging with existing settings.
+ */
 export const updateSettings = mutation({
 	args: {
 		settings: v.object({
@@ -127,29 +186,13 @@ export const updateSettings = mutation({
 					emailReminders: v.object({
 						events: v.boolean(),
 						birthdays: v.boolean(),
-						holidays: v.boolean(),
 					}),
 				})
 			),
 		}),
 	},
 	async handler(ctx, args) {
-		const identity = await ctx.auth.getUserIdentity();
-
-		if (!identity) {
-			throw new ConvexError("Not authenticated");
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
-
-		if (!user) {
-			throw new ConvexError("User not found");
-		}
+		const { user } = await authenticateUser(ctx);
 
 		// Merge new settings with existing settings
 		const currentSettings = user.settings || {};
@@ -166,6 +209,9 @@ export const updateSettings = mutation({
 	},
 });
 
+/**
+ * Lists all users. Internal use only.
+ */
 export const listUsers = internalQuery({
 	args: {},
 	async handler(ctx) {
