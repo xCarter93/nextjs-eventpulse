@@ -92,7 +92,7 @@ export function CustomAnimationUploader() {
 							Note: On the free plan, custom animations are automatically
 							deleted after 10 days.{" "}
 							<Link
-								href="/upgrade"
+								href="/billing"
 								className="underline hover:text-yellow-700 dark:hover:text-yellow-400"
 							>
 								Upgrade to keep them permanently
