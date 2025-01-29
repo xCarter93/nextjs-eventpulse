@@ -41,6 +41,7 @@ export default defineSchema({
 						emailReminders: v.object({
 							events: v.boolean(),
 							birthdays: v.boolean(),
+							holidays: v.boolean(),
 						}),
 					})
 				),

@@ -40,10 +40,7 @@ export default function RecipientsAnimationForm({
 	onFormChange,
 }: RecipientsAnimationFormProps) {
 	const recipients = useQuery(api.recipients.getRecipients);
-	const user = useQuery(api.users.getUser);
-	const userAnimations = useQuery(api.animations.list, {
-		userId: user?._id,
-	});
+	const animations = useQuery(api.animations.getBaseAnimations);
 
 	const form = useForm<z.infer<typeof recipientsAnimationSchema>>({
 		resolver: zodResolver(recipientsAnimationSchema),
@@ -60,7 +57,7 @@ export default function RecipientsAnimationForm({
 		onFormChange(value as Partial<z.infer<typeof recipientsAnimationSchema>>);
 	});
 
-	if (!recipients || !userAnimations || !user) {
+	if (!recipients || !animations) {
 		return (
 			<div className="flex items-center justify-center p-8">
 				<Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -115,7 +112,7 @@ export default function RecipientsAnimationForm({
 											<RadioGroupItem value="uploaded" />
 										</FormControl>
 										<FormLabel className="font-normal">
-											Choose from your uploaded images/animations
+											Choose from uploaded images/animations
 										</FormLabel>
 									</FormItem>
 									<FormItem className="flex items-center space-x-3 space-y-0">
@@ -149,16 +146,15 @@ export default function RecipientsAnimationForm({
 										</SelectTrigger>
 									</FormControl>
 									<SelectContent>
-										{userAnimations.map((animation) => (
+										{animations?.map((animation) => (
 											<SelectItem key={animation._id} value={animation._id}>
-												{animation.name || "Untitled Animation"}
+												{animation.name}
 											</SelectItem>
 										))}
 									</SelectContent>
 								</Select>
 								<FormDescription>
-									Choose one of your uploaded images or animations to include in
-									the email.
+									Choose an image or animation to include in the email.
 								</FormDescription>
 								<FormMessage />
 							</FormItem>
