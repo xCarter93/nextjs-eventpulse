@@ -38,7 +38,10 @@ export function NewScheduledEmailForm({
 	initialDate,
 }: NewScheduledEmailFormProps) {
 	const scheduleEmail = useMutation(api.scheduledEmails.scheduleCustomEmail);
-	const animations = useQuery(api.animations.getBaseAnimations);
+	const user = useQuery(api.users.getUser);
+	const userAnimations = useQuery(api.animations.list, {
+		userId: user?._id,
+	});
 	const subscriptionLevel = useQuery(
 		api.subscriptions.getUserSubscriptionLevel
 	);
@@ -97,7 +100,7 @@ export function NewScheduledEmailForm({
 		setFormData(newFormData as FormData);
 
 		// Update preview
-		const selectedAnimation = animations?.find(
+		const selectedAnimation = userAnimations?.find(
 			(a) => a._id === newFormData.animation
 		);
 
