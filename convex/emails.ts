@@ -105,7 +105,7 @@ export const sendScheduledEmail = internalAction({
 		try {
 			// Send the email using Resend
 			await resend.emails.send({
-				from: "EventPulse <onboarding@resend.dev>",
+				from: "EventPulse <pulse@eventpulse.tech>",
 				to: recipient.email,
 				subject: subject,
 				html: getBirthdayEmailHtml({
@@ -258,7 +258,7 @@ export const sendReminderEmails = internalAction({
 
 			try {
 				await resend.emails.send({
-					from: "EventPulse <onboarding@resend.dev>",
+					from: "EventPulse <pulse@eventpulse.tech>",
 					to: user.email,
 					subject: `Events happening in ${reminderDays} days`,
 					html: getReminderEmailHtml({
