@@ -57,8 +57,8 @@ export function Navbar() {
 						<Image
 							src="/EventPulse Logo-Photoroom.png"
 							alt="EventPulse Logo"
-							width={56}
-							height={56}
+							width={45}
+							height={45}
 							className="h-14 w-14"
 						/>
 						<span className="font-bold hidden lg:inline">EventPulse</span>

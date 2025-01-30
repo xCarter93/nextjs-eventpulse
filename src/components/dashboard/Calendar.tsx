@@ -114,15 +114,15 @@ export function Calendar() {
 	];
 
 	const navigateMonth = (direction: "prev" | "next") => {
-		setCurrentDate((prev) => {
-			const newDate = new Date(prev);
-			if (direction === "prev") {
-				newDate.setMonth(prev.getMonth() - 1);
-			} else {
-				newDate.setMonth(prev.getMonth() + 1);
-			}
-			return newDate;
-		});
+		setCurrentDate(
+			new Date(
+				currentDate.getFullYear(),
+				direction === "prev"
+					? currentDate.getMonth() - 1
+					: currentDate.getMonth() + 1,
+				1
+			)
+		);
 	};
 
 	const handleDayClick = (day: number) => {
