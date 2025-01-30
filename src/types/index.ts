@@ -13,7 +13,7 @@ export interface AnimationTemplate {
 	id: Id<"animations">;
 	name: string;
 	description: string | ReactNode;
-	previewUrl?: string;
+	previewUrl?: string | null;
 	previewComponent?: ComponentType<{ isPreview?: boolean }>;
 	isPremium?: boolean;
 	isCustom?: boolean;

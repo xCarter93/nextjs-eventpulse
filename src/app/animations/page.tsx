@@ -4,12 +4,9 @@ import { useState } from "react";
 import { type AnimationTemplate } from "@/types";
 import { TemplateCard } from "@/components/animations/TemplateCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import Animation from "@/components/animations/LottieAnimation";
 import { CustomAnimationUploader } from "@/components/animations/CustomAnimationUploader";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-
-type LottieAnimationProps = React.ComponentProps<typeof Animation>;
 
 export default function AnimationsPage() {
 	const [selectedTemplate, setSelectedTemplate] =
@@ -23,9 +20,7 @@ export default function AnimationsPage() {
 			id: animation._id,
 			name: animation.name || "Untitled Animation",
 			description: animation.description || "",
-			previewComponent: (props: LottieAnimationProps) => (
-				<Animation {...props} storageId={animation.storageId} />
-			),
+			previewUrl: animation.url,
 			createdAt: animation._creationTime,
 			isCustom: !animation.isBaseAnimation,
 		})) || [];

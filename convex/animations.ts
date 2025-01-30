@@ -39,9 +39,19 @@ export const getBaseAnimations = query({
 			.filter((q) => q.eq(q.field("isBaseAnimation"), true))
 			.collect();
 
+		// Get URLs for all animations
+		const baseAnimationsWithUrls = await Promise.all(
+			baseAnimations.map(async (animation) => ({
+				...animation,
+				url: animation.storageId
+					? await ctx.storage.getUrl(animation.storageId)
+					: undefined,
+			}))
+		);
+
 		// If user is not logged in, only return base animations
 		if (!identity) {
-			return baseAnimations;
+			return baseAnimationsWithUrls;
 		}
 
 		// Get user's custom animations
@@ -53,7 +63,7 @@ export const getBaseAnimations = query({
 			.first();
 
 		if (!user) {
-			return baseAnimations;
+			return baseAnimationsWithUrls;
 		}
 
 		const userAnimations = await ctx.db
@@ -66,8 +76,18 @@ export const getBaseAnimations = query({
 			)
 			.collect();
 
+		// Get URLs for user animations
+		const userAnimationsWithUrls = await Promise.all(
+			userAnimations.map(async (animation) => ({
+				...animation,
+				url: animation.storageId
+					? await ctx.storage.getUrl(animation.storageId)
+					: undefined,
+			}))
+		);
+
 		// Return both base animations and user's custom animations
-		return [...baseAnimations, ...userAnimations];
+		return [...baseAnimationsWithUrls, ...userAnimationsWithUrls];
 	},
 });
 
