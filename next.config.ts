@@ -5,7 +5,7 @@ const config: NextConfig = {
 		remotePatterns: [
 			{
 				protocol: "https",
-				hostname: "grateful-antelope-945.convex.cloud",
+				hostname: "hallowed-perch-712.convex.cloud",
 			},
 			{
 				protocol: "https",
