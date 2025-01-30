@@ -57,11 +57,11 @@ export function Navbar() {
 						<Image
 							src="/EventPulse Logo-Photoroom.png"
 							alt="EventPulse Logo"
-							width={45}
-							height={45}
-							className="h-14 w-14"
+							width={32}
+							height={32}
+							className="h-8 w-8"
 						/>
-						<span className="font-bold hidden lg:inline">EventPulse</span>
+						<span className="font-bold hidden lg:inline ml-2">EventPulse</span>
 					</Link>
 					{isSignedIn && (
 						<nav className="flex items-center space-x-1 lg:space-x-4 text-sm font-medium">
