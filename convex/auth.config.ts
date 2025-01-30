@@ -1,7 +1,7 @@
 export default {
 	providers: [
 		{
-			domain: "https://clerk.eventpulse.tech.clerk.accounts.dev/",
+			domain: "https://clerk.eventpulse.tech/",
 			applicationID: "convex",
 		},
 	],
