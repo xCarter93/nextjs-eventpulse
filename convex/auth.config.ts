@@ -1,7 +1,7 @@
 export default {
 	providers: [
 		{
-			domain: "https://living-seal-99.clerk.accounts.dev",
+			domain: "https://clerk.eventpulse.tech",
 			applicationID: "convex",
 		},
 	],
