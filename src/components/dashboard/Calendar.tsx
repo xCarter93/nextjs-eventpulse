@@ -234,7 +234,7 @@ export function Calendar() {
 	};
 
 	return (
-		<div className="w-full rounded-lg bg-card shadow-sm">
+		<div className="w-full h-full bg-card rounded-lg shadow-sm">
 			{/* Address Required Banner */}
 			{!hasAddress && showHolidays && showHolidaysEnabled && (
 				<div className="p-4">

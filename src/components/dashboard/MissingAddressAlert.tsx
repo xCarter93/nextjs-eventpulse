@@ -16,6 +16,7 @@ export default function MissingAddressAlert() {
 					variant="faded"
 					color="secondary"
 					size="sm"
+					className="text-secondary-foreground font-medium"
 					onPress={() => router.push("/settings")}
 				>
 					Update Settings
