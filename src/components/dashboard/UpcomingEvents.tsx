@@ -1,10 +1,11 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { getDaysUntilBirthday } from "@/utils/date";
 import { Doc } from "../../../convex/_generated/dataModel";
+import { Card, CardHeader, CardBody } from "@heroui/card";
+import { Calendar, Gift, Clock } from "lucide-react";
 
 interface Event {
 	type: "birthday" | "custom";
@@ -36,76 +37,100 @@ export function UpcomingEvents() {
 		return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 	};
 
-	// Process birthdays
-	const birthdayEvents: Event[] = recipients.map((r: Doc<"recipients">) => {
-		const date = new Date(r.birthday);
-		return {
-			type: "birthday",
-			name: r.name,
-			date,
-			daysUntil: getDaysUntilBirthday(date),
-		};
-	});
+	const birthdayEvents: Event[] = recipients.map((r: Doc<"recipients">) => ({
+		type: "birthday",
+		name: r.name,
+		date: new Date(r.birthday),
+		daysUntil: getDaysUntilBirthday(new Date(r.birthday)),
+	}));
 
-	// Process custom events
-	const customEventsList: Event[] = customEvents.map((e) => {
-		const date = new Date(e.date);
-		return {
-			type: "custom",
-			name: e.name,
-			date,
-			daysUntil: getDaysUntil(date),
-			isRecurring: e.isRecurring,
-		};
-	});
+	const customEventsList: Event[] = customEvents.map((e) => ({
+		type: "custom",
+		name: e.name,
+		date: new Date(e.date),
+		daysUntil: getDaysUntil(new Date(e.date)),
+		isRecurring: e.isRecurring,
+	}));
 
-	// Combine and sort all events
 	const allEvents = [...birthdayEvents, ...customEventsList]
 		.filter((event) => event.daysUntil >= 0 && event.daysUntil <= daysToShow)
 		.sort((a, b) => a.daysUntil - b.daysUntil);
 
 	return (
-		<Card>
-			<CardHeader>
-				<CardTitle>Upcoming Events</CardTitle>
+		<Card className="w-full" shadow="sm">
+			<CardHeader className="flex justify-between items-center px-4 py-3">
+				<div className="flex items-center gap-2">
+					<Calendar className="h-4 w-4 text-primary" />
+					<div className="text-sm font-medium">Upcoming Events</div>
+				</div>
+				<div className="text-xs text-gray-500">Next {daysToShow} days</div>
 			</CardHeader>
-			<CardContent>
+			<CardBody className="px-4 py-3">
 				{allEvents.length > 0 ? (
-					<div className="space-y-2">
+					<div className="space-y-3">
 						{allEvents.map((event, index) => (
 							<div
 								key={`${event.name}-${index}`}
-								className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-accent/50 transition-colors"
+								className="flex items-center gap-3 group hover:bg-gray-50 dark:hover:bg-gray-800/50 p-2 rounded-lg transition-colors"
 							>
-								<div className="flex items-center gap-3 flex-1 min-w-0">
-									<div
-										className={`w-2.5 h-2.5 rounded-full ${
-											event.type === "birthday" ? "bg-pink-500" : "bg-green-500"
-										}`}
-									/>
-									<div className="min-w-0 flex-1">
-										<div className="text-sm truncate">
-											{event.name}
-											{event.type === "custom" && event.isRecurring && (
-												<span className="text-xs text-muted-foreground ml-2">
-													(Recurring)
-												</span>
-											)}
-										</div>
+								<div
+									className={`p-2 rounded-full ${
+										event.type === "birthday"
+											? "bg-pink-100 text-pink-600 dark:bg-pink-900/20"
+											: "bg-green-100 text-green-600 dark:bg-green-900/20"
+									}`}
+								>
+									{event.type === "birthday" ? (
+										<Gift className="h-3.5 w-3.5" />
+									) : (
+										<Calendar className="h-3.5 w-3.5" />
+									)}
+								</div>
+								<div className="flex-1 min-w-0">
+									<div className="text-sm font-medium truncate">
+										{event.name}
+										{event.type === "custom" && event.isRecurring && (
+											<span className="text-xs text-gray-500 ml-1">↻</span>
+										)}
+									</div>
+									<div className="flex items-center gap-1 text-xs text-gray-500">
+										<Clock className="h-3 w-3" />
+										<span>
+											{event.daysUntil === 0
+												? "Today"
+												: event.daysUntil === 1
+													? "Tomorrow"
+													: `In ${event.daysUntil} days`}
+										</span>
 									</div>
 								</div>
-								<div className="text-xs font-medium text-muted-foreground px-2.5 py-0.5 bg-muted rounded-md ml-3 w-[4.5rem] text-center">
-									{event.daysUntil} {event.daysUntil === 1 ? "day" : "days"}
+								<div
+									className={`px-2 py-1 rounded-full text-xs font-medium ${
+										event.daysUntil <= 3
+											? "bg-red-100 text-red-600 dark:bg-red-900/20"
+											: event.daysUntil <= 7
+												? "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20"
+												: "bg-gray-100 text-gray-600 dark:bg-gray-700"
+									}`}
+								>
+									{event.daysUntil === 0
+										? "Today"
+										: event.daysUntil === 1
+											? "1d"
+											: `${event.daysUntil}d`}
 								</div>
 							</div>
 						))}
 					</div>
 				) : (
-					<div className="text-sm text-muted-foreground">
-						No upcoming events in the next {daysToShow} days
+					<div className="flex flex-col items-center justify-center py-6 text-center">
+						<Calendar className="h-8 w-8 text-gray-400 mb-2" />
+						<div className="text-sm text-gray-500">
+							No upcoming events in the next {daysToShow} days
+						</div>
 					</div>
 				)}
-			</CardContent>
+			</CardBody>
 		</Card>
 	);
 }

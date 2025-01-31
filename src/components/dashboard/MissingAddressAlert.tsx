@@ -14,8 +14,9 @@ export default function MissingAddressAlert() {
 			endContent={
 				<Button
 					variant="faded"
+					color="secondary"
 					size="sm"
-					onClick={() => router.push("/settings")}
+					onPress={() => router.push("/settings")}
 				>
 					Update Settings
 				</Button>
