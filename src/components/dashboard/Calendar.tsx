@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Mail, X, MapPin, Lock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Mail, X, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation } from "convex/react";
@@ -17,10 +17,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CalendarIcon } from "lucide-react";
 import { PremiumModal } from "@/components/premium/PremiumModal";
 import { getPublicHolidays } from "@/app/actions/holidays";
+import MissingAddressAlert from "./MissingAddressAlert";
 
 interface Holiday {
 	date: string;
@@ -237,20 +237,9 @@ export function Calendar() {
 		<div className="w-full rounded-lg bg-card shadow-sm">
 			{/* Address Required Banner */}
 			{!hasAddress && showHolidays && showHolidaysEnabled && (
-				<Alert className="mb-4">
-					<MapPin className="h-4 w-4" />
-					<AlertDescription>
-						To see holidays for your country, please{" "}
-						<Button
-							variant="link"
-							className="h-auto p-0"
-							onClick={() => router.push("/settings")}
-						>
-							set your home address
-						</Button>{" "}
-						in settings.
-					</AlertDescription>
-				</Alert>
+				<div className="p-4">
+					<MissingAddressAlert />
+				</div>
 			)}
 
 			{/* Calendar Header */}
