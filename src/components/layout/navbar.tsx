@@ -51,7 +51,7 @@ export function Navbar() {
 
 	return (
 		<header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-			<div className="container flex h-14 items-center">
+			<div className="container relative flex h-14 items-center">
 				<div className="mr-4 flex items-center flex-1">
 					<Link href="/" className="mr-6 flex items-center">
 						<Image
@@ -115,6 +115,11 @@ export function Navbar() {
 					)}
 				</div>
 			</div>
+			{/* Centered glowing gradient effect */}
+			<div className="absolute left-1/2 -translate-x-1/2 bottom-0 bg-gradient-to-r from-transparent via-primary to-transparent h-[2px] w-3/4 blur-sm opacity-75" />
+			<div className="absolute left-1/2 -translate-x-1/2 bottom-0 bg-gradient-to-r from-transparent via-primary to-transparent h-px w-3/4" />
+			<div className="absolute left-1/2 -translate-x-1/2 bottom-0 bg-gradient-to-r from-transparent via-primary to-transparent h-[5px] w-1/3 blur-sm opacity-50" />
+			<div className="absolute left-1/2 -translate-x-1/2 bottom-0 bg-gradient-to-r from-transparent via-primary to-transparent h-px w-1/3" />
 		</header>
 	);
 }

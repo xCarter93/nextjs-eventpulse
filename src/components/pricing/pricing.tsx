@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { createCheckoutSession } from "../premium/actions";
 import { toast } from "sonner";
@@ -12,7 +12,7 @@ export default function SlidePricing() {
 	const [selected, setSelected] = useState<"M" | "A">("M");
 
 	return (
-		<section className="w-full px-4 lg:px-8 py-12 lg:py-24 relative overflow-hidden">
+		<section className="w-full px-4 lg:px-8 py-12 lg:py-24 relative overflow-hidden rounded-[50px]">
 			<Heading selected={selected} setSelected={setSelected} />
 			<PriceCards selected={selected} />
 			<TopLeftCircle />
@@ -38,8 +38,8 @@ const Heading = ({ selected, setSelected }: HeadingProps) => {
 				Simple Pricing
 			</h3>
 			<p className="text-center mx-auto max-w-lg mb-8 text-muted-foreground">
-				Choose the plan that works best for you. All plans include access to our
-				beautiful animation templates.
+				Choose the plan that works best for you. Upgrade anytime to unlock
+				advanced features and remove limitations.
 			</p>
 			<div className="flex items-center justify-center gap-3">
 				<button
@@ -146,92 +146,50 @@ const PriceCards = ({ selected }: PriceCardProps) => {
 	return (
 		<div className="flex flex-col lg:flex-row gap-8 lg:gap-4 w-full max-w-6xl mx-auto relative z-10">
 			{/* FREE */}
-			<div className="w-full bg-card p-6 border border-border rounded-xl">
-				<p className="text-2xl font-bold mb-2 text-foreground">Free</p>
-				<p className="text-lg mb-6 text-muted-foreground">
-					Get started with animations
-				</p>
-				<p className="text-6xl font-bold mb-8 text-foreground">
-					$0
-					<span className="font-normal text-xl text-muted-foreground">
-						/month
-					</span>
-				</p>
-				<div className="flex items-center gap-2 mb-2">
-					<svg
-						width="20"
-						height="15"
-						viewBox="0 0 20 15"
-						fill="none"
-						xmlns="http://www.w3.org/2000/svg"
-						className="shrink-0"
-					>
-						<path
-							d="M6.35588 11.8345L1.61455 7.17002L0 8.7472L6.35588 15L20 1.57718L18.3968 0L6.35588 11.8345Z"
-							fill="currentColor"
-							className="text-foreground"
-						/>
-					</svg>
-					<span className="text-base text-muted-foreground">
-						Up to 5 recipients
-					</span>
-				</div>
-				<div className="flex items-center gap-2 mb-2">
-					<svg
-						width="20"
-						height="15"
-						viewBox="0 0 20 15"
-						fill="none"
-						xmlns="http://www.w3.org/2000/svg"
-						className="shrink-0"
-					>
-						<path
-							d="M6.35588 11.8345L1.61455 7.17002L0 8.7472L6.35588 15L20 1.57718L18.3968 0L6.35588 11.8345Z"
-							fill="currentColor"
-							className="text-foreground"
-						/>
-					</svg>
-					<span className="text-base text-muted-foreground">
-						Basic animation templates
-					</span>
-				</div>
-				<div className="flex items-center gap-2 mb-2">
-					<svg
-						width="20"
-						height="15"
-						viewBox="0 0 20 15"
-						fill="none"
-						xmlns="http://www.w3.org/2000/svg"
-						className="shrink-0"
-					>
-						<path
-							d="M6.35588 11.8345L1.61455 7.17002L0 8.7472L6.35588 15L20 1.57718L18.3968 0L6.35588 11.8345Z"
-							fill="currentColor"
-							className="text-foreground"
-						/>
-					</svg>
-					<span className="text-base text-muted-foreground">
-						Email reminders
-					</span>
-				</div>
-				<div className="flex items-center gap-2 mb-2">
-					<svg
-						width="20"
-						height="15"
-						viewBox="0 0 20 15"
-						fill="none"
-						xmlns="http://www.w3.org/2000/svg"
-						className="shrink-0"
-					>
-						<path
-							d="M6.35588 11.8345L1.61455 7.17002L0 8.7472L6.35588 15L20 1.57718L18.3968 0L6.35588 11.8345Z"
-							fill="currentColor"
-							className="text-foreground"
-						/>
-					</svg>
-					<span className="text-base text-muted-foreground">
-						Custom animations (30-day storage)
-					</span>
+			<div className="w-full bg-card p-6 border border-border rounded-xl flex flex-col min-h-[600px]">
+				<div className="flex-grow">
+					<p className="text-2xl font-bold mb-2 text-foreground">Free</p>
+					<p className="text-lg mb-6 text-muted-foreground">
+						Get started with animations
+					</p>
+					<div className="h-[120px] mb-8">
+						<p className="text-6xl font-bold text-foreground">
+							$0
+							<span className="font-normal text-xl text-muted-foreground">
+								/month
+							</span>
+						</p>
+					</div>
+					<div className="flex items-center gap-2 mb-2">
+						<CheckIcon />
+						<span className="text-base text-muted-foreground">
+							Up to 5 recipients
+						</span>
+					</div>
+					<div className="flex items-center gap-2 mb-2">
+						<CheckIcon />
+						<span className="text-base text-muted-foreground">
+							10-day media storage
+						</span>
+					</div>
+					<div className="flex items-center gap-2 mb-2">
+						<CheckIcon />
+						<span className="text-base text-muted-foreground">
+							7-day advance scheduling
+						</span>
+					</div>
+					<div className="flex items-center gap-2 mb-2">
+						<CheckIcon />
+						<span className="text-base text-muted-foreground">
+							Basic email reminders (7 days before)
+						</span>
+					</div>
+					<div className="flex items-center gap-2 mb-2">
+						<CheckIcon />
+						<span className="text-base text-muted-foreground">
+							Custom color themes
+						</span>
+					</div>
 				</div>
 
 				<motion.div
@@ -257,137 +215,91 @@ const PriceCards = ({ selected }: PriceCardProps) => {
 				</motion.div>
 			</div>
 
-			{/* PRO  */}
-			<div className="w-full bg-card p-6 border border-border rounded-xl">
-				<p className="text-2xl font-bold mb-2 text-foreground">Pro</p>
-				<p className="text-lg mb-6 text-muted-foreground">For power users</p>
-				<div className="overflow-hidden mb-8">
-					<AnimatePresence mode="wait">
-						{selected === "M" ? (
-							<motion.p
-								key="monthly1"
-								initial={{ y: -50, opacity: 0 }}
-								animate={{ y: 0, opacity: 1 }}
-								exit={{ y: 50, opacity: 0 }}
-								transition={{ ease: "linear", duration: 0.25 }}
-								className="text-6xl font-bold text-primary"
-							>
-								<span>$5</span>
-								<span className="font-normal text-xl text-muted-foreground">
-									/month
-								</span>
-							</motion.p>
-						) : (
-							<motion.p
-								key="monthly2"
-								initial={{ y: -50, opacity: 0 }}
-								animate={{ y: 0, opacity: 1 }}
-								exit={{ y: 50, opacity: 0 }}
-								transition={{ ease: "linear", duration: 0.25 }}
-								className="text-6xl font-bold text-primary"
-							>
-								<span>$3.75</span>
-								<span className="font-normal text-xl text-muted-foreground">
-									/month
-								</span>
-							</motion.p>
-						)}
-					</AnimatePresence>
-				</div>
-				<div className="flex items-center gap-2 mb-2">
-					<svg
-						width="20"
-						height="15"
-						viewBox="0 0 20 15"
-						fill="none"
-						xmlns="http://www.w3.org/2000/svg"
-						className="shrink-0"
-					>
-						<path
-							d="M6.35588 11.8345L1.61455 7.17002L0 8.7472L6.35588 15L20 1.57718L18.3968 0L6.35588 11.8345Z"
-							fill="currentColor"
-							className="text-foreground"
-						/>
-					</svg>
-					<span className="text-base text-muted-foreground">
-						Unlimited recipients
-					</span>
-				</div>
-				<div className="flex items-center gap-2 mb-2">
-					<svg
-						width="20"
-						height="15"
-						viewBox="0 0 20 15"
-						fill="none"
-						xmlns="http://www.w3.org/2000/svg"
-						className="shrink-0"
-					>
-						<path
-							d="M6.35588 11.8345L1.61455 7.17002L0 8.7472L6.35588 15L20 1.57718L18.3968 0L6.35588 11.8345Z"
-							fill="currentColor"
-							className="text-foreground"
-						/>
-					</svg>
-					<span className="text-base text-muted-foreground">
-						All premium templates
-					</span>
-				</div>
-				<div className="flex items-center gap-2 mb-2">
-					<svg
-						width="20"
-						height="15"
-						viewBox="0 0 20 15"
-						fill="none"
-						xmlns="http://www.w3.org/2000/svg"
-						className="shrink-0"
-					>
-						<path
-							d="M6.35588 11.8345L1.61455 7.17002L0 8.7472L6.35588 15L20 1.57718L18.3968 0L6.35588 11.8345Z"
-							fill="currentColor"
-							className="text-foreground"
-						/>
-					</svg>
-					<span className="text-base text-muted-foreground">
-						Automatic sending
-					</span>
-				</div>
-				<div className="flex items-center gap-2 mb-2">
-					<svg
-						width="20"
-						height="15"
-						viewBox="0 0 20 15"
-						fill="none"
-						xmlns="http://www.w3.org/2000/svg"
-						className="shrink-0"
-					>
-						<path
-							d="M6.35588 11.8345L1.61455 7.17002L0 8.7472L6.35588 15L20 1.57718L18.3968 0L6.35588 11.8345Z"
-							fill="currentColor"
-							className="text-foreground"
-						/>
-					</svg>
-					<span className="text-base text-muted-foreground">
-						Priority support
-					</span>
-				</div>
-				<div className="flex items-center gap-2 mb-2">
-					<svg
-						width="20"
-						height="15"
-						viewBox="0 0 20 15"
-						fill="none"
-						xmlns="http://www.w3.org/2000/svg"
-						className="shrink-0"
-					>
-						<path
-							d="M6.35588 11.8345L1.61455 7.17002L0 8.7472L6.35588 15L20 1.57718L18.3968 0L6.35588 11.8345Z"
-							fill="currentColor"
-							className="text-foreground"
-						/>
-					</svg>
-					<span className="text-base text-muted-foreground">
-						Permanent custom animation storage
-					</span>
+			{/* PRO */}
+			<div className="w-full bg-card p-6 border border-border rounded-xl flex flex-col min-h-[600px]">
+				<div className="flex-grow">
+					<p className="text-2xl font-bold mb-2 text-foreground">Pro</p>
+					<p className="text-lg mb-6 text-muted-foreground">For power users</p>
+					<div className="h-[120px] mb-8">
+						<AnimatePresence mode="wait">
+							{selected === "M" ? (
+								<motion.p
+									key="monthly1"
+									initial={{ y: -50, opacity: 0 }}
+									animate={{ y: 0, opacity: 1 }}
+									exit={{ y: 50, opacity: 0 }}
+									transition={{ ease: "linear", duration: 0.25 }}
+									className="text-6xl font-bold text-primary"
+								>
+									<span>$5</span>
+									<span className="font-normal text-xl text-muted-foreground">
+										/month
+									</span>
+								</motion.p>
+							) : (
+								<motion.div
+									key="monthly2"
+									initial={{ y: -50, opacity: 0 }}
+									animate={{ y: 0, opacity: 1 }}
+									exit={{ y: 50, opacity: 0 }}
+									transition={{ ease: "linear", duration: 0.25 }}
+									className="space-y-2"
+								>
+									<p className="text-6xl font-bold text-primary">
+										<span>$3.75</span>
+										<span className="font-normal text-xl text-muted-foreground">
+											/month
+										</span>
+									</p>
+									<p className="text-sm text-muted-foreground">
+										Billed annually ($45/year)
+									</p>
+								</motion.div>
+							)}
+						</AnimatePresence>
+					</div>
+					<div className="flex items-center gap-2 mb-2">
+						<CheckIcon />
+						<span className="text-base text-muted-foreground">
+							Unlimited recipients
+						</span>
+					</div>
+					<div className="flex items-center gap-2 mb-2">
+						<CheckIcon />
+						<span className="text-base text-muted-foreground">
+							Unlimited media storage
+						</span>
+					</div>
+					<div className="flex items-center gap-2 mb-2">
+						<CheckIcon />
+						<span className="text-base text-muted-foreground">
+							Unlimited advance scheduling
+						</span>
+					</div>
+					<div className="flex items-center gap-2 mb-2">
+						<CheckIcon />
+						<span className="text-base text-muted-foreground">
+							Advanced reminders (customize days)
+						</span>
+					</div>
+					<div className="flex items-center gap-2 mb-2">
+						<CheckIcon />
+						<span className="text-base text-muted-foreground">
+							Custom color themes
+						</span>
+					</div>
+					<div className="flex items-center gap-2 mb-2">
+						<CheckIcon />
+						<span className="text-base text-muted-foreground">
+							Recipient map visualization
+						</span>
+					</div>
+					<div className="flex items-center gap-2 mb-2">
+						<CheckIcon />
+						<span className="text-base text-muted-foreground">
+							Priority email delivery
+						</span>
+					</div>
 				</div>
 
 				<motion.button
@@ -399,24 +311,32 @@ const PriceCards = ({ selected }: PriceCardProps) => {
 				>
 					{isLoading ? "Loading..." : "Upgrade Now"}
 				</motion.button>
-				{selected === "A" && (
-					<p className="text-sm text-center mt-4 text-muted-foreground">
-						Billed annually (${(3.75 * 12).toFixed(2)}/year)
-					</p>
-				)}
 			</div>
 		</div>
 	);
 };
 
-const TopLeftCircle = () => {
-	return (
-		<div className="absolute -top-20 -left-20 w-[200px] h-[200px] rounded-full bg-primary/10 blur-3xl" />
-	);
-};
+const CheckIcon = () => (
+	<svg
+		width="20"
+		height="15"
+		viewBox="0 0 20 15"
+		fill="none"
+		xmlns="http://www.w3.org/2000/svg"
+		className="shrink-0"
+	>
+		<path
+			d="M6.35588 11.8345L1.61455 7.17002L0 8.7472L6.35588 15L20 1.57718L18.3968 0L6.35588 11.8345Z"
+			fill="currentColor"
+			className="text-foreground"
+		/>
+	</svg>
+);
 
-const BottomRightCircle = () => {
-	return (
-		<div className="absolute -bottom-20 -right-20 w-[200px] h-[200px] rounded-full bg-primary/10 blur-3xl" />
-	);
-};
+const TopLeftCircle = () => (
+	<div className="absolute -top-40 -left-40 h-[400px] w-[400px] bg-primary/20 dark:bg-primary/30 rounded-full blur-[160px] rotate-12" />
+);
+
+const BottomRightCircle = () => (
+	<div className="absolute -bottom-40 -right-40 h-[400px] w-[400px] bg-primary/20 dark:bg-primary/30 rounded-full blur-[160px] -rotate-12" />
+);
