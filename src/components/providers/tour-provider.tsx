@@ -69,11 +69,23 @@ const steps: Tour[] = [
 			},
 			{
 				icon: <>🎨</>,
-				title: "Custom Animations",
+				title: "Custom Animations Gallery",
 				content:
-					"Upload and manage custom animations to make your emails more engaging",
+					"This is where all your custom animations will be displayed. You can preview, select, and manage them here.",
 				selector: ".animations-grid",
 				side: "top" as const,
+				showControls: true,
+				showSkip: true,
+				pointerPadding: 15,
+				pointerRadius: 15,
+			},
+			{
+				icon: <>⬆️</>,
+				title: "Upload Animations",
+				content:
+					"Use this uploader to add your own custom GIFs, JPGs, or PNGs. They'll appear in the gallery once uploaded.",
+				selector: ".animation-uploader",
+				side: "left" as const,
 				showControls: true,
 				showSkip: true,
 				pointerPadding: 15,
