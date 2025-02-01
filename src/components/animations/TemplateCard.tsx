@@ -87,7 +87,7 @@ export function TemplateCard({
 				)}
 				<CardBody className="p-4">
 					<div
-						className="aspect-video mb-4 overflow-hidden relative"
+						className="w-full aspect-video mb-4 relative"
 						onClick={(e) => {
 							e.stopPropagation();
 							setShowPreview(true);
@@ -101,10 +101,12 @@ export function TemplateCard({
 									as={NextImage}
 									src={template.previewUrl}
 									alt={template.name}
-									fill
-									className="object-cover"
+									width={480}
+									height={270}
+									className="w-full h-full object-cover"
 									isZoomed
 									radius="lg"
+									sizes="(max-width: 768px) 100vw, 480px"
 								/>
 							)
 						)}
@@ -130,7 +132,7 @@ export function TemplateCard({
 					<ModalHeader>
 						<h3 className="text-lg font-semibold">{template.name} Preview</h3>
 					</ModalHeader>
-					<div className="aspect-video relative p-6">
+					<div className="w-full aspect-video relative">
 						{PreviewComponent ? (
 							<PreviewComponent />
 						) : (
@@ -139,9 +141,11 @@ export function TemplateCard({
 									as={NextImage}
 									src={template.previewUrl}
 									alt={template.name}
-									fill
-									className="object-cover"
+									width={1280}
+									height={720}
+									className="w-full h-full object-cover"
 									radius="lg"
+									sizes="(max-width: 1280px) 100vw, 1280px"
 								/>
 							)
 						)}
