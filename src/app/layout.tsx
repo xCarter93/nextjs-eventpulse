@@ -9,6 +9,7 @@ import { Navbar } from "@/components/layout/navbar";
 import type { Metadata } from "next";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { TourProvider } from "@/components/providers/tour-provider";
+import DatadogInit from "@/components/datadog/datadog-init";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -29,6 +30,7 @@ export default function RootLayout({
 		>
 			<html lang="en" suppressHydrationWarning>
 				<body suppressHydrationWarning className={inter.className}>
+					<DatadogInit />
 					<ThemeProvider>
 						<ConvexClientProvider>
 							<TooltipProvider>
