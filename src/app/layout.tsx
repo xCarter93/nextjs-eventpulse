@@ -8,6 +8,7 @@ import { Toaster } from "sonner";
 import { Navbar } from "@/components/layout/navbar";
 import type { Metadata } from "next";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { TourProvider } from "@/components/providers/tour-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -31,12 +32,14 @@ export default function RootLayout({
 					<ThemeProvider>
 						<ConvexClientProvider>
 							<TooltipProvider>
-								<div className="min-h-screen flex flex-col bg-background">
-									<Navbar />
-									<main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-										{children}
-									</main>
-								</div>
+								<TourProvider>
+									<div className="min-h-screen flex flex-col bg-background">
+										<Navbar />
+										<main className="main-content flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+											{children}
+										</main>
+									</div>
+								</TourProvider>
 							</TooltipProvider>
 						</ConvexClientProvider>
 					</ThemeProvider>

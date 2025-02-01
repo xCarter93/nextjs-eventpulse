@@ -1,45 +1,24 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { AgGridReact } from "ag-grid-react";
-import {
-	type ColDef,
-	type ICellRendererParams,
-	type CellValueChangedEvent,
-	ModuleRegistry,
-	ClientSideRowModelModule,
-	GridOptions,
-	themeQuartz,
-	colorSchemeLightCold,
-	colorSchemeDarkBlue,
-	TextEditorModule,
-	ValidationModule,
-	RowSelectionModule,
-	PaginationModule,
-	DateEditorModule,
-	RowStyleModule,
-	ColumnAutoSizeModule,
-} from "ag-grid-community";
-import { format } from "date-fns";
-import { useTheme } from "next-themes";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
-import { useMemo, useCallback } from "react";
-
-// Register AG Grid Modules
-ModuleRegistry.registerModules([
-	ClientSideRowModelModule,
-	TextEditorModule,
-	ValidationModule,
-	RowSelectionModule,
-	PaginationModule,
-	DateEditorModule,
-	RowStyleModule,
-	ColumnAutoSizeModule,
-]);
+import { useMemo, useState } from "react";
+import { format } from "date-fns";
+import {
+	Table,
+	TableHeader,
+	TableBody,
+	TableColumn,
+	TableRow,
+	TableCell,
+	Input,
+	Pagination,
+	Button,
+} from "@heroui/react";
+import { SortDescriptor } from "@heroui/react";
 
 interface Recipient {
 	_id: Id<"recipients">;
@@ -50,101 +29,45 @@ interface Recipient {
 	userId: Id<"users">;
 }
 
-interface ActionCellRendererProps extends ICellRendererParams {
-	data: Recipient;
-	onDelete: (id: Id<"recipients">) => void;
-}
-
-const ActionCellRenderer = (props: ActionCellRendererProps) => {
-	return (
-		<div className="flex justify-center py-1">
-			<Button
-				variant="destructive"
-				size="sm"
-				onClick={(e) => {
-					e.stopPropagation();
-					props.onDelete(props.data._id);
-				}}
-				className="h-7 px-2"
-			>
-				Delete
-			</Button>
-		</div>
-	);
-};
-
 export function RecipientsTable() {
 	const router = useRouter();
-	const { theme } = useTheme();
+	const [page, setPage] = useState(1);
+	const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
+		column: "name",
+		direction: "ascending",
+	});
+
+	// Number of items per page
+	const rowsPerPage = 10;
 
 	const recipients = useQuery(api.recipients.getRecipients);
 	const updateRecipient = useMutation(api.recipients.updateRecipient);
 	const deleteRecipient = useMutation(api.recipients.deleteRecipient);
 
-	const gridTheme = useMemo(
-		() =>
-			themeQuartz.withPart(
-				theme === "dark" ? colorSchemeDarkBlue : colorSchemeLightCold
-			),
-		[theme]
-	);
-
-	const defaultColDef = useMemo(
-		() => ({
-			sortable: true,
-			resizable: true,
-			editable: true,
-		}),
-		[]
-	);
-
-	const gridOptions: GridOptions<Recipient> = useMemo(
-		() => ({
-			suppressCellFocus: true,
-			rowHeight: 48,
-			headerHeight: 48,
-			suppressMovableColumns: true,
-			animateRows: true,
-			rowSelection: {
-				mode: "singleRow",
-				checkboxes: false,
-				enableClickSelection: true,
-			},
-			defaultColDef,
-			onRowClicked: (event) => {
-				// Check if we're clicking the delete button or its container
-				const target = event.event?.target as HTMLElement;
-				const isDeleteButton = target?.closest("button") !== null;
-
-				if (event.data && !isDeleteButton) {
-					router.push(`/recipients/${event.data._id}`);
-				}
-			},
-			rowStyle: { cursor: "pointer" },
-		}),
-		[defaultColDef, router]
-	);
-
-	const handleDelete = useCallback(
-		async (id: Id<"recipients">) => {
-			try {
-				await deleteRecipient({ id });
-				toast.success("Recipient deleted successfully");
-			} catch (error) {
-				toast.error("Failed to delete recipient");
-				console.error(error);
-			}
-		},
-		[deleteRecipient]
-	);
-
-	const handleCellValueChanged = async (event: CellValueChangedEvent) => {
+	const handleDelete = async (id: Id<"recipients">) => {
 		try {
+			await deleteRecipient({ id });
+			toast.success("Recipient deleted successfully");
+		} catch (error) {
+			toast.error("Failed to delete recipient");
+			console.error(error);
+		}
+	};
+
+	const handleUpdate = async (
+		id: Id<"recipients">,
+		field: string,
+		value: string | number
+	) => {
+		try {
+			const recipient = recipients?.find((r) => r._id === id);
+			if (!recipient) return;
+
 			await updateRecipient({
-				id: event.data._id,
-				name: event.data.name,
-				email: event.data.email,
-				birthday: event.data.birthday,
+				id,
+				name: field === "name" ? (value as string) : recipient.name,
+				email: field === "email" ? (value as string) : recipient.email,
+				birthday: field === "birthday" ? (value as number) : recipient.birthday,
 			});
 			toast.success("Recipient updated successfully");
 		} catch (error) {
@@ -153,89 +76,107 @@ export function RecipientsTable() {
 		}
 	};
 
-	const columnDefs = useMemo<ColDef<Recipient>[]>(
-		() => [
-			{
-				field: "name",
-				headerName: "Name",
-				flex: 1,
-				editable: true,
-				cellEditor: "agTextCellEditor",
-			},
-			{
-				field: "email",
-				headerName: "Email",
-				flex: 1,
-				editable: true,
-				cellEditor: "agTextCellEditor",
-			},
-			{
-				field: "birthday",
-				headerName: "Birthday",
-				flex: 1,
-				editable: true,
-				valueFormatter: (params) => {
-					if (!params.value) return "";
-					const date = new Date(params.value);
-					return format(date, "MMMM d, yyyy");
-				},
-				valueGetter: (params) => {
-					if (!params.data?.birthday) return null;
-					const date = new Date(params.data.birthday);
-					return date;
-				},
-				valueSetter: (params) => {
-					if (!params.data) return false;
-					const newValue = params.newValue;
-					const timestamp =
-						newValue instanceof Date
-							? newValue.getTime()
-							: new Date(newValue).getTime();
-					if (isNaN(timestamp)) return false;
-					params.data.birthday = timestamp;
-					return true;
-				},
-				cellEditor: "agDateCellEditor",
-				cellEditorParams: {
-					browserDatePicker: true,
-				},
-			},
-			{
-				headerName: "Actions",
-				minWidth: 100,
-				cellRenderer: ActionCellRenderer,
-				cellRendererParams: {
-					onDelete: handleDelete,
-				},
-			},
-		],
-		[handleDelete]
+	const sortedRecipients = useMemo(() => {
+		if (!recipients) return [];
+
+		return [...recipients].sort((a, b) => {
+			const column = sortDescriptor.column as keyof Recipient;
+			const direction = sortDescriptor.direction === "ascending" ? 1 : -1;
+
+			if (column === "birthday") {
+				return (a[column] - b[column]) * direction;
+			}
+
+			return String(a[column]).localeCompare(String(b[column])) * direction;
+		});
+	}, [recipients, sortDescriptor]);
+
+	// Calculate pagination
+	const pages = Math.ceil((sortedRecipients?.length || 0) / rowsPerPage);
+	const items = sortedRecipients?.slice(
+		(page - 1) * rowsPerPage,
+		page * rowsPerPage
 	);
 
-	// If no recipients data yet, show loading state
 	if (!recipients) {
-		return (
-			<div style={{ height: "500px" }} className="grid place-items-center">
-				Loading...
-			</div>
-		);
+		return <div className="h-[500px] grid place-items-center">Loading...</div>;
 	}
 
 	return (
-		<div style={{ height: "500px" }}>
-			<AgGridReact
-				key={theme} // Force remount when theme changes
-				gridOptions={gridOptions}
-				rowData={recipients}
-				columnDefs={columnDefs}
-				theme={gridTheme}
-				pagination={true}
-				paginationAutoPageSize={true}
-				onCellValueChanged={handleCellValueChanged}
-				onGridReady={(params) => {
-					params.api.sizeColumnsToFit();
-				}}
-			/>
+		<div className="h-[500px]">
+			<Table
+				aria-label="Recipients table"
+				sortDescriptor={sortDescriptor}
+				onSortChange={setSortDescriptor}
+				selectionMode="single"
+				onRowAction={(key) => router.push(`/recipients/${key}`)}
+				bottomContent={
+					<div className="flex justify-center">
+						<Pagination total={pages} page={page} onChange={setPage} />
+					</div>
+				}
+				className="recipients-table"
+			>
+				<TableHeader>
+					<TableColumn key="name" allowsSorting>
+						Name
+					</TableColumn>
+					<TableColumn key="email" allowsSorting>
+						Email
+					</TableColumn>
+					<TableColumn key="birthday" allowsSorting>
+						Birthday
+					</TableColumn>
+					<TableColumn key="actions">Actions</TableColumn>
+				</TableHeader>
+				<TableBody items={items} emptyContent="No recipients found">
+					{(recipient) => (
+						<TableRow key={recipient._id}>
+							<TableCell>
+								<Input
+									defaultValue={recipient.name}
+									onBlur={(e) =>
+										handleUpdate(recipient._id, "name", e.target.value)
+									}
+								/>
+							</TableCell>
+							<TableCell>
+								<Input
+									defaultValue={recipient.email}
+									onBlur={(e) =>
+										handleUpdate(recipient._id, "email", e.target.value)
+									}
+								/>
+							</TableCell>
+							<TableCell>
+								<Input
+									type="date"
+									defaultValue={format(
+										new Date(recipient.birthday),
+										"yyyy-MM-dd"
+									)}
+									onBlur={(e) => {
+										const timestamp = new Date(e.target.value).getTime();
+										if (!isNaN(timestamp)) {
+											handleUpdate(recipient._id, "birthday", timestamp);
+										}
+									}}
+								/>
+							</TableCell>
+							<TableCell>
+								<Button
+									color="danger"
+									size="sm"
+									variant="flat"
+									onPress={() => handleDelete(recipient._id)}
+								>
+									Delete
+								</Button>
+							</TableCell>
+						</TableRow>
+					)}
+				</TableBody>
+			</Table>
 		</div>
 	);
 }

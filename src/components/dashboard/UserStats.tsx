@@ -46,7 +46,7 @@ export function UserStats() {
 	];
 
 	return (
-		<Card className="w-full" shadow="sm">
+		<Card className="w-full user-stats" shadow="sm">
 			<CardHeader className="flex justify-between items-center px-4 py-3">
 				<div className="text-sm font-medium">Plan Status</div>
 				<div

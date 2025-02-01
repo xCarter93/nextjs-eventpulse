@@ -172,3 +172,53 @@ export const listUsers = internalQuery({
 		return await ctx.db.query("users").collect();
 	},
 });
+
+export const updateLastSignIn = internalMutation({
+	args: {
+		tokenIdentifier: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const user = await ctx.db
+			.query("users")
+			.withIndex("by_tokenIdentifier", (q) =>
+				q.eq("tokenIdentifier", args.tokenIdentifier)
+			)
+			.first();
+
+		if (!user) {
+			throw new Error("User not found");
+		}
+
+		await ctx.db.patch(user._id, {
+			lastSignedInDate: Date.now(),
+		});
+	},
+});
+
+export const updateHasSeenTour = mutation({
+	args: {
+		hasSeenTour: v.boolean(),
+	},
+	async handler(ctx, args) {
+		const identity = await ctx.auth.getUserIdentity();
+
+		if (!identity) {
+			throw new ConvexError("Not authenticated");
+		}
+
+		const user = await ctx.db
+			.query("users")
+			.withIndex("by_tokenIdentifier", (q) =>
+				q.eq("tokenIdentifier", identity.tokenIdentifier)
+			)
+			.first();
+
+		if (!user) {
+			throw new ConvexError("User not found");
+		}
+
+		await ctx.db.patch(user._id, {
+			hasSeenTour: args.hasSeenTour,
+		});
+	},
+});

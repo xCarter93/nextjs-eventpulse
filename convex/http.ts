@@ -21,19 +21,23 @@ http.route({
 				},
 			});
 
+			const clerkHostname = process.env.CLERK_HOSTNAME;
+			if (!clerkHostname) {
+				throw new Error("CLERK_HOSTNAME environment variable is not set");
+			}
+
 			if (result.type === "user.created") {
 				const email = result.data.email_addresses?.[0]?.email_address ?? "";
-				const clerkHostname = process.env.CLERK_HOSTNAME;
-
-				if (!clerkHostname) {
-					throw new Error("CLERK_HOSTNAME environment variable is not set");
-				}
 
 				await ctx.runMutation(internal.users.createUser, {
 					tokenIdentifier: `https://${clerkHostname}|${result.data.id}`,
 					name: `${result.data.first_name ?? ""} ${result.data.last_name ?? ""}`,
 					image: result.data.image_url,
 					email: email,
+				});
+			} else if (result.type === "session.created") {
+				await ctx.runMutation(internal.users.updateLastSignIn, {
+					tokenIdentifier: `https://${clerkHostname}|${result.data.user_id}`,
 				});
 			}
 

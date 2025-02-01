@@ -23,7 +23,7 @@ export default function ScheduledEmailsPage() {
 						greetings and custom scheduled messages.
 					</p>
 				</div>
-				<Tabs defaultValue="pending" className="space-y-4">
+				<Tabs defaultValue="pending" className="space-y-4 email-status-tabs">
 					<div className="flex items-center justify-between">
 						<TabsList>
 							<TabsTrigger value="pending">Pending</TabsTrigger>
@@ -31,7 +31,7 @@ export default function ScheduledEmailsPage() {
 							<TabsTrigger value="canceled">Canceled</TabsTrigger>
 						</TabsList>
 						<Link href="/scheduled-emails/new">
-							<Button>
+							<Button className="create-email-button">
 								<Plus className="mr-2 h-4 w-4" />
 								New Scheduled Email
 							</Button>

@@ -7,6 +7,8 @@ export default defineSchema({
 		tokenIdentifier: v.string(),
 		image: v.string(),
 		email: v.string(),
+		lastSignedInDate: v.optional(v.number()),
+		hasSeenTour: v.optional(v.boolean()),
 		settings: v.optional(
 			v.object({
 				address: v.optional(

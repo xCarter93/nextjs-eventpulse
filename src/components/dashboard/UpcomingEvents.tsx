@@ -57,7 +57,7 @@ export function UpcomingEvents() {
 		.sort((a, b) => a.daysUntil - b.daysUntil);
 
 	return (
-		<Card className="w-full" shadow="sm">
+		<Card className="w-full upcoming-events" shadow="sm">
 			<CardHeader className="flex justify-between items-center px-4 py-3">
 				<div className="flex items-center gap-2">
 					<Calendar className="h-4 w-4 text-primary" />

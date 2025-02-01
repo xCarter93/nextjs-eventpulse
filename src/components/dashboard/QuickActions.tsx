@@ -48,7 +48,7 @@ export function QuickActions() {
 	];
 
 	return (
-		<Card className="w-full" shadow="sm">
+		<Card className="w-full quick-actions" shadow="sm">
 			<CardHeader className="flex items-center px-4 py-3">
 				<div className="text-sm font-medium">Quick Actions</div>
 			</CardHeader>
