@@ -16,9 +16,13 @@ import {
 	TableCell,
 	Input,
 	Pagination,
-	Button,
+	User,
+	Tooltip,
+	Select,
+	SelectItem,
 } from "@heroui/react";
 import { SortDescriptor } from "@heroui/react";
+import { Eye, Trash2 } from "lucide-react";
 
 interface Recipient {
 	_id: Id<"recipients">;
@@ -27,7 +31,17 @@ interface Recipient {
 	email: string;
 	birthday: number;
 	userId: Id<"users">;
+	metadata?: {
+		relation?: "friend" | "parent" | "spouse" | "sibling";
+	};
 }
+
+const relationOptions = [
+	{ label: "Friend", value: "friend" },
+	{ label: "Parent", value: "parent" },
+	{ label: "Spouse", value: "spouse" },
+	{ label: "Sibling", value: "sibling" },
+];
 
 export function RecipientsTable() {
 	const router = useRouter();
@@ -42,6 +56,9 @@ export function RecipientsTable() {
 
 	const recipients = useQuery(api.recipients.getRecipients);
 	const updateRecipient = useMutation(api.recipients.updateRecipient);
+	const updateRecipientMetadata = useMutation(
+		api.recipients.updateRecipientMetadata
+	);
 	const deleteRecipient = useMutation(api.recipients.deleteRecipient);
 
 	const handleDelete = async (id: Id<"recipients">) => {
@@ -72,6 +89,28 @@ export function RecipientsTable() {
 			toast.success("Recipient updated successfully");
 		} catch (error) {
 			toast.error("Failed to update recipient");
+			console.error(error);
+		}
+	};
+
+	const handleUpdateRelation = async (
+		id: Id<"recipients">,
+		relation: string
+	) => {
+		try {
+			const recipient = recipients?.find((r) => r._id === id);
+			if (!recipient) return;
+
+			await updateRecipientMetadata({
+				id,
+				metadata: {
+					...recipient.metadata,
+					relation: relation as "friend" | "parent" | "spouse" | "sibling",
+				},
+			});
+			toast.success("Relationship updated successfully");
+		} catch (error) {
+			toast.error("Failed to update relationship");
 			console.error(error);
 		}
 	};
@@ -108,8 +147,6 @@ export function RecipientsTable() {
 				aria-label="Recipients table"
 				sortDescriptor={sortDescriptor}
 				onSortChange={setSortDescriptor}
-				selectionMode="single"
-				onRowAction={(key) => router.push(`/recipients/${key}`)}
 				bottomContent={
 					<div className="flex justify-center">
 						<Pagination total={pages} page={page} onChange={setPage} />
@@ -121,32 +158,41 @@ export function RecipientsTable() {
 					<TableColumn key="name" allowsSorting>
 						Name
 					</TableColumn>
-					<TableColumn key="email" allowsSorting>
-						Email
-					</TableColumn>
+					<TableColumn key="relation">Relationship</TableColumn>
 					<TableColumn key="birthday" allowsSorting>
 						Birthday
 					</TableColumn>
-					<TableColumn key="actions">Actions</TableColumn>
+					<TableColumn key="actions" align="center">
+						Actions
+					</TableColumn>
 				</TableHeader>
 				<TableBody items={items} emptyContent="No recipients found">
 					{(recipient) => (
 						<TableRow key={recipient._id}>
 							<TableCell>
-								<Input
-									defaultValue={recipient.name}
-									onBlur={(e) =>
-										handleUpdate(recipient._id, "name", e.target.value)
-									}
+								<User
+									name={recipient.name}
+									description={recipient.email}
+									classNames={{
+										name: "text-sm font-semibold",
+										description: "text-sm text-default-500",
+									}}
 								/>
 							</TableCell>
 							<TableCell>
-								<Input
-									defaultValue={recipient.email}
-									onBlur={(e) =>
-										handleUpdate(recipient._id, "email", e.target.value)
+								<Select
+									defaultSelectedKeys={[recipient.metadata?.relation || ""]}
+									onChange={(e) =>
+										handleUpdateRelation(recipient._id, e.target.value)
 									}
-								/>
+									className="max-w-[200px]"
+								>
+									{relationOptions.map((option) => (
+										<SelectItem key={option.value} value={option.value}>
+											{option.label}
+										</SelectItem>
+									))}
+								</Select>
 							</TableCell>
 							<TableCell>
 								<Input
@@ -164,14 +210,26 @@ export function RecipientsTable() {
 								/>
 							</TableCell>
 							<TableCell>
-								<Button
-									color="danger"
-									size="sm"
-									variant="flat"
-									onPress={() => handleDelete(recipient._id)}
-								>
-									Delete
-								</Button>
+								<div className="relative flex items-center justify-center gap-2">
+									<Tooltip content="View Details">
+										<span
+											className="text-lg text-default-400 cursor-pointer active:opacity-50"
+											onClick={() =>
+												router.push(`/recipients/${recipient._id}`)
+											}
+										>
+											<Eye className="h-5 w-5" />
+										</span>
+									</Tooltip>
+									<Tooltip color="danger" content="Delete Recipient">
+										<span
+											className="text-lg text-danger cursor-pointer active:opacity-50"
+											onClick={() => handleDelete(recipient._id)}
+										>
+											<Trash2 className="h-5 w-5" />
+										</span>
+									</Tooltip>
+								</div>
 							</TableCell>
 						</TableRow>
 					)}
