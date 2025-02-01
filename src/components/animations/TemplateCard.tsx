@@ -1,16 +1,17 @@
 "use client";
 
 import { type AnimationTemplate } from "@/types";
-import { Card, CardContent } from "@/components/ui/card";
 import {
-	Dialog,
-	DialogContent,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
+	Card,
+	CardBody,
+	Button,
+	Modal,
+	ModalContent,
+	ModalHeader,
+	Image as HeroImage,
+} from "@heroui/react";
 import { useState } from "react";
-import Image from "next/image";
-import { Button } from "@/components/ui/button";
+import NextImage from "next/image";
 import { Trash2 } from "lucide-react";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -52,8 +53,7 @@ export function TemplateCard({
 
 	const daysUntilDeletion = getDaysUntilDeletion();
 
-	const handleDelete = async (e: React.MouseEvent) => {
-		e.stopPropagation();
+	const handleDelete = async () => {
 		try {
 			await deleteAnimation({ id: template.id });
 			toast.success("Animation deleted successfully");
@@ -66,24 +66,28 @@ export function TemplateCard({
 	return (
 		<>
 			<Card
-				className={`relative overflow-hidden cursor-pointer transition-all hover:ring-2 hover:ring-primary ${
+				isPressable
+				isHoverable
+				shadow="sm"
+				className={`relative overflow-hidden transition-all ${
 					isSelected ? "ring-2 ring-primary" : ""
 				}`}
-				onClick={() => onSelect(template)}
+				onPress={() => onSelect(template)}
 			>
 				{isCustom && (
 					<Button
+						isIconOnly
 						variant="ghost"
-						size="icon"
+						size="sm"
 						className="absolute top-2 right-2 z-10 bg-background/80 hover:bg-background/90"
-						onClick={handleDelete}
+						onPress={handleDelete}
 					>
 						<Trash2 className="h-4 w-4 text-destructive" />
 					</Button>
 				)}
-				<CardContent className="p-4">
+				<CardBody className="p-4">
 					<div
-						className="aspect-video bg-muted rounded-lg mb-4 overflow-hidden relative"
+						className="aspect-video mb-4 overflow-hidden relative"
 						onClick={(e) => {
 							e.stopPropagation();
 							setShowPreview(true);
@@ -93,11 +97,14 @@ export function TemplateCard({
 							<PreviewComponent isPreview />
 						) : (
 							template.previewUrl && (
-								<Image
+								<HeroImage
+									as={NextImage}
 									src={template.previewUrl}
 									alt={template.name}
 									fill
 									className="object-cover"
+									isZoomed
+									radius="lg"
 								/>
 							)
 						)}
@@ -111,30 +118,36 @@ export function TemplateCard({
 							Will be deleted in {daysUntilDeletion} days
 						</p>
 					)}
-				</CardContent>
+				</CardBody>
 			</Card>
 
-			<Dialog open={showPreview} onOpenChange={setShowPreview}>
-				<DialogContent className="max-w-3xl">
-					<DialogHeader>
-						<DialogTitle>{template.name} Preview</DialogTitle>
-					</DialogHeader>
-					<div className="aspect-video relative">
+			<Modal
+				isOpen={showPreview}
+				onClose={() => setShowPreview(false)}
+				size="3xl"
+			>
+				<ModalContent>
+					<ModalHeader>
+						<h3 className="text-lg font-semibold">{template.name} Preview</h3>
+					</ModalHeader>
+					<div className="aspect-video relative p-6">
 						{PreviewComponent ? (
 							<PreviewComponent />
 						) : (
 							template.previewUrl && (
-								<Image
+								<HeroImage
+									as={NextImage}
 									src={template.previewUrl}
 									alt={template.name}
 									fill
 									className="object-cover"
+									radius="lg"
 								/>
 							)
 						)}
 					</div>
-				</DialogContent>
-			</Dialog>
+				</ModalContent>
+			</Modal>
 		</>
 	);
 }

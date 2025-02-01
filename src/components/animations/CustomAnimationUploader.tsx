@@ -1,7 +1,7 @@
 "use client";
 
 import { type ChangeEvent, useState } from "react";
-import { Input } from "@/components/ui/input";
+import { Card, CardBody, Input } from "@heroui/react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
@@ -70,58 +70,69 @@ export function CustomAnimationUploader() {
 	};
 
 	return (
-		<div
-			className="relative rounded-lg border bg-card text-card-foreground shadow-sm cursor-pointer hover:bg-accent/10 transition-colors"
-			onClick={() =>
-				!isUploading && document.getElementById("file-upload")?.click()
-			}
-		>
-			<div className="flex flex-col items-center justify-center h-full min-h-[200px] space-y-4 p-6">
-				<Upload
-					className={`w-12 h-12 text-muted-foreground ${isUploading ? "animate-bounce" : ""}`}
-				/>
-				<div className="space-y-2 text-center">
-					<h3 className="font-semibold">Custom Animation</h3>
-					<p className="text-sm text-muted-foreground">
-						{isUploading
-							? "Uploading image..."
-							: "Click to upload your image (GIF, JPG, or PNG)"}
-					</p>
-					{user?.subscription.tier === "free" && (
-						<p className="text-sm text-yellow-600 dark:text-yellow-500">
-							Note: On the free plan, custom animations are automatically
-							deleted after 10 days.{" "}
-							<Link
-								href="/billing"
-								className="underline hover:text-yellow-700 dark:hover:text-yellow-400"
-							>
-								Upgrade to keep them permanently
-							</Link>
-						</p>
-					)}
-					<div className="space-y-1">
-						<a
-							href="https://lottiefiles.com/featured-free-animations"
-							target="_blank"
-							rel="noopener noreferrer"
-							className="text-xs text-primary hover:underline block"
-							onClick={(e) => e.stopPropagation()}
-						>
-							Browse free animations at LottieFiles
-						</a>
-						<p className="text-xs text-muted-foreground">
-							Export your Lottie animation as GIF, or upload any JPG/PNG image
-						</p>
+		<Card shadow="sm" className="relative transition-all hover:shadow-md">
+			<CardBody className="p-6">
+				<div className="space-y-4">
+					<div className="flex flex-col items-center justify-center space-y-2">
+						<Upload
+							className={`w-12 h-12 text-muted-foreground ${isUploading ? "animate-bounce" : ""}`}
+						/>
+						<h3 className="text-lg font-semibold">
+							{isUploading ? "Uploading..." : "Custom Animation"}
+						</h3>
 					</div>
+
+					<Input
+						type="file"
+						accept=".gif,.jpg,.jpeg,.png"
+						onChange={handleFileChange}
+						variant="faded"
+						radius="lg"
+						size="lg"
+						isDisabled={isUploading}
+						description={
+							<div className="space-y-2">
+								<p className="text-sm text-muted-foreground">
+									{isUploading
+										? "Uploading image..."
+										: "Click to upload your image (GIF, JPG, or PNG)"}
+								</p>
+								{user?.subscription.tier === "free" && (
+									<p className="text-sm text-yellow-600 dark:text-yellow-500">
+										Note: On the free plan, custom animations are automatically
+										deleted after 10 days.{" "}
+										<Link
+											href="/billing"
+											className="underline hover:text-yellow-700 dark:hover:text-yellow-400"
+										>
+											Upgrade to keep them permanently
+										</Link>
+									</p>
+								)}
+								<div className="space-y-1">
+									<a
+										href="https://lottiefiles.com/featured-free-animations"
+										target="_blank"
+										rel="noopener noreferrer"
+										className="text-xs text-primary hover:underline block"
+									>
+										Browse free animations at LottieFiles
+									</a>
+									<p className="text-xs text-muted-foreground">
+										Export your Lottie animation as GIF, or upload any JPG/PNG
+										image
+									</p>
+								</div>
+							</div>
+						}
+						startContent={
+							<div className="pointer-events-none">
+								<Upload className="text-default-400 w-5 h-5" />
+							</div>
+						}
+					/>
 				</div>
-			</div>
-			<Input
-				id="file-upload"
-				type="file"
-				accept=".gif,.jpg,.jpeg,.png"
-				onChange={handleFileChange}
-				className="hidden"
-			/>
-		</div>
+			</CardBody>
+		</Card>
 	);
 }
