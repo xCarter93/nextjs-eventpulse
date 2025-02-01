@@ -18,7 +18,6 @@ import { Trash2, Eye } from "lucide-react";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
-import { format } from "date-fns";
 
 interface TemplateCardProps {
 	template: AnimationTemplate;
@@ -69,28 +68,20 @@ export function TemplateCard({
 	return (
 		<>
 			<Card
-				isPressable
 				isHoverable
 				shadow="sm"
-				className={`relative overflow-hidden transition-all max-w-sm ${
+				className={`relative overflow-hidden transition-all ${
 					isSelected ? "ring-2 ring-primary" : ""
 				}`}
 				onPress={() => onSelect(template)}
 			>
-				<CardHeader className="pb-2">
-					<div className="flex justify-between items-start">
-						<div>
-							<h3 className="text-lg font-semibold">{template.name}</h3>
-							{createdAt && (
-								<p className="text-xs text-muted-foreground">
-									Uploaded {format(new Date(createdAt), "MMM d, yyyy")}
-								</p>
-							)}
-						</div>
-					</div>
+				<CardHeader className="pb-0 pt-3 px-3">
+					<h3 className="font-semibold text-sm truncate" title={template.name}>
+						{template.name}
+					</h3>
 				</CardHeader>
 
-				<CardBody className="px-4 py-2">
+				<CardBody className="p-3 pt-2">
 					<div className="w-full aspect-video relative">
 						{PreviewComponent ? (
 							<PreviewComponent isPreview />
@@ -100,31 +91,28 @@ export function TemplateCard({
 									as={NextImage}
 									src={template.previewUrl}
 									alt={template.name}
-									width={480}
-									height={270}
+									width={320}
+									height={180}
 									className="w-full h-full object-cover"
 									radius="lg"
-									sizes="(max-width: 768px) 100vw, 480px"
+									sizes="(max-width: 768px) 100vw, 320px"
 								/>
 							)
 						)}
 					</div>
-					<div className="text-sm text-muted-foreground mt-2">
-						{template.description}
-					</div>
 					{daysUntilDeletion !== null && daysUntilDeletion > 0 && (
-						<p className="text-sm text-yellow-600 dark:text-yellow-500 mt-2">
+						<p className="text-xs text-yellow-600 dark:text-yellow-500 mt-2">
 							Will be deleted in {daysUntilDeletion} days
 						</p>
 					)}
 				</CardBody>
 
-				<CardFooter className="px-4 py-3 justify-between">
+				<CardFooter className="px-3 py-2 gap-2">
 					<Button
 						size="sm"
 						variant="flat"
 						onPress={() => setShowPreview(true)}
-						startContent={<Eye className="h-4 w-4" />}
+						startContent={<Eye className="h-3 w-3" />}
 					>
 						Preview
 					</Button>
@@ -134,7 +122,7 @@ export function TemplateCard({
 							variant="ghost"
 							color="danger"
 							onPress={handleDelete}
-							startContent={<Trash2 className="h-4 w-4" />}
+							startContent={<Trash2 className="h-3 w-3" />}
 						>
 							Delete
 						</Button>

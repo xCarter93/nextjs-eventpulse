@@ -70,16 +70,24 @@ export function CustomAnimationUploader() {
 	};
 
 	return (
-		<Card shadow="sm" className="relative transition-all hover:shadow-md">
-			<CardBody className="p-6">
-				<div className="space-y-4">
-					<div className="flex flex-col items-center justify-center space-y-2">
+		<Card
+			shadow="sm"
+			className="relative transition-all hover:shadow-md sticky top-8"
+		>
+			<CardBody className="p-4">
+				<div className="space-y-3">
+					<div className="flex items-center gap-3">
 						<Upload
-							className={`w-12 h-12 text-muted-foreground ${isUploading ? "animate-bounce" : ""}`}
+							className={`w-8 h-8 text-muted-foreground ${isUploading ? "animate-bounce" : ""}`}
 						/>
-						<h3 className="text-lg font-semibold">
-							{isUploading ? "Uploading..." : "Custom Animation"}
-						</h3>
+						<div>
+							<h3 className="font-semibold">
+								{isUploading ? "Uploading..." : "Custom Animation"}
+							</h3>
+							<p className="text-sm text-muted-foreground">
+								Upload your custom GIF, JPG, or PNG
+							</p>
+						</div>
 					</div>
 
 					<Input
@@ -88,17 +96,12 @@ export function CustomAnimationUploader() {
 						onChange={handleFileChange}
 						variant="faded"
 						radius="lg"
-						size="lg"
+						size="sm"
 						isDisabled={isUploading}
 						description={
-							<div className="space-y-2">
-								<p className="text-sm text-muted-foreground">
-									{isUploading
-										? "Uploading image..."
-										: "Click to upload your image (GIF, JPG, or PNG)"}
-								</p>
+							<div className="space-y-2 mt-2">
 								{user?.subscription.tier === "free" && (
-									<p className="text-sm text-yellow-600 dark:text-yellow-500">
+									<p className="text-xs text-yellow-600 dark:text-yellow-500">
 										Note: On the free plan, custom animations are automatically
 										deleted after 10 days.{" "}
 										<Link
@@ -109,7 +112,7 @@ export function CustomAnimationUploader() {
 										</Link>
 									</p>
 								)}
-								<div className="space-y-1">
+								<div>
 									<a
 										href="https://lottiefiles.com/featured-free-animations"
 										target="_blank"
@@ -118,16 +121,12 @@ export function CustomAnimationUploader() {
 									>
 										Browse free animations at LottieFiles
 									</a>
-									<p className="text-xs text-muted-foreground">
-										Export your Lottie animation as GIF, or upload any JPG/PNG
-										image
-									</p>
 								</div>
 							</div>
 						}
 						startContent={
 							<div className="pointer-events-none">
-								<Upload className="text-default-400 w-5 h-5" />
+								<Upload className="text-default-400 w-4 h-4" />
 							</div>
 						}
 					/>
