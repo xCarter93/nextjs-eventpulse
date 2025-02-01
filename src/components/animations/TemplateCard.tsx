@@ -4,6 +4,8 @@ import { type AnimationTemplate } from "@/types";
 import {
 	Card,
 	CardBody,
+	CardHeader,
+	CardFooter,
 	Button,
 	Modal,
 	ModalContent,
@@ -12,10 +14,11 @@ import {
 } from "@heroui/react";
 import { useState } from "react";
 import NextImage from "next/image";
-import { Trash2 } from "lucide-react";
+import { Trash2, Eye } from "lucide-react";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
+import { format } from "date-fns";
 
 interface TemplateCardProps {
 	template: AnimationTemplate;
@@ -69,30 +72,26 @@ export function TemplateCard({
 				isPressable
 				isHoverable
 				shadow="sm"
-				className={`relative overflow-hidden transition-all ${
+				className={`relative overflow-hidden transition-all max-w-sm ${
 					isSelected ? "ring-2 ring-primary" : ""
 				}`}
 				onPress={() => onSelect(template)}
 			>
-				{isCustom && (
-					<Button
-						isIconOnly
-						variant="ghost"
-						size="sm"
-						className="absolute top-2 right-2 z-10 bg-background/80 hover:bg-background/90"
-						onPress={handleDelete}
-					>
-						<Trash2 className="h-4 w-4 text-destructive" />
-					</Button>
-				)}
-				<CardBody className="p-4">
-					<div
-						className="w-full aspect-video mb-4 relative"
-						onClick={(e) => {
-							e.stopPropagation();
-							setShowPreview(true);
-						}}
-					>
+				<CardHeader className="pb-2">
+					<div className="flex justify-between items-start">
+						<div>
+							<h3 className="text-lg font-semibold">{template.name}</h3>
+							{createdAt && (
+								<p className="text-xs text-muted-foreground">
+									Uploaded {format(new Date(createdAt), "MMM d, yyyy")}
+								</p>
+							)}
+						</div>
+					</div>
+				</CardHeader>
+
+				<CardBody className="px-4 py-2">
+					<div className="w-full aspect-video relative">
 						{PreviewComponent ? (
 							<PreviewComponent isPreview />
 						) : (
@@ -104,15 +103,13 @@ export function TemplateCard({
 									width={480}
 									height={270}
 									className="w-full h-full object-cover"
-									isZoomed
 									radius="lg"
 									sizes="(max-width: 768px) 100vw, 480px"
 								/>
 							)
 						)}
 					</div>
-					<h3 className="font-semibold">{template.name}</h3>
-					<div className="text-sm text-muted-foreground">
+					<div className="text-sm text-muted-foreground mt-2">
 						{template.description}
 					</div>
 					{daysUntilDeletion !== null && daysUntilDeletion > 0 && (
@@ -121,6 +118,28 @@ export function TemplateCard({
 						</p>
 					)}
 				</CardBody>
+
+				<CardFooter className="px-4 py-3 justify-between">
+					<Button
+						size="sm"
+						variant="flat"
+						onPress={() => setShowPreview(true)}
+						startContent={<Eye className="h-4 w-4" />}
+					>
+						Preview
+					</Button>
+					{isCustom && (
+						<Button
+							size="sm"
+							variant="ghost"
+							color="danger"
+							onPress={handleDelete}
+							startContent={<Trash2 className="h-4 w-4" />}
+						>
+							Delete
+						</Button>
+					)}
+				</CardFooter>
 			</Card>
 
 			<Modal
