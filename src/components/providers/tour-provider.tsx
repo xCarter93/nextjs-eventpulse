@@ -85,7 +85,7 @@ const steps: Tour[] = [
 				content:
 					"Use this uploader to add your own custom GIFs, JPGs, or PNGs. They'll appear in the gallery once uploaded.",
 				selector: ".animation-uploader",
-				side: "left" as const,
+				side: "right" as const,
 				showControls: true,
 				showSkip: true,
 				pointerPadding: 15,
