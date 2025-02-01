@@ -71,12 +71,6 @@ export default function AnimationsPage() {
 				</p>
 			</div>
 
-			{/* Mobile Layout */}
-			<div className="block lg:hidden">
-				<CustomAnimationUploader />
-			</div>
-
-			{/* Desktop Layout */}
 			<div className="flex flex-col lg:flex-row gap-6">
 				<Card className="flex-1">
 					<CardHeader>
@@ -103,8 +97,7 @@ export default function AnimationsPage() {
 					</CardContent>
 				</Card>
 
-				{/* Desktop Uploader */}
-				<div className="hidden lg:block w-80">
+				<div className="w-full lg:w-80 order-first lg:order-last animation-uploader">
 					<CustomAnimationUploader />
 				</div>
 			</div>

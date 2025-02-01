@@ -70,10 +70,7 @@ export function CustomAnimationUploader() {
 	};
 
 	return (
-		<Card
-			shadow="sm"
-			className="transition-all hover:shadow-md sticky top-8 animation-uploader"
-		>
+		<Card shadow="sm" className="transition-all hover:shadow-md sticky top-8">
 			<CardBody className="p-4">
 				<div className="space-y-3">
 					<div className="flex items-center gap-3">

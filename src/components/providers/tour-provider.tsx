@@ -78,6 +78,7 @@ const steps: Tour[] = [
 				showSkip: true,
 				pointerPadding: 15,
 				pointerRadius: 15,
+				prevRoute: "/dashboard",
 			},
 			{
 				icon: <>⬆️</>,
@@ -85,13 +86,12 @@ const steps: Tour[] = [
 				content:
 					"Use this uploader to add your own custom GIFs, JPGs, or PNGs. They'll appear in the gallery once uploaded.",
 				selector: ".animation-uploader",
-				side: "right" as const,
+				side: "left" as const,
 				showControls: true,
 				showSkip: true,
 				pointerPadding: 15,
 				pointerRadius: 15,
 				nextRoute: "/recipients",
-				prevRoute: "/dashboard",
 			},
 			{
 				icon: <>👥</>,
