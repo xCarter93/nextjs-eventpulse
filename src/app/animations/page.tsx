@@ -12,11 +12,11 @@ export default function AnimationsPage() {
 	const [selectedTemplate, setSelectedTemplate] =
 		useState<AnimationTemplate | null>(null);
 
-	const baseAnimations = useQuery(api.animations.getBaseAnimations);
+	const userAnimations = useQuery(api.animations.getUserAnimations);
 	const user = useQuery(api.users.getUser);
 
 	const templates: AnimationTemplate[] =
-		baseAnimations?.map((animation) => ({
+		userAnimations?.map((animation) => ({
 			id: animation._id,
 			name: animation.name || "Untitled Animation",
 			description: animation.description || "",

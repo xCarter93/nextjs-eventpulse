@@ -40,7 +40,7 @@ export default function RecipientsAnimationForm({
 	onFormChange,
 }: RecipientsAnimationFormProps) {
 	const recipients = useQuery(api.recipients.getRecipients);
-	const animations = useQuery(api.animations.getBaseAnimations);
+	const animations = useQuery(api.animations.getUserAnimations);
 
 	const form = useForm<z.infer<typeof recipientsAnimationSchema>>({
 		resolver: zodResolver(recipientsAnimationSchema),

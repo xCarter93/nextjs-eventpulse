@@ -29,29 +29,13 @@ export const getAnimationUrlInternal = internalQuery({
 	},
 });
 
-export const getBaseAnimations = query({
+export const getUserAnimations = query({
 	handler: async (ctx) => {
 		const identity = await ctx.auth.getUserIdentity();
 
-		// Get base animations
-		const baseAnimations = await ctx.db
-			.query("animations")
-			.filter((q) => q.eq(q.field("isBaseAnimation"), true))
-			.collect();
-
-		// Get URLs for all animations
-		const baseAnimationsWithUrls = await Promise.all(
-			baseAnimations.map(async (animation) => ({
-				...animation,
-				url: animation.storageId
-					? await ctx.storage.getUrl(animation.storageId)
-					: undefined,
-			}))
-		);
-
 		// If user is not logged in, only return base animations
 		if (!identity) {
-			return baseAnimationsWithUrls;
+			return [];
 		}
 
 		// Get user's custom animations
@@ -63,7 +47,7 @@ export const getBaseAnimations = query({
 			.first();
 
 		if (!user) {
-			return baseAnimationsWithUrls;
+			throw new ConvexError("User not found");
 		}
 
 		const userAnimations = await ctx.db
@@ -87,7 +71,7 @@ export const getBaseAnimations = query({
 		);
 
 		// Return both base animations and user's custom animations
-		return [...baseAnimationsWithUrls, ...userAnimationsWithUrls];
+		return [...userAnimationsWithUrls];
 	},
 });
 
