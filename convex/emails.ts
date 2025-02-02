@@ -56,15 +56,27 @@ export const sendScheduledEmail = internalAction({
 		),
 	},
 	handler: async (ctx, args) => {
-		await resend.emails.send({
-			from: "EventPulse <onboarding@resend.dev>",
-			to: args.to,
-			subject: args.subject,
-			html: getCustomEmailHtml({
-				components: args.components as EmailComponent[],
-				colorScheme: args.colorScheme,
-			}),
-		});
+		try {
+			const { data, error } = await resend.emails.send({
+				from: "EventPulse <onboarding@resend.dev>",
+				to: args.to,
+				subject: args.subject,
+				html: getCustomEmailHtml({
+					components: args.components as EmailComponent[],
+					colorScheme: args.colorScheme,
+				}),
+			});
+
+			if (error) {
+				console.error("Failed to send email:", error);
+				throw new Error(`Failed to send email: ${error.message}`);
+			}
+
+			return data;
+		} catch (error) {
+			console.error("Error sending email:", error);
+			throw error;
+		}
 	},
 });
 

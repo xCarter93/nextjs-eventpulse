@@ -104,17 +104,25 @@ export const scheduleCustomEmail = mutation({
 		}
 
 		// Schedule the email
-		await ctx.scheduler.runAt(
-			args.scheduledDate,
-			internal.emails.sendScheduledEmail,
-			{
-				recipientId: args.recipientId,
-				to: recipient.email,
-				subject: args.subject,
-				components: args.components as EmailComponent[],
-				colorScheme: args.colorScheme,
-			}
-		);
+		try {
+			await ctx.scheduler.runAt(
+				args.scheduledDate,
+				internal.emails.sendScheduledEmail,
+				{
+					recipientId: args.recipientId,
+					to: recipient.email,
+					subject: args.subject,
+					components: args.components as EmailComponent[],
+					colorScheme: args.colorScheme,
+				}
+			);
+			console.log(
+				`Scheduled email to ${recipient.email} for ${new Date(args.scheduledDate).toISOString()}`
+			);
+		} catch (error) {
+			console.error("Failed to schedule email:", error);
+			throw new ConvexError("Failed to schedule email. Please try again.");
+		}
 	},
 });
 
