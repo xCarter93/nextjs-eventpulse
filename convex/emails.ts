@@ -201,19 +201,17 @@ export const sendReminderEmailAction = internalAction({
 	},
 	async handler(ctx, args) {
 		try {
+			const reminderEmailHtml = await render(
+				React.createElement(ReminderEmailTemplate, {
+					userName: args.userName,
+					events: args.events,
+				})
+			);
 			await resend.emails.send({
 				from: "EventPulse <pulse@eventpulse.tech>",
 				to: args.userEmail,
 				subject: `Events happening in ${args.reminderDays} days`,
-				html: await render(
-					React.createElement(ReminderEmailTemplate, {
-						userName: args.userName,
-						events: args.events,
-					}),
-					{
-						pretty: false,
-					}
-				),
+				html: reminderEmailHtml,
 			});
 		} catch (error) {
 			console.error(
