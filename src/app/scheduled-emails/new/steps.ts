@@ -25,17 +25,17 @@ export const steps: {
 	key: string;
 }[] = [
 	{
-		title: "Recipients & Animation",
+		title: "Recipients",
 		component: RecipientsAnimationForm,
 		key: "recipients-animation",
 	},
 	{
-		title: "Email Content",
+		title: "Content",
 		component: EmailContentForm,
 		key: "email-content",
 	},
 	{
-		title: "Color Scheme",
+		title: "Style",
 		component: ColorSchemeForm,
 		key: "color-scheme",
 	},
