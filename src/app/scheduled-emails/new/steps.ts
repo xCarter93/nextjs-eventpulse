@@ -1,17 +1,15 @@
-import RecipientsAnimationForm from "./forms/RecipientsAnimationForm";
+import RecipientsForm from "./forms/RecipientsForm";
 import EmailContentForm from "./forms/EmailContentForm";
 import ColorSchemeForm from "./forms/ColorSchemeForm";
 import {
-	recipientsAnimationSchema,
+	recipientsSchema,
 	emailContentSchema,
 	colorSchemeSchema,
 } from "@/lib/validation";
 import * as z from "zod";
 
 type FormData = z.infer<
-	typeof recipientsAnimationSchema &
-		typeof emailContentSchema &
-		typeof colorSchemeSchema
+	typeof recipientsSchema & typeof emailContentSchema & typeof colorSchemeSchema
 >;
 
 export type EditorFormProps = {
@@ -26,8 +24,8 @@ export const steps: {
 }[] = [
 	{
 		title: "Recipients",
-		component: RecipientsAnimationForm,
-		key: "recipients-animation",
+		component: RecipientsForm,
+		key: "recipients",
 	},
 	{
 		title: "Content",

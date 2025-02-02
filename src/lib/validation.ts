@@ -1,36 +1,53 @@
 import * as z from "zod";
 import { Id } from "../../convex/_generated/dataModel";
 
-const baseRecipientsAnimationSchema = z.object({
-	recipients: z
-		.array(z.string().transform((val) => val as Id<"recipients">))
-		.min(1, "Select at least one recipient"),
-	animationType: z.enum(["uploaded", "url"]),
-	animation: z.string().optional(),
-	animationUrl: z.string().optional(),
+// Email component schemas
+const baseEmailComponent = z.object({
+	id: z.string(),
+	type: z.enum(["heading", "text", "button", "image"]),
 });
 
-export const recipientsAnimationSchema = baseRecipientsAnimationSchema.refine(
-	(data) => {
-		if (data.animationType === "uploaded") {
-			return !!data.animation;
-		} else {
-			return (
-				!!data.animationUrl && data.animationUrl.match(/\.(gif|jpe?g|png)$/i)
-			);
-		}
-	},
-	{
-		message: "Please select an animation or enter a valid image URL",
-		path: ["animation"],
-	}
-);
+const headingComponent = baseEmailComponent.extend({
+	type: z.literal("heading"),
+	content: z.string(),
+});
+
+const textComponent = baseEmailComponent.extend({
+	type: z.literal("text"),
+	content: z.string(),
+});
+
+const buttonComponent = baseEmailComponent.extend({
+	type: z.literal("button"),
+	content: z.string(),
+	url: z.string(),
+});
+
+const imageComponent = baseEmailComponent.extend({
+	type: z.literal("image"),
+	url: z.string(),
+	alt: z.string(),
+});
+
+const emailComponentSchema = z.discriminatedUnion("type", [
+	headingComponent,
+	textComponent,
+	buttonComponent,
+	imageComponent,
+]);
+
+export const recipientsSchema = z.object({
+	recipients: z
+		.array(z.custom<Id<"recipients">>())
+		.min(1, "Select at least one recipient"),
+});
+
+// TODO: IMPORTANT - Restore .min(1, "Select at least one recipient") after testing
 
 export const emailContentSchema = z.object({
-	subject: z.string().min(1, "Enter a subject"),
-	scheduledDate: z.string().min(1, "Select a date"),
-	heading: z.string().min(1, "Enter a heading"),
-	body: z.string().min(1, "Enter a message"),
+	subject: z.string().min(1, "Subject is required"),
+	scheduledDate: z.string().min(1, "Send date is required"),
+	components: z.array(emailComponentSchema),
 });
 
 export const colorSchemeSchema = z.object({
@@ -42,25 +59,6 @@ export const colorSchemeSchema = z.object({
 	}),
 });
 
-// Merge all schemas into one
-export const scheduledEmailFormSchema = z
-	.object({
-		...baseRecipientsAnimationSchema.shape,
-		...emailContentSchema.shape,
-		...colorSchemeSchema.shape,
-	})
-	.refine(
-		(data) => {
-			if (data.animationType === "uploaded") {
-				return !!data.animation;
-			} else {
-				return (
-					!!data.animationUrl && data.animationUrl.match(/\.(gif|jpe?g|png)$/i)
-				);
-			}
-		},
-		{
-			message: "Please select an animation or enter a valid image URL",
-			path: ["animation"],
-		}
-	);
+export const scheduledEmailFormSchema = recipientsSchema
+	.merge(emailContentSchema)
+	.merge(colorSchemeSchema);

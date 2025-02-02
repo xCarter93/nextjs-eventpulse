@@ -5,15 +5,42 @@ import { internal } from "./_generated/api";
 import { Doc, Id } from "./_generated/dataModel";
 import { canScheduleForDate } from "../src/lib/permissions";
 import { api } from "./_generated/api";
+import {
+	type EmailComponent,
+	type ImageComponent,
+} from "../src/types/email-components";
 
 export const scheduleCustomEmail = mutation({
 	args: {
 		recipientId: v.id("recipients"),
 		scheduledDate: v.number(),
-		message: v.string(),
 		subject: v.string(),
-		animationId: v.optional(v.id("animations")),
-		animationUrl: v.optional(v.string()),
+		components: v.array(
+			v.union(
+				v.object({
+					id: v.string(),
+					type: v.literal("heading"),
+					content: v.string(),
+				}),
+				v.object({
+					id: v.string(),
+					type: v.literal("text"),
+					content: v.string(),
+				}),
+				v.object({
+					id: v.string(),
+					type: v.literal("button"),
+					content: v.string(),
+					url: v.string(),
+				}),
+				v.object({
+					id: v.string(),
+					type: v.literal("image"),
+					url: v.string(),
+					alt: v.string(),
+				})
+			)
+		),
 		colorScheme: v.optional(
 			v.object({
 				primary: v.string(),
@@ -62,9 +89,14 @@ export const scheduleCustomEmail = mutation({
 			throw new ConvexError("Recipient not found or access denied");
 		}
 
-		// Validate animationUrl if provided
-		if (args.animationUrl && !args.animationUrl.match(/\.(gif|jpe?g|png)$/i)) {
-			throw new ConvexError("Invalid image URL format");
+		// Validate image URLs in components
+		const imageComponents = args.components.filter(
+			(component): component is ImageComponent => component.type === "image"
+		);
+		for (const component of imageComponents) {
+			if (!component.url.match(/\.(gif|jpe?g|png)$/i)) {
+				throw new ConvexError("Invalid image URL format");
+			}
 		}
 
 		// Schedule the email
@@ -74,10 +106,8 @@ export const scheduleCustomEmail = mutation({
 			{
 				recipientId: args.recipientId,
 				date: args.scheduledDate,
-				customMessage: args.message,
 				subject: args.subject,
-				animationId: args.animationId,
-				animationUrl: args.animationUrl,
+				components: args.components as EmailComponent[],
 				colorScheme: args.colorScheme,
 			}
 		);

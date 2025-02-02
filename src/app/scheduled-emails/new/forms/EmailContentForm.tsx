@@ -10,7 +10,6 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { emailContentSchema } from "@/lib/validation";
@@ -48,8 +47,7 @@ export default function EmailContentForm({
 		defaultValues: defaultValues || {
 			subject: "",
 			scheduledDate: "",
-			heading: "",
-			body: "",
+			components: [],
 		},
 	});
 
@@ -67,7 +65,8 @@ export default function EmailContentForm({
 				form.clearErrors("scheduledDate");
 			}
 		}
-		onFormChange(value);
+		console.log("Form state updated:", value);
+		onFormChange(value as Partial<z.infer<typeof emailContentSchema>>);
 	});
 
 	return (
@@ -106,41 +105,6 @@ export default function EmailContentForm({
 									? "Choose when to send the email."
 									: "Free users can only schedule emails up to 7 days in advance."}
 							</FormDescription>
-							<FormMessage />
-						</FormItem>
-					)}
-				/>
-
-				<FormField
-					control={form.control}
-					name="heading"
-					render={({ field }) => (
-						<FormItem>
-							<FormLabel>Email Heading</FormLabel>
-							<FormControl>
-								<Input
-									placeholder="Enter heading to display above animation..."
-									{...field}
-								/>
-							</FormControl>
-							<FormMessage />
-						</FormItem>
-					)}
-				/>
-
-				<FormField
-					control={form.control}
-					name="body"
-					render={({ field }) => (
-						<FormItem>
-							<FormLabel>Email Message</FormLabel>
-							<FormControl>
-								<Textarea
-									placeholder="Enter message to display below animation..."
-									className="min-h-[100px]"
-									{...field}
-								/>
-							</FormControl>
 							<FormMessage />
 						</FormItem>
 					)}

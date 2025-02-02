@@ -8,10 +8,10 @@ import {
 } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
-import { ConvexError } from "convex/values";
 import { Id } from "./_generated/dataModel";
-import { getBirthdayEmailHtml } from "../src/email-templates/birthday";
-import { getReminderEmailHtml } from "../src/email-templates/reminder";
+import { EmailTemplate } from "../src/email-templates/EmailTemplate";
+import { ReminderEmailTemplate } from "../src/email-templates/ReminderEmailTemplate";
+import { type EmailComponent } from "../src/types/email-components";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -21,8 +21,32 @@ export const sendScheduledEmail = internalAction({
 		date: v.number(),
 		customMessage: v.optional(v.string()),
 		subject: v.optional(v.string()),
-		animationId: v.optional(v.id("animations")),
-		animationUrl: v.optional(v.string()),
+		components: v.array(
+			v.union(
+				v.object({
+					id: v.string(),
+					type: v.literal("heading"),
+					content: v.string(),
+				}),
+				v.object({
+					id: v.string(),
+					type: v.literal("text"),
+					content: v.string(),
+				}),
+				v.object({
+					id: v.string(),
+					type: v.literal("button"),
+					content: v.string(),
+					url: v.string(),
+				}),
+				v.object({
+					id: v.string(),
+					type: v.literal("image"),
+					url: v.string(),
+					alt: v.string(),
+				})
+			)
+		),
 		colorScheme: v.optional(
 			v.object({
 				primary: v.string(),
@@ -44,80 +68,14 @@ export const sendScheduledEmail = internalAction({
 			return;
 		}
 
-		// Get the animation URL - either from storage or direct URL
-		let animationUrl = args.animationUrl;
-		if (!animationUrl && args.animationId) {
-			// For custom emails, use the specified animation
-			const animation = await ctx.runQuery(internal.animations.getAnimation, {
-				id: args.animationId,
-			});
-
-			if (!animation) {
-				console.error("Animation not found");
-				throw new ConvexError("Animation not found");
-			}
-
-			if (!animation.storageId) {
-				console.error("Animation has no storage ID");
-				throw new ConvexError("Animation has no storage ID");
-			}
-
-			// Get the animation URL
-			const fetchedUrl = await ctx.runQuery(
-				internal.animations.getAnimationUrlInternal,
-				{
-					storageId: animation.storageId as Id<"_storage">,
-				}
-			);
-
-			if (!fetchedUrl) {
-				console.error("Failed to get animation URL");
-				throw new ConvexError("Failed to get animation URL");
-			}
-
-			animationUrl = fetchedUrl;
-		} else if (!animationUrl) {
-			// For automated emails, get a random base animation
-			const animation = await ctx.runQuery(
-				internal.animations.getBaseAnimation
-			);
-
-			if (!animation || !animation.storageId) {
-				console.error("No base animation found");
-				throw new ConvexError("No base animation found");
-			}
-
-			const fetchedUrl = await ctx.runQuery(
-				internal.animations.getAnimationUrlInternal,
-				{
-					storageId: animation.storageId as Id<"_storage">,
-				}
-			);
-
-			if (!fetchedUrl) {
-				console.error("Failed to get animation URL");
-				throw new ConvexError("Failed to get animation URL");
-			}
-
-			animationUrl = fetchedUrl;
-		}
-
-		// Create the email content
-		const subject = args.subject || `Happy Birthday ${recipient.name}!`;
-		const message =
-			args.customMessage ||
-			`Wishing you a fantastic birthday filled with joy and celebration!`;
-
 		try {
-			// Send the email using Resend
+			// Send the email using Resend with React template
 			await resend.emails.send({
 				from: "EventPulse <pulse@eventpulse.tech>",
 				to: recipient.email,
-				subject: subject,
-				html: getBirthdayEmailHtml({
-					subject,
-					message,
-					animationUrl,
+				subject: args.subject || `Happy Birthday ${recipient.name}!`,
+				react: EmailTemplate({
+					components: args.components as EmailComponent[],
 					colorScheme: args.colorScheme,
 				}),
 			});
@@ -245,7 +203,7 @@ export const sendReminderEmailAction = internalAction({
 				from: "EventPulse <pulse@eventpulse.tech>",
 				to: args.userEmail,
 				subject: `Events happening in ${args.reminderDays} days`,
-				html: getReminderEmailHtml({
+				react: ReminderEmailTemplate({
 					userName: args.userName,
 					events: args.events,
 				}),

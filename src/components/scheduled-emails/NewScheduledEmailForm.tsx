@@ -6,39 +6,28 @@ import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useState, forwardRef, useImperativeHandle } from "react";
 import { steps } from "@/app/scheduled-emails/new/steps";
 import Breadcrumbs from "@/app/scheduled-emails/new/Breadcrumbs";
 import { scheduledEmailFormSchema } from "@/lib/validation";
 import * as z from "zod";
-import { Id } from "../../../convex/_generated/dataModel";
-
-interface PreviewData {
-	heading?: string;
-	animationId?: string;
-	animationUrl?: string;
-	body?: string;
-	colorScheme?: {
-		primary: string;
-		secondary: string;
-		accent: string;
-		background: string;
-	};
-}
 
 interface NewScheduledEmailFormProps {
-	onFormChange: (data: PreviewData) => void;
+	onFormChange: (data: FormData) => void;
 	initialDate?: Date;
 }
 
 type FormData = z.infer<typeof scheduledEmailFormSchema>;
 
-export function NewScheduledEmailForm({
-	onFormChange,
-	initialDate,
-}: NewScheduledEmailFormProps) {
+export interface NewScheduledEmailFormRef {
+	onFormChange: (data: Partial<FormData>) => void;
+}
+
+export const NewScheduledEmailForm = forwardRef<
+	NewScheduledEmailFormRef,
+	NewScheduledEmailFormProps
+>(function NewScheduledEmailForm({ onFormChange, initialDate }, ref) {
 	const scheduleEmail = useMutation(api.scheduledEmails.scheduleCustomEmail);
-	const animations = useQuery(api.animations.getUserAnimations);
 	const subscriptionLevel = useQuery(
 		api.subscriptions.getUserSubscriptionLevel
 	);
@@ -49,9 +38,7 @@ export function NewScheduledEmailForm({
 	// Form state with required fields initialized
 	const [formData, setFormData] = useState<FormData>({
 		recipients: [],
-		animationType: "uploaded",
-		animation: "",
-		animationUrl: "",
+		components: [],
 		subject: "",
 		scheduledDate: initialDate
 			? new Date(
@@ -60,8 +47,6 @@ export function NewScheduledEmailForm({
 					.toISOString()
 					.slice(0, 16)
 			: "",
-		heading: "",
-		body: "",
 		colorScheme: {
 			primary: "#3B82F6",
 			secondary: "#60A5FA",
@@ -95,23 +80,13 @@ export function NewScheduledEmailForm({
 	const handleFormChange = (data: Partial<FormData>) => {
 		const newFormData = { ...formData, ...data };
 		setFormData(newFormData as FormData);
-
-		// Update preview
-		const selectedAnimation = animations?.find(
-			(a) => a._id === newFormData.animation
-		);
-
-		onFormChange({
-			heading: newFormData.heading,
-			animationId: selectedAnimation?.storageId,
-			animationUrl:
-				newFormData.animationType === "url"
-					? newFormData.animationUrl
-					: undefined,
-			body: newFormData.body,
-			colorScheme: newFormData.colorScheme,
-		});
+		onFormChange(newFormData);
 	};
+
+	// Expose handleFormChange through ref
+	useImperativeHandle(ref, () => ({
+		onFormChange: handleFormChange,
+	}));
 
 	// Handle form submission
 	async function handleSubmit() {
@@ -127,16 +102,8 @@ export function NewScheduledEmailForm({
 					await scheduleEmail({
 						recipientId,
 						scheduledDate: new Date(validatedData.scheduledDate).getTime(),
-						message: validatedData.body,
 						subject: validatedData.subject,
-						animationId:
-							validatedData.animationType === "uploaded"
-								? (validatedData.animation as Id<"animations">)
-								: undefined,
-						animationUrl:
-							validatedData.animationType === "url"
-								? validatedData.animationUrl
-								: undefined,
+						components: validatedData.components,
 						colorScheme: validatedData.colorScheme,
 					});
 				})
@@ -234,4 +201,4 @@ export function NewScheduledEmailForm({
 			</div>
 		</div>
 	);
-}
+});
