@@ -24,7 +24,7 @@ function renderComponent(component: EmailComponent, colorScheme: ColorScheme) {
 		case "heading":
 			return `<h2 style="color: ${colorScheme.primary}; margin: 0 0 24px; text-align: center; font-size: 24px; font-weight: 600;">${component.content}</h2>`;
 		case "text":
-			return `<p style="color: ${colorScheme.secondary}; margin: 0 0 16px; line-height: 1.5;">${component.content}</p>`;
+			return `<div style="text-align: center;"><p style="color: ${colorScheme.secondary}; margin: 0 0 16px; line-height: 1.5; display: inline-block; max-width: 600px;">${component.content}</p></div>`;
 		case "button":
 			const buttonUrl = component.url || "https://www.eventpulse.tech";
 			return `
@@ -39,7 +39,7 @@ function renderComponent(component: EmailComponent, colorScheme: ColorScheme) {
 				</div>
 			`;
 		case "image":
-			return `<img src="${component.url}" alt="${component.alt}" style="max-width: 100%; height: auto; margin: 0 0 24px; border-radius: 8px;" />`;
+			return `<div style="text-align: center; margin: 0 0 24px;"><img src="${component.url}" alt="${component.alt}" style="max-width: 100%; height: auto; border-radius: 8px;" /></div>`;
 		default:
 			return "";
 	}
@@ -79,15 +79,11 @@ export function getCustomEmailHtml({
                 <tr>
                   <td style="padding: 40px;">
                     ${emailBody}
-                  </td>
-                </tr>
-              </table>
-              <table width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto;">
-                <tr>
-                  <td align="center" style="padding: 24px 0;">
-                    <p style="margin: 0; color: ${colorScheme.secondary}; font-size: 14px;">
-                      Sent with ❤️ from <a href="https://www.eventpulse.tech" style="color: ${colorScheme.accent}; text-decoration: none; font-weight: 500;">EventPulse</a>
-                    </p>
+                    <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb; text-align: center;">
+                      <p style="margin: 0; color: ${colorScheme.secondary}; font-size: 14px;">
+                        Sent with ❤️ from <a href="https://www.eventpulse.tech" style="color: ${colorScheme.accent}; text-decoration: none; font-weight: 500;">EventPulse</a>
+                      </p>
+                    </div>
                   </td>
                 </tr>
               </table>
