@@ -149,10 +149,15 @@ export const listScheduledEmails = query({
 			scheduledEmails.map(async (email) => {
 				const args = email.args[0] as {
 					recipientId: Id<"recipients">;
-					date: number;
-					customMessage?: string;
-					subject?: string;
-					animationId?: Id<"animations">;
+					to: string;
+					subject: string;
+					components: EmailComponent[];
+					colorScheme?: {
+						primary: string;
+						secondary: string;
+						accent: string;
+						background: string;
+					};
 				};
 
 				const recipient = await ctx.db.get(args.recipientId);
@@ -171,9 +176,8 @@ export const listScheduledEmails = query({
 						name: recipient.name,
 						email: recipient.email,
 					},
-					customMessage: args.customMessage,
 					subject: args.subject,
-					isAutomated: !args.customMessage,
+					isAutomated: false,
 					error: email.state.kind === "failed" ? email.state.error : undefined,
 				};
 
@@ -253,9 +257,15 @@ export const deleteScheduledEmailsForRecipient = internalMutation({
 			scheduledEmails.map(async (email) => {
 				const emailArgs = email.args[0] as {
 					recipientId: Id<"recipients">;
-					date: number;
-					customMessage?: string;
-					subject?: string;
+					to: string;
+					subject: string;
+					components: EmailComponent[];
+					colorScheme?: {
+						primary: string;
+						secondary: string;
+						accent: string;
+						background: string;
+					};
 				};
 
 				if (emailArgs.recipientId === args.recipientId) {
