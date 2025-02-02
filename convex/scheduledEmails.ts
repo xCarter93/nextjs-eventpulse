@@ -108,8 +108,7 @@ export const scheduleCustomEmail = mutation({
 			args.scheduledDate,
 			internal.emails.sendScheduledEmail,
 			{
-				recipientId: args.recipientId,
-				date: args.scheduledDate,
+				to: recipient.email,
 				subject: args.subject,
 				components: args.components as EmailComponent[],
 				colorScheme: args.colorScheme,

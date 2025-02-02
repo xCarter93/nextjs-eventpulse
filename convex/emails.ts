@@ -9,20 +9,16 @@ import {
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
-import { EmailTemplate } from "../src/email-templates/EmailTemplate";
-import { ReminderEmailTemplate } from "@/email-templates/ReminderEmailTemplate";
+import { getCustomEmailHtml } from "../src/email-templates/CustomEmailTemplate";
+import { getReminderEmailHtml } from "../src/email-templates/reminder";
 import { type EmailComponent } from "../src/types/email-components";
-import React from "react";
-import { render } from "@react-email/render";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const sendScheduledEmail = internalAction({
 	args: {
-		recipientId: v.id("recipients"),
-		date: v.number(),
-		customMessage: v.optional(v.string()),
-		subject: v.optional(v.string()),
+		to: v.string(),
+		subject: v.string(),
 		components: v.array(
 			v.union(
 				v.object({
@@ -58,33 +54,16 @@ export const sendScheduledEmail = internalAction({
 			})
 		),
 	},
-	async handler(ctx, args) {
-		const recipient = await ctx.runQuery(
-			internal.recipients.getRecipientInternal,
-			{
-				id: args.recipientId,
-			}
-		);
-
-		if (!recipient) {
-			return;
-		}
-
-		try {
-			// Send the email using Resend with React template
-			await resend.emails.send({
-				from: "EventPulse <pulse@eventpulse.tech>",
-				to: recipient.email,
-				subject: args.subject || `Happy Birthday ${recipient.name}!`,
-				react: React.createElement(EmailTemplate, {
-					components: args.components as EmailComponent[],
-					colorScheme: args.colorScheme,
-				}),
-			});
-		} catch (error) {
-			console.error("Failed to send email:", error);
-			throw error;
-		}
+	handler: async (ctx, args) => {
+		await resend.emails.send({
+			from: "EventPulse <onboarding@resend.dev>",
+			to: args.to,
+			subject: args.subject,
+			html: getCustomEmailHtml({
+				components: args.components as EmailComponent[],
+				colorScheme: args.colorScheme,
+			}),
+		});
 	},
 });
 
@@ -200,26 +179,15 @@ export const sendReminderEmailAction = internalAction({
 		reminderDays: v.number(),
 	},
 	async handler(ctx, args) {
-		const reminderEmailHtml = await render(
-			React.createElement(ReminderEmailTemplate, {
-				userName: args.userName,
-				events: args.events,
-			})
-		);
-		console.log(reminderEmailHtml);
-		const { error } = await resend.emails.send({
+		await resend.emails.send({
 			from: "EventPulse <pulse@eventpulse.tech>",
 			to: args.userEmail,
 			subject: `Events happening in ${args.reminderDays} days`,
-			html: reminderEmailHtml,
+			html: getReminderEmailHtml({
+				userName: args.userName,
+				events: args.events,
+			}),
 		});
-		if (error) {
-			console.error(
-				`Failed to send reminder email to ${args.userEmail}:`,
-				error
-			);
-			throw error;
-		}
 	},
 });
 
