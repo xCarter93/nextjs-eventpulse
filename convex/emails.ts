@@ -1,5 +1,11 @@
 import { Resend } from "resend";
-import { internalAction, internalQuery } from "./_generated/server";
+import {
+	internalAction,
+	internalMutation,
+	internalQuery,
+	MutationCtx,
+	QueryCtx,
+} from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import { ConvexError } from "convex/values";
@@ -213,62 +219,140 @@ export const getUpcomingEvents = internalQuery({
 	},
 });
 
+// Internal action to send a single reminder email
+export const sendReminderEmailAction = internalAction({
+	args: {
+		userId: v.id("users"),
+		userEmail: v.string(),
+		userName: v.string(),
+		events: v.array(
+			v.object({
+				type: v.union(
+					v.literal("birthday"),
+					v.literal("event"),
+					v.literal("holiday")
+				),
+				name: v.string(),
+				date: v.number(),
+				description: v.optional(v.string()),
+			})
+		),
+		reminderDays: v.number(),
+	},
+	async handler(ctx, args) {
+		try {
+			await resend.emails.send({
+				from: "EventPulse <pulse@eventpulse.tech>",
+				to: args.userEmail,
+				subject: `Events happening in ${args.reminderDays} days`,
+				html: getReminderEmailHtml({
+					userName: args.userName,
+					events: args.events,
+				}),
+			});
+			console.log(
+				`Successfully sent reminder email to ${args.userEmail} for ${args.events.length} events`
+			);
+		} catch (error) {
+			console.error(
+				`Failed to send reminder email to ${args.userEmail}:`,
+				error
+			);
+			throw error;
+		}
+	},
+});
+
+// Helper function to get and process events for a user
+async function sendReminderEmail(
+	ctx: {
+		runQuery: QueryCtx["runQuery"];
+		scheduler: MutationCtx["scheduler"];
+	},
+	user: {
+		_id: Id<"users">;
+		email: string;
+		name: string;
+		settings?: {
+			notifications?: {
+				reminderDays: number;
+				emailReminders: {
+					events: boolean;
+					birthdays: boolean;
+					holidays: boolean;
+				};
+			};
+		};
+	},
+	delay: number
+): Promise<void> {
+	// Ensure user has required settings
+	if (!user.settings?.notifications) return;
+
+	const { reminderDays, emailReminders } = user.settings.notifications;
+
+	// Calculate the date range for events
+	const now = new Date();
+	now.setUTCHours(0, 0, 0, 0);
+
+	const targetStart = new Date(now);
+	targetStart.setDate(targetStart.getDate() + reminderDays);
+	targetStart.setUTCHours(0, 0, 0, 0);
+
+	const targetEnd = new Date(targetStart);
+	targetEnd.setUTCHours(23, 59, 59, 999);
+
+	const upcomingEvents = await ctx.runQuery(internal.emails.getUpcomingEvents, {
+		userId: user._id,
+		startDate: targetStart.getTime(),
+		endDate: targetEnd.getTime(),
+		includeEvents: emailReminders.events,
+		includeBirthdays: emailReminders.birthdays,
+		includeHolidays: emailReminders.holidays,
+	});
+
+	// If no events, return early
+	if (upcomingEvents.length === 0) return;
+
+	// Schedule the email with the specified delay
+	await ctx.scheduler.runAfter(delay, internal.emails.sendReminderEmailAction, {
+		userId: user._id,
+		userEmail: user.email,
+		userName: user.name,
+		events: upcomingEvents,
+		reminderDays,
+	});
+	console.log(
+		`Scheduled reminder email for ${user.email} with ${upcomingEvents.length} events`
+	);
+}
+
 // Daily cron job to send reminder emails
-export const sendReminderEmails = internalAction({
+export const sendReminderEmails = internalMutation({
 	args: {},
 	async handler(ctx) {
 		const users = await ctx.runQuery(internal.users.listUsers);
+		console.log(`Processing reminder emails for ${users.length} users`);
 
-		for (const user of users) {
-			// Skip if user doesn't have notification settings
-			if (!user.settings?.notifications) continue;
-
-			const { reminderDays, emailReminders } = user.settings.notifications;
-
-			// Skip if no reminders are enabled
-			if (
-				!emailReminders.events &&
-				!emailReminders.birthdays &&
-				!emailReminders.holidays
-			) {
-				continue;
-			}
-
-			const now = new Date();
-			const targetDate = new Date(
-				now.getTime() + reminderDays * 24 * 60 * 60 * 1000
+		// Filter users who have at least one notification type enabled
+		const eligibleUsers = users.filter((user) => {
+			if (!user.settings?.notifications) return false;
+			const { emailReminders } = user.settings.notifications;
+			return (
+				emailReminders.events ||
+				emailReminders.birthdays ||
+				emailReminders.holidays
 			);
-			// Set the time to midnight UTC for consistent comparison
-			targetDate.setUTCHours(0, 0, 0, 0);
+		});
 
-			const upcomingEvents = await ctx.runQuery(
-				internal.emails.getUpcomingEvents,
-				{
-					userId: user._id,
-					startDate: targetDate.getTime(),
-					endDate: targetDate.getTime() + 24 * 60 * 60 * 1000 - 1, // End of the target day
-					includeEvents: emailReminders.events,
-					includeBirthdays: emailReminders.birthdays,
-					includeHolidays: emailReminders.holidays,
-				}
-			);
-
-			// Skip if no upcoming events
-			if (upcomingEvents.length === 0) continue;
-
-			try {
-				await resend.emails.send({
-					from: "EventPulse <pulse@eventpulse.tech>",
-					to: user.email,
-					subject: `Events happening in ${reminderDays} days`,
-					html: getReminderEmailHtml({
-						userName: user.name,
-						events: upcomingEvents,
-					}),
-				});
-			} catch (error) {
-				console.error(`Failed to send reminder email to ${user.email}:`, error);
-			}
-		}
+		// Process each eligible user with a delay
+		await Promise.all(
+			eligibleUsers.map(
+				(user, index) => sendReminderEmail(ctx, user, index * 200) // 200ms delay between each email
+			)
+		);
+		console.log(
+			`Completed processing reminder emails for ${eligibleUsers.length} eligible users`
+		);
 	},
 });

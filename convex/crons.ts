@@ -6,14 +6,14 @@ const crons = cronJobs();
 // Run every day at midnight UTC to clean up expired animations
 crons.daily(
 	"cleanup-free-tier-animations",
-	{ hourUTC: 0, minuteUTC: 0 },
+	{ hourUTC: 12, minuteUTC: 0 },
 	internal.animations.cleanupFreeUserAnimations
 );
 
 // Run every day at midnight UTC to send reminder emails
 crons.daily(
 	"send-reminder-emails",
-	{ hourUTC: 0, minuteUTC: 0 },
+	{ hourUTC: 12, minuteUTC: 0 },
 	internal.emails.sendReminderEmails
 );
 
