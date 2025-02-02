@@ -211,7 +211,7 @@ export const sendReminderEmailAction = internalAction({
 						events: args.events,
 					}),
 					{
-						pretty: true,
+						pretty: false,
 					}
 				),
 			});
