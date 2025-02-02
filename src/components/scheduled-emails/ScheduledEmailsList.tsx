@@ -66,10 +66,10 @@ export function ScheduledEmailsList({
 		return (
 			<Card>
 				<CardBody className="px-4 py-6 sm:p-8">
-					<h3 className="text-base font-semibold leading-7 text-gray-900">
+					<h3 className="text-base font-semibold leading-7 text-gray-900 dark:text-gray-100">
 						No {filterStatus} Emails
 					</h3>
-					<p className="mt-1 text-sm leading-6 text-gray-600">
+					<p className="mt-1 text-sm leading-6 text-gray-600 dark:text-gray-400">
 						{filterStatus === "pending"
 							? "You don't have any pending emails scheduled at the moment."
 							: filterStatus === "completed"
@@ -88,12 +88,12 @@ export function ScheduledEmailsList({
 					<CardHeader className="flex flex-row items-start justify-between gap-4">
 						<div>
 							<div className="flex items-center gap-2">
-								<Mail className="h-5 w-5 text-gray-500" />
-								<h3 className="text-base font-semibold leading-7 text-gray-900">
+								<Mail className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+								<h3 className="text-base font-semibold leading-7 text-gray-900 dark:text-gray-100">
 									{email.subject || "Birthday Greeting"}
 								</h3>
 							</div>
-							<p className="mt-1 text-sm leading-6 text-gray-600">
+							<p className="mt-1 text-sm leading-6 text-gray-600 dark:text-gray-400">
 								To: {email.recipient.name} ({email.recipient.email})
 							</p>
 						</div>
@@ -118,24 +118,41 @@ export function ScheduledEmailsList({
 					<CardBody className="pt-0">
 						<div className="flex flex-col gap-4 text-sm">
 							<div>
-								<span className="text-gray-500">Scheduled for: </span>
-								{new Date(email.scheduledTime).toLocaleString()} (
-								{formatDistanceToNow(email.scheduledTime, { addSuffix: true })})
+								<span className="text-gray-500 dark:text-gray-400">
+									Scheduled for:{" "}
+								</span>
+								<span className="text-gray-700 dark:text-gray-300">
+									{new Date(email.scheduledTime).toLocaleString()} (
+									{formatDistanceToNow(email.scheduledTime, {
+										addSuffix: true,
+									})}
+									)
+								</span>
 							</div>
 							{email.completedTime && (
 								<div>
-									<span className="text-gray-500">Completed: </span>
-									{new Date(email.completedTime).toLocaleString()}
+									<span className="text-gray-500 dark:text-gray-400">
+										Completed:{" "}
+									</span>
+									<span className="text-gray-700 dark:text-gray-300">
+										{new Date(email.completedTime).toLocaleString()}
+									</span>
 								</div>
 							)}
 							{email.customMessage && (
 								<div>
-									<span className="text-gray-500">Message: </span>
-									{email.customMessage}
+									<span className="text-gray-500 dark:text-gray-400">
+										Message:{" "}
+									</span>
+									<span className="text-gray-700 dark:text-gray-300">
+										{email.customMessage}
+									</span>
 								</div>
 							)}
 							<div className="flex items-center gap-2">
-								<span className="text-gray-500">Status: </span>
+								<span className="text-gray-500 dark:text-gray-400">
+									Status:{" "}
+								</span>
 								<Chip
 									color={statusColorMap[email.status]}
 									variant="flat"
@@ -151,10 +168,12 @@ export function ScheduledEmailsList({
 								</div>
 							)}
 							<div>
-								<span className="text-gray-500">Type: </span>
-								{email.isAutomated
-									? "Automated Birthday Email"
-									: "Custom Scheduled Email"}
+								<span className="text-gray-500 dark:text-gray-400">Type: </span>
+								<span className="text-gray-700 dark:text-gray-300">
+									{email.isAutomated
+										? "Automated Birthday Email"
+										: "Custom Scheduled Email"}
+								</span>
 							</div>
 						</div>
 					</CardBody>
