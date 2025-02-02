@@ -123,7 +123,6 @@ export function Navbar() {
 						<NavbarItem className="flex items-center">
 							{isSignedIn ? (
 								<UserButton
-									afterSignOutUrl="/"
 									appearance={{
 										elements: {
 											avatarBox: {
