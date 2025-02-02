@@ -17,6 +17,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const sendScheduledEmail = internalAction({
 	args: {
+		recipientId: v.id("recipients"),
 		to: v.string(),
 		subject: v.string(),
 		components: v.array(
