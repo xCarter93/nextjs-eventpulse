@@ -94,6 +94,10 @@ export const scheduleCustomEmail = mutation({
 			(component): component is ImageComponent => component.type === "image"
 		);
 		for (const component of imageComponents) {
+			// Skip validation for Convex storage URLs
+			if (component.url.includes("convex.cloud")) continue;
+
+			// Only validate external URLs
 			if (!component.url.match(/\.(gif|jpe?g|png)$/i)) {
 				throw new ConvexError("Invalid image URL format");
 			}
