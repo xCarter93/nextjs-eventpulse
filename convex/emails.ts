@@ -207,6 +207,7 @@ export const sendReminderEmailAction = internalAction({
 					events: args.events,
 				})
 			);
+			console.log(reminderEmailHtml);
 			await resend.emails.send({
 				from: "EventPulse <pulse@eventpulse.tech>",
 				to: args.userEmail,
