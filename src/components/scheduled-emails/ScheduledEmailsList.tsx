@@ -2,20 +2,12 @@
 
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
 import { formatDistanceToNow } from "date-fns";
 import { Loader2, Mail, Trash2 } from "lucide-react";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { Id } from "../../../convex/_generated/dataModel";
-import { cn } from "@/lib/utils";
+import { Card, CardHeader, CardBody, Button, Chip } from "@heroui/react";
 
 interface ScheduledEmail {
 	_id: Id<"_scheduled_functions">;
@@ -35,6 +27,14 @@ interface ScheduledEmail {
 interface ScheduledEmailsListProps {
 	filterStatus: "pending" | "completed" | "canceled";
 }
+
+const statusColorMap = {
+	pending: "warning",
+	inProgress: "primary",
+	success: "success",
+	failed: "danger",
+	canceled: "default",
+} as const;
 
 export function ScheduledEmailsList({
 	filterStatus,
@@ -65,16 +65,18 @@ export function ScheduledEmailsList({
 	if (filteredEmails.length === 0) {
 		return (
 			<Card>
-				<CardHeader>
-					<CardTitle>No {filterStatus} Emails</CardTitle>
-					<CardDescription>
+				<CardBody className="px-4 py-6 sm:p-8">
+					<h3 className="text-base font-semibold leading-7 text-gray-900">
+						No {filterStatus} Emails
+					</h3>
+					<p className="mt-1 text-sm leading-6 text-gray-600">
 						{filterStatus === "pending"
 							? "You don't have any pending emails scheduled at the moment."
 							: filterStatus === "completed"
 								? "No emails have been completed yet."
 								: "No emails have been canceled or failed."}
-					</CardDescription>
-				</CardHeader>
+					</p>
+				</CardBody>
 			</Card>
 		);
 	}
@@ -83,78 +85,64 @@ export function ScheduledEmailsList({
 		<div className="grid gap-4">
 			{filteredEmails.map((email) => (
 				<Card key={email._id}>
-					<CardHeader className="pb-4">
-						<div className="flex items-start justify-between">
-							<div>
-								<CardTitle className="flex items-center gap-2">
-									<Mail className="h-5 w-5" />
+					<CardHeader className="flex flex-row items-start justify-between gap-4">
+						<div>
+							<div className="flex items-center gap-2">
+								<Mail className="h-5 w-5 text-gray-500" />
+								<h3 className="text-base font-semibold leading-7 text-gray-900">
 									{email.subject || "Birthday Greeting"}
-								</CardTitle>
-								<CardDescription className="mt-1">
-									To: {email.recipient.name} ({email.recipient.email})
-								</CardDescription>
+								</h3>
 							</div>
-							{email.status === "pending" && (
-								<Button
-									variant="ghost"
-									size="icon"
-									onClick={() => {
-										toast.promise(
-											cancelEmail({ scheduledEmailId: email._id }),
-											{
-												loading: "Canceling email...",
-												success: "Email canceled successfully",
-												error: "Failed to cancel email",
-											}
-										);
-									}}
-								>
-									<Trash2 className="h-4 w-4" />
-									<span className="sr-only">Cancel email</span>
-								</Button>
-							)}
+							<p className="mt-1 text-sm leading-6 text-gray-600">
+								To: {email.recipient.name} ({email.recipient.email})
+							</p>
 						</div>
+						{email.status === "pending" && (
+							<Button
+								variant="ghost"
+								isIconOnly
+								color="danger"
+								onPress={() => {
+									toast.promise(cancelEmail({ scheduledEmailId: email._id }), {
+										loading: "Canceling email...",
+										success: "Email canceled successfully",
+										error: "Failed to cancel email",
+									});
+								}}
+							>
+								<Trash2 className="h-4 w-4" />
+								<span className="sr-only">Cancel email</span>
+							</Button>
+						)}
 					</CardHeader>
-					<CardContent>
-						<div className="flex flex-col gap-2 text-sm">
+					<CardBody className="pt-0">
+						<div className="flex flex-col gap-4 text-sm">
 							<div>
-								<span className="text-muted-foreground">Scheduled for: </span>
+								<span className="text-gray-500">Scheduled for: </span>
 								{new Date(email.scheduledTime).toLocaleString()} (
 								{formatDistanceToNow(email.scheduledTime, { addSuffix: true })})
 							</div>
 							{email.completedTime && (
 								<div>
-									<span className="text-muted-foreground">Completed: </span>
+									<span className="text-gray-500">Completed: </span>
 									{new Date(email.completedTime).toLocaleString()}
 								</div>
 							)}
 							{email.customMessage && (
 								<div>
-									<span className="text-muted-foreground">Message: </span>
+									<span className="text-gray-500">Message: </span>
 									{email.customMessage}
 								</div>
 							)}
 							<div className="flex items-center gap-2">
-								<span className="text-muted-foreground">Status: </span>
-								<span
-									className={cn(
-										"inline-flex items-center rounded-full px-2 py-1 text-xs font-medium",
-										{
-											"bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200":
-												email.status === "pending",
-											"bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200":
-												email.status === "inProgress",
-											"bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200":
-												email.status === "success",
-											"bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200":
-												email.status === "failed",
-											"bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200":
-												email.status === "canceled",
-										}
-									)}
+								<span className="text-gray-500">Status: </span>
+								<Chip
+									color={statusColorMap[email.status]}
+									variant="flat"
+									size="sm"
 								>
 									{email.status.charAt(0).toUpperCase() + email.status.slice(1)}
-								</span>
+								</Chip>
 							</div>
 							{email.error && (
 								<div className="text-red-600 dark:text-red-400">
@@ -163,13 +151,13 @@ export function ScheduledEmailsList({
 								</div>
 							)}
 							<div>
-								<span className="text-muted-foreground">Type: </span>
+								<span className="text-gray-500">Type: </span>
 								{email.isAutomated
 									? "Automated Birthday Email"
 									: "Custom Scheduled Email"}
 							</div>
 						</div>
-					</CardContent>
+					</CardBody>
 				</Card>
 			))}
 		</div>
