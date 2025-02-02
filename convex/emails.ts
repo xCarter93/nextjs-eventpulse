@@ -58,7 +58,7 @@ export const sendScheduledEmail = internalAction({
 	handler: async (ctx, args) => {
 		try {
 			const { data, error } = await resend.emails.send({
-				from: "EventPulse <onboarding@resend.dev>",
+				from: "EventPulse <pulse@eventpulse.tech>",
 				to: args.to,
 				subject: args.subject,
 				html: getCustomEmailHtml({
