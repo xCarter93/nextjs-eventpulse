@@ -200,21 +200,20 @@ export const sendReminderEmailAction = internalAction({
 		reminderDays: v.number(),
 	},
 	async handler(ctx, args) {
-		try {
-			const reminderEmailHtml = await render(
-				React.createElement(ReminderEmailTemplate, {
-					userName: args.userName,
-					events: args.events,
-				})
-			);
-			console.log(reminderEmailHtml);
-			await resend.emails.send({
-				from: "EventPulse <pulse@eventpulse.tech>",
-				to: args.userEmail,
-				subject: `Events happening in ${args.reminderDays} days`,
-				html: reminderEmailHtml,
-			});
-		} catch (error) {
+		const reminderEmailHtml = await render(
+			React.createElement(ReminderEmailTemplate, {
+				userName: args.userName,
+				events: args.events,
+			})
+		);
+		console.log(reminderEmailHtml);
+		const { error } = await resend.emails.send({
+			from: "EventPulse <pulse@eventpulse.tech>",
+			to: args.userEmail,
+			subject: `Events happening in ${args.reminderDays} days`,
+			html: reminderEmailHtml,
+		});
+		if (error) {
 			console.error(
 				`Failed to send reminder email to ${args.userEmail}:`,
 				error
