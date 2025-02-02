@@ -12,6 +12,7 @@ import { Id } from "./_generated/dataModel";
 import { EmailTemplate } from "../src/email-templates/EmailTemplate";
 import { ReminderEmailTemplate } from "../src/email-templates/ReminderEmailTemplate";
 import { type EmailComponent } from "../src/types/email-components";
+import React from "react";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -74,7 +75,7 @@ export const sendScheduledEmail = internalAction({
 				from: "EventPulse <pulse@eventpulse.tech>",
 				to: recipient.email,
 				subject: args.subject || `Happy Birthday ${recipient.name}!`,
-				react: EmailTemplate({
+				react: React.createElement(EmailTemplate, {
 					components: args.components as EmailComponent[],
 					colorScheme: args.colorScheme,
 				}),
@@ -203,7 +204,7 @@ export const sendReminderEmailAction = internalAction({
 				from: "EventPulse <pulse@eventpulse.tech>",
 				to: args.userEmail,
 				subject: `Events happening in ${args.reminderDays} days`,
-				react: ReminderEmailTemplate({
+				react: React.createElement(ReminderEmailTemplate, {
 					userName: args.userName,
 					events: args.events,
 				}),
