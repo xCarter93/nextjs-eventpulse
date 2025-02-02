@@ -22,16 +22,37 @@ const defaultColorScheme: ColorScheme = {
 function renderComponent(component: EmailComponent, colorScheme: ColorScheme) {
 	switch (component.type) {
 		case "heading":
-			return `<h2 style="color: ${colorScheme.primary}; margin: 0 0 24px;">${component.content}</h2>`;
+			return `<h2 style="color: ${colorScheme.primary}; margin: 0 0 24px; text-align: center; font-size: 24px; font-weight: 600;">${component.content}</h2>`;
 		case "text":
 			return `<p style="color: ${colorScheme.secondary}; margin: 0 0 16px; line-height: 1.5;">${component.content}</p>`;
 		case "button":
-			return `<a href="${component.url}" style="display: inline-block; padding: 12px 24px; background-color: ${colorScheme.accent}; color: white; text-decoration: none; border-radius: 6px; margin: 0 0 24px;">${component.content}</a>`;
+			const buttonUrl = component.url || "https://www.eventpulse.tech";
+			return `
+				<div style="text-align: center; margin: 0 0 24px;">
+					<a href="${buttonUrl}" 
+						style="display: inline-block; padding: 12px 24px; background-color: ${colorScheme.accent}; color: white; text-decoration: none; border-radius: 6px; font-weight: 500; transition: background-color 0.2s ease;"
+						onmouseover="this.style.backgroundColor='${adjustColor(colorScheme.accent, -20)}'"
+						onmouseout="this.style.backgroundColor='${colorScheme.accent}'"
+					>
+						${component.content}
+					</a>
+				</div>
+			`;
 		case "image":
-			return `<img src="${component.url}" alt="${component.alt}" style="max-width: 100%; height: auto; margin: 0 0 24px;" />`;
+			return `<img src="${component.url}" alt="${component.alt}" style="max-width: 100%; height: auto; margin: 0 0 24px; border-radius: 8px;" />`;
 		default:
 			return "";
 	}
+}
+
+// Helper function to darken/lighten colors for hover effects
+function adjustColor(color: string, amount: number): string {
+	const hex = color.replace("#", "");
+	const num = parseInt(hex, 16);
+	const r = Math.max(0, Math.min(255, (num >> 16) + amount));
+	const g = Math.max(0, Math.min(255, ((num >> 8) & 0x00ff) + amount));
+	const b = Math.max(0, Math.min(255, (num & 0x0000ff) + amount));
+	return "#" + (g | (b << 8) | (r << 16)).toString(16).padStart(6, "0");
 }
 
 export function getCustomEmailHtml({
@@ -65,7 +86,7 @@ export function getCustomEmailHtml({
                 <tr>
                   <td align="center" style="padding: 24px 0;">
                     <p style="margin: 0; color: ${colorScheme.secondary}; font-size: 14px;">
-                      Powered by <a href="https://eventpulse.tech" style="color: ${colorScheme.accent}; text-decoration: none;">EventPulse</a>
+                      Sent with ❤️ from <a href="https://www.eventpulse.tech" style="color: ${colorScheme.accent}; text-decoration: none; font-weight: 500;">EventPulse</a>
                     </p>
                   </td>
                 </tr>
