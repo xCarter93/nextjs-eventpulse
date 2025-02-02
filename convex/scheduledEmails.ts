@@ -160,6 +160,11 @@ export const listScheduledEmails = query({
 					};
 				};
 
+				// Skip if no recipientId
+				if (!args?.recipientId) {
+					return null;
+				}
+
 				const recipient = await ctx.db.get(args.recipientId);
 
 				// Only include emails for recipients that belong to this user
@@ -225,13 +230,23 @@ export const cancelScheduledEmail = mutation({
 		// Verify the recipient belongs to this user
 		const emailArgs = scheduledEmail.args[0] as {
 			recipientId: Id<"recipients">;
-			date: number;
-			customMessage?: string;
-			subject?: string;
+			to: string;
+			subject: string;
+			components: EmailComponent[];
+			colorScheme?: {
+				primary: string;
+				secondary: string;
+				accent: string;
+				background: string;
+			};
 		};
-		const recipient = (await ctx.db.get(
-			emailArgs.recipientId
-		)) as Doc<"recipients"> | null;
+
+		// Skip if no recipientId
+		if (!emailArgs?.recipientId) {
+			throw new ConvexError("Invalid email format");
+		}
+
+		const recipient = await ctx.db.get(emailArgs.recipientId);
 		if (!recipient || recipient.userId !== user._id) {
 			throw new ConvexError("Access denied");
 		}
