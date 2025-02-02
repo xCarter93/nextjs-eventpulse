@@ -10,9 +10,10 @@ import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import { EmailTemplate } from "../src/email-templates/EmailTemplate";
-import { ReminderEmailTemplate } from "../src/email-templates/ReminderEmailTemplate";
+import { ReminderEmailTemplate } from "@/email-templates/ReminderEmailTemplate";
 import { type EmailComponent } from "../src/types/email-components";
 import React from "react";
+import { render } from "@react-email/render";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -204,14 +205,16 @@ export const sendReminderEmailAction = internalAction({
 				from: "EventPulse <pulse@eventpulse.tech>",
 				to: args.userEmail,
 				subject: `Events happening in ${args.reminderDays} days`,
-				react: React.createElement(ReminderEmailTemplate, {
-					userName: args.userName,
-					events: args.events,
-				}),
+				html: await render(
+					React.createElement(ReminderEmailTemplate, {
+						userName: args.userName,
+						events: args.events,
+					}),
+					{
+						pretty: true,
+					}
+				),
 			});
-			console.log(
-				`Successfully sent reminder email to ${args.userEmail} for ${args.events.length} events`
-			);
 		} catch (error) {
 			console.error(
 				`Failed to send reminder email to ${args.userEmail}:`,
