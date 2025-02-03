@@ -8,20 +8,24 @@ import {
 import { DEFAULT_FREE_FEATURES } from "./subscriptions";
 import { PRO_TIER_LIMITS } from "../src/lib/subscriptions";
 
-const DEFAULT_SETTINGS = {
-	calendar: {
-		showHolidays: true,
-	},
-	upcomingEvents: {
-		daysToShow: 30,
-		maxEvents: 10,
-	},
-	notifications: {
-		reminderDays: 7,
-		emailReminders: {
-			events: true,
-			birthdays: true,
-			holidays: false,
+const DEFAULT_USER_STATE = {
+	lastSignedInDate: Date.now(),
+	hasSeenTour: false,
+	settings: {
+		calendar: {
+			showHolidays: true,
+		},
+		upcomingEvents: {
+			daysToShow: 30,
+			maxEvents: 10,
+		},
+		notifications: {
+			reminderDays: 7,
+			emailReminders: {
+				events: true,
+				birthdays: true,
+				holidays: false,
+			},
 		},
 	},
 };
@@ -46,13 +50,10 @@ export const createUser = internalMutation({
 			throw new ConvexError("User already exists");
 		}
 
-		// Create new user with default settings
+		// Create new user with all default values
 		return await ctx.db.insert("users", {
-			name: args.name,
-			tokenIdentifier: args.tokenIdentifier,
-			image: args.image,
-			email: args.email,
-			settings: DEFAULT_SETTINGS,
+			...args,
+			...DEFAULT_USER_STATE,
 		});
 	},
 });
@@ -185,8 +186,9 @@ export const updateLastSignIn = internalMutation({
 			)
 			.first();
 
+		// If no user found, just return without throwing error
 		if (!user) {
-			throw new Error("User not found");
+			return;
 		}
 
 		await ctx.db.patch(user._id, {
