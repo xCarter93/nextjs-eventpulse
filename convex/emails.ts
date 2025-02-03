@@ -15,6 +15,17 @@ import { type EmailComponent } from "../src/types/email-components";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// Helper function to check if a URL is a Convex storage URL
+function isConvexStorageUrl(url: string): boolean {
+	return url.includes("convex.cloud");
+}
+
+// Helper function to extract storage ID from Convex URL
+function getStorageIdFromUrl(url: string): Id<"_storage"> | null {
+	const match = url.match(/\/storage\/([^/]+)/);
+	return match ? (match[1] as Id<"_storage">) : null;
+}
+
 export const sendScheduledEmail = internalAction({
 	args: {
 		recipientId: v.id("recipients"),
@@ -57,12 +68,30 @@ export const sendScheduledEmail = internalAction({
 	},
 	handler: async (ctx, args) => {
 		try {
+			// Create a new array of components with fresh URLs for Convex storage images
+			const updatedComponents = await Promise.all(
+				args.components.map(async (component) => {
+					if (component.type === "image" && isConvexStorageUrl(component.url)) {
+						const storageId = getStorageIdFromUrl(component.url);
+						if (storageId) {
+							// Generate a fresh URL for the image
+							const freshUrl = await ctx.storage.getUrl(storageId);
+							return {
+								...component,
+								url: freshUrl,
+							};
+						}
+					}
+					return component;
+				})
+			);
+
 			const { data, error } = await resend.emails.send({
 				from: "EventPulse <pulse@eventpulse.tech>",
 				to: args.to,
 				subject: args.subject,
 				html: getCustomEmailHtml({
-					components: args.components as EmailComponent[],
+					components: updatedComponents as EmailComponent[],
 					colorScheme: args.colorScheme,
 				}),
 			});
