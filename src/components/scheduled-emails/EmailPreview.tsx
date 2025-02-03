@@ -159,12 +159,12 @@ function EmailComponentRenderer({
 			);
 		case "image":
 			return component.url ? (
-				<div className="relative w-full aspect-[16/9]">
+				<div className="relative w-full aspect-[16/9] rounded-lg overflow-hidden">
 					<Image
 						src={component.url}
 						alt={component.alt}
 						fill
-						className="object-contain rounded-lg"
+						className="object-cover rounded-lg"
 					/>
 				</div>
 			) : (

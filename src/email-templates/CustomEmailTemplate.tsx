@@ -59,11 +59,11 @@ export function getCustomEmailHtml({
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>EventPulse Email</title>
       </head>
-      <body style="margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; background-color: ${colorScheme.background};">
-        <table width="100%" cellpadding="0" cellspacing="0" style="min-width: 100%; background-color: ${colorScheme.background};">
+      <body style="margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; background-color: #f3f4f6;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="min-width: 100%; background-color: #f3f4f6;">
           <tr>
             <td align="center" style="padding: 45px 0;">
-              <table width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
+              <table width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: ${colorScheme.background}; border-radius: 8px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
                 <tr>
                   <td style="padding: 40px;">
                     ${emailBody}
