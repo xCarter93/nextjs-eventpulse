@@ -9,6 +9,7 @@ import { GripVertical } from "lucide-react";
 import { ComponentControls } from "./ComponentControls";
 import { ComponentConfigDialog } from "./ComponentConfigDialog";
 import { useState } from "react";
+import Image from "next/image";
 
 interface EmailPreviewProps {
 	colorScheme?: ColorScheme;
@@ -145,21 +146,27 @@ function EmailComponentRenderer({
 			);
 		case "button":
 			return (
-				<a
-					href="#"
-					onClick={handleButtonClick}
-					className="inline-block px-6 py-3 rounded-lg font-medium text-white bg-primary hover:bg-primary/90 transition-colors pointer-events-none"
-				>
-					{component.content}
-				</a>
+				<div className="text-center">
+					<a
+						href="#"
+						onClick={handleButtonClick}
+						className="inline-block px-6 py-3 rounded-lg font-medium text-white transition-colors pointer-events-none"
+						style={{ backgroundColor: colorScheme?.accent || "#3B82F6" }}
+					>
+						{component.content}
+					</a>
+				</div>
 			);
 		case "image":
 			return component.url ? (
-				<img
-					src={component.url}
-					alt={component.alt}
-					className="max-w-full h-auto rounded-lg"
-				/>
+				<div className="relative w-full aspect-[16/9]">
+					<Image
+						src={component.url}
+						alt={component.alt}
+						fill
+						className="object-contain rounded-lg"
+					/>
+				</div>
 			) : (
 				<div className="w-full aspect-video bg-muted rounded-lg flex items-center justify-center text-muted-foreground">
 					Add image URL

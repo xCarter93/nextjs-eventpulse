@@ -30,9 +30,7 @@ function renderComponent(component: EmailComponent, colorScheme: ColorScheme) {
 			return `
 				<div style="text-align: center; margin: 0 0 24px;">
 					<a href="${buttonUrl}" 
-						style="display: inline-block; padding: 12px 24px; background-color: ${colorScheme.accent}; color: white; text-decoration: none; border-radius: 6px; font-weight: 500; transition: background-color 0.2s ease;"
-						onmouseover="this.style.backgroundColor='${adjustColor(colorScheme.accent, -20)}'"
-						onmouseout="this.style.backgroundColor='${colorScheme.accent}'"
+						style="display: inline-block; padding: 12px 24px; background-color: ${colorScheme.accent}; color: white; text-decoration: none; border-radius: 6px; font-weight: 500; cursor: pointer;"
 					>
 						${component.content}
 					</a>
@@ -43,16 +41,6 @@ function renderComponent(component: EmailComponent, colorScheme: ColorScheme) {
 		default:
 			return "";
 	}
-}
-
-// Helper function to darken/lighten colors for hover effects
-function adjustColor(color: string, amount: number): string {
-	const hex = color.replace("#", "");
-	const num = parseInt(hex, 16);
-	const r = Math.max(0, Math.min(255, (num >> 16) + amount));
-	const g = Math.max(0, Math.min(255, ((num >> 8) & 0x00ff) + amount));
-	const b = Math.max(0, Math.min(255, (num & 0x0000ff) + amount));
-	return "#" + (g | (b << 8) | (r << 16)).toString(16).padStart(6, "0");
 }
 
 export function getCustomEmailHtml({
@@ -79,9 +67,10 @@ export function getCustomEmailHtml({
                 <tr>
                   <td style="padding: 40px;">
                     ${emailBody}
-                    <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb; text-align: center;">
-                      <p style="margin: 0; color: ${colorScheme.secondary}; font-size: 14px;">
-                        Sent with ❤️ from <a href="https://www.eventpulse.tech" style="color: ${colorScheme.accent}; text-decoration: none; font-weight: 500;">EventPulse</a>
+                    <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid ${colorScheme.accent}; text-align: center;">
+                      <p style="margin: 0; font-size: 14px;">
+                        <span style="color: ${colorScheme.secondary};">Sent with ❤️ from </span>
+                        <a href="https://www.eventpulse.tech" style="color: ${colorScheme.primary}; text-decoration: none; font-weight: 500;">EventPulse</a>
                       </p>
                     </div>
                   </td>
