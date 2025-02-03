@@ -21,7 +21,7 @@ import { CalendarIcon } from "lucide-react";
 import { PremiumModal } from "@/components/premium/PremiumModal";
 import { getPublicHolidays } from "@/app/actions/holidays";
 import MissingAddressAlert from "./MissingAddressAlert";
-import { Card, CardBody, CardHeader } from "@heroui/react";
+import { Card, CardBody, CardHeader, Tooltip } from "@heroui/react";
 
 interface Holiday {
 	date: string;
@@ -355,19 +355,23 @@ export function Calendar() {
 								<CardHeader className="p-1">
 									<span className="text-sm font-medium">{day}</span>
 								</CardHeader>
-								<CardBody className="p-1">
+								<CardBody className="p-1 relative">
 									{/* Event Indicators */}
-									<div className="flex flex-wrap gap-0.5">
-										{events.birthdays.length > 0 && (
-											<div className="w-1.5 h-1.5 rounded-full bg-pink-500" />
-										)}
-										{events.holidays.length > 0 && (
-											<div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-										)}
-										{events.customEvents.length > 0 && (
-											<div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-										)}
-									</div>
+									{(events.birthdays.length > 0 ||
+										events.holidays.length > 0 ||
+										events.customEvents.length > 0) && (
+										<div className="absolute top-0 inset-x-0 flex h-1 gap-px">
+											{events.birthdays.length > 0 && (
+												<div className="flex-1 bg-pink-500" />
+											)}
+											{events.holidays.length > 0 && (
+												<div className="flex-1 bg-blue-500" />
+											)}
+											{events.customEvents.length > 0 && (
+												<div className="flex-1 bg-green-500" />
+											)}
+										</div>
+									)}
 									{events.scheduledEmails.length > 0 && (
 										<div className="absolute inset-0 flex items-center justify-center">
 											<div className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -382,60 +386,68 @@ export function Calendar() {
 									events.holidays.length > 0 ||
 									events.customEvents.length > 0 ||
 									events.scheduledEmails.length > 0) && (
-									<div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50">
-										<Card className="w-64" shadow="lg">
-											<CardBody className="p-2 space-y-2">
-												{events.birthdays.map((birthday, i) => (
-													<div key={i} className="flex items-center gap-2">
-														<span className="w-2 h-2 rounded-full bg-pink-500" />
-														<span className="text-sm">
-															{birthday.name}&apos;s Birthday
-														</span>
-													</div>
-												))}
-												{events.holidays.map((holiday, i) => (
-													<div key={i} className="flex flex-col gap-1">
-														<div className="flex items-center gap-2">
-															<span className="w-2 h-2 rounded-full bg-blue-500" />
+									<Tooltip
+										content={
+											<Card className="w-64" shadow="lg">
+												<CardBody className="p-2 space-y-2">
+													{events.birthdays.map((birthday, i) => (
+														<div key={i} className="flex items-center gap-2">
+															<span className="w-2 h-2 rounded-full bg-pink-500" />
 															<span className="text-sm">
-																{holiday.localName}
+																{birthday.name}&apos;s Birthday
 															</span>
 														</div>
-														<span className="text-xs text-muted-foreground pl-4 capitalize">
-															{holiday.type.replace(/_/g, " ")}
-														</span>
-													</div>
-												))}
-												{events.customEvents.map((event, i) => (
-													<div key={i} className="flex items-center gap-2">
-														<span className="w-2 h-2 rounded-full bg-green-500" />
-														<span className="text-sm">
-															{event.name}
-															{event.isRecurring && " (Recurring)"}
-														</span>
-													</div>
-												))}
-												{events.scheduledEmails.map((email, i) => (
-													<div key={i} className="flex flex-col gap-1">
-														<div className="flex items-center gap-2">
-															<Mail className="w-3 h-3" />
-															<span className="text-sm">
-																{email.isAutomated
-																	? "Automated Email"
-																	: "Custom Email"}{" "}
-																to {email.recipient.name}
+													))}
+													{events.holidays.map((holiday, i) => (
+														<div key={i} className="flex flex-col gap-1">
+															<div className="flex items-center gap-2">
+																<span className="w-2 h-2 rounded-full bg-blue-500" />
+																<span className="text-sm">
+																	{holiday.localName}
+																</span>
+															</div>
+															<span className="text-xs text-muted-foreground pl-4 capitalize">
+																{holiday.type.replace(/_/g, " ")}
 															</span>
 														</div>
-														{email.subject && (
-															<span className="text-xs text-muted-foreground pl-4">
-																{email.subject}
+													))}
+													{events.customEvents.map((event, i) => (
+														<div key={i} className="flex items-center gap-2">
+															<span className="w-2 h-2 rounded-full bg-green-500" />
+															<span className="text-sm">
+																{event.name}
+																{event.isRecurring && " (Recurring)"}
 															</span>
-														)}
-													</div>
-												))}
-											</CardBody>
-										</Card>
-									</div>
+														</div>
+													))}
+													{events.scheduledEmails.map((email, i) => (
+														<div key={i} className="flex flex-col gap-1">
+															<div className="flex items-center gap-2">
+																<Mail className="w-3 h-3" />
+																<span className="text-sm">
+																	{email.isAutomated
+																		? "Automated Email"
+																		: "Custom Email"}{" "}
+																	to {email.recipient.name}
+																</span>
+															</div>
+															{email.subject && (
+																<span className="text-xs text-muted-foreground pl-4">
+																	{email.subject}
+																</span>
+															)}
+														</div>
+													))}
+												</CardBody>
+											</Card>
+										}
+										placement="top"
+										delay={0}
+										closeDelay={0}
+										offset={10}
+									>
+										<div className="absolute inset-0" />
+									</Tooltip>
 								)}
 							</Card>
 						);
