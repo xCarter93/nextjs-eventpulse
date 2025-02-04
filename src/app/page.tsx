@@ -4,10 +4,14 @@ import Link from "next/link";
 import { MagicCard } from "@/components/ui/magic-card";
 import SlidePricing from "@/components/pricing/pricing";
 import { DarkGridHero } from "@/components/home-page/dark-grid-hero";
+import { BetaBanner } from "@/components/beta-banner";
 
 export default function LandingPage() {
 	return (
-		<div className="space-y-20">
+		<div>
+			{/* Beta Banner */}
+			<BetaBanner />
+
 			{/* Hero Section */}
 			<DarkGridHero />
 
