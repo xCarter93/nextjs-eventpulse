@@ -305,7 +305,7 @@ export function Calendar() {
 			{/* Calendar Grid */}
 			<div className="p-4">
 				{/* Weekday Headers */}
-				<div className="grid grid-cols-7 gap-1 mb-2">
+				<div className="grid grid-cols-7 gap-2 mb-2">
 					{["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
 						<div
 							key={day}
@@ -317,7 +317,7 @@ export function Calendar() {
 				</div>
 
 				{/* Calendar Days */}
-				<div className="grid grid-cols-7 gap-1">
+				<div className="grid grid-cols-7 gap-2">
 					{/* Empty cells for days before the first day of the month */}
 					{Array.from({ length: firstDayOfMonth }).map((_, index) => (
 						<Card
@@ -346,7 +346,12 @@ export function Calendar() {
 								onPress={() => handleDayClick(day)}
 								className={cn(
 									"aspect-square relative group transition-all duration-200",
-									isToday && "border-primary",
+									isToday && [
+										"border-2 border-orange-400",
+										"bg-gradient-to-br from-orange-50 to-transparent",
+										"shadow-[0_0_12px_rgba(251,146,60,0.3)]",
+										"dark:from-orange-950/30 dark:to-transparent",
+									],
 									"hover:scale-[1.02] hover:-translate-y-0.5"
 								)}
 								shadow="sm"
@@ -356,7 +361,7 @@ export function Calendar() {
 								{(events.birthdays.length > 0 ||
 									events.holidays.length > 0 ||
 									events.customEvents.length > 0) && (
-									<div className="absolute top-0 inset-x-0 flex h-1 gap-px z-10">
+									<div className="absolute top-0 inset-x-0 flex h-1 gap-px z-20">
 										{events.birthdays.length > 0 && (
 											<div className="flex-1 bg-pink-500" />
 										)}
