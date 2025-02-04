@@ -10,6 +10,7 @@ import type { Metadata } from "next";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { TourProvider } from "@/components/providers/tour-provider";
 import DatadogInit from "@/components/datadog/datadog-init";
+import { CSPostHogProvider } from "@/components/providers/PostHogProvier";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -30,24 +31,26 @@ export default function RootLayout({
 			afterSignOutUrl="/"
 		>
 			<html lang="en" suppressHydrationWarning>
-				<body suppressHydrationWarning className={inter.className}>
-					<DatadogInit />
-					<ThemeProvider>
-						<ConvexClientProvider>
-							<TooltipProvider>
-								<TourProvider>
-									<div className="min-h-screen flex flex-col bg-background">
-										<Navbar />
-										<main className="main-content flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-											{children}
-										</main>
-									</div>
-								</TourProvider>
-							</TooltipProvider>
-						</ConvexClientProvider>
-					</ThemeProvider>
-					<Toaster />
-				</body>
+				<CSPostHogProvider>
+					<body suppressHydrationWarning className={inter.className}>
+						<DatadogInit />
+						<ThemeProvider>
+							<ConvexClientProvider>
+								<TooltipProvider>
+									<TourProvider>
+										<div className="min-h-screen flex flex-col bg-background">
+											<Navbar />
+											<main className="main-content flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+												{children}
+											</main>
+										</div>
+									</TourProvider>
+								</TooltipProvider>
+							</ConvexClientProvider>
+						</ThemeProvider>
+						<Toaster />
+					</body>
+				</CSPostHogProvider>
 			</html>
 		</ClerkProvider>
 	);
