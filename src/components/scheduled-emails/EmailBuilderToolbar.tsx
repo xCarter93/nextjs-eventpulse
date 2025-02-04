@@ -39,7 +39,7 @@ export function EmailBuilderToolbar() {
 		{ id: "button", icon: <Square className="h-5 w-5" />, label: "Button" },
 		{
 			id: "image",
-			icon: <Image className="h-5 w-5" aria-hidden="true" />,
+			icon: <Image className="h-5 w-5" aria-label="Image component" />,
 			label: "Image",
 		},
 	];
