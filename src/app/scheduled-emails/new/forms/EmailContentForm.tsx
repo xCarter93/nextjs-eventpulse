@@ -17,6 +17,7 @@ import * as z from "zod";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { canScheduleForDate } from "@/lib/permissions";
+import { Card, CardBody, CardHeader } from "@heroui/react";
 
 interface EmailContentFormProps {
 	defaultValues?: z.infer<typeof emailContentSchema>;
@@ -71,45 +72,52 @@ export default function EmailContentForm({
 
 	return (
 		<Form {...form}>
-			<form className="space-y-6">
-				<FormField
-					control={form.control}
-					name="subject"
-					render={({ field }) => (
-						<FormItem>
-							<FormLabel>Subject</FormLabel>
-							<FormControl>
-								<Input placeholder="Enter email subject..." {...field} />
-							</FormControl>
-							<FormMessage />
-						</FormItem>
-					)}
-				/>
+			<Card>
+				<CardHeader>
+					<h2 className="text-lg font-semibold">Email Details</h2>
+				</CardHeader>
+				<CardBody>
+					<form className="space-y-6">
+						<FormField
+							control={form.control}
+							name="subject"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Subject</FormLabel>
+									<FormControl>
+										<Input placeholder="Enter email subject..." {...field} />
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
 
-				<FormField
-					control={form.control}
-					name="scheduledDate"
-					render={({ field }) => (
-						<FormItem>
-							<FormLabel>Send Date</FormLabel>
-							<FormControl>
-								<Input
-									type="datetime-local"
-									min={minDate.toISOString().slice(0, 16)}
-									max={maxDate.toISOString().slice(0, 16)}
-									{...field}
-								/>
-							</FormControl>
-							<FormDescription>
-								{subscriptionLevel === "pro"
-									? "Choose when to send the email."
-									: "Free users can only schedule emails up to 7 days in advance."}
-							</FormDescription>
-							<FormMessage />
-						</FormItem>
-					)}
-				/>
-			</form>
+						<FormField
+							control={form.control}
+							name="scheduledDate"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Send Date</FormLabel>
+									<FormControl>
+										<Input
+											type="datetime-local"
+											min={minDate.toISOString().slice(0, 16)}
+											max={maxDate.toISOString().slice(0, 16)}
+											{...field}
+										/>
+									</FormControl>
+									<FormDescription>
+										{subscriptionLevel === "pro"
+											? "Choose when to send the email."
+											: "Free users can only schedule emails up to 7 days in advance."}
+									</FormDescription>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+					</form>
+				</CardBody>
+			</Card>
 		</Form>
 	);
 }

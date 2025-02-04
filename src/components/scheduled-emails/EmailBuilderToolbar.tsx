@@ -45,7 +45,7 @@ export function EmailBuilderToolbar() {
 	];
 
 	return (
-		<div className="w-fit flex flex-col gap-2 p-2 border rounded-lg bg-card">
+		<div className="w-fit h-fit flex flex-col gap-2 p-2 border rounded-lg bg-card sticky top-6">
 			{items.map((item) => (
 				<ToolbarItem key={item.id} {...item} />
 			))}

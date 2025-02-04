@@ -23,17 +23,17 @@ export const steps: {
 	key: string;
 }[] = [
 	{
-		title: "Recipients",
+		title: "Who",
 		component: RecipientsForm,
 		key: "recipients",
 	},
 	{
-		title: "Content",
+		title: "When",
 		component: EmailContentForm,
 		key: "email-content",
 	},
 	{
-		title: "Style",
+		title: "What",
 		component: ColorSchemeForm,
 		key: "color-scheme",
 	},

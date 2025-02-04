@@ -1,5 +1,6 @@
 "use client";
 
+import { EmailTemplateGrid } from "@/components/scheduled-emails/EmailTemplateCard";
 import {
 	Form,
 	FormControl,
@@ -12,12 +13,18 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { colorSchemeSchema } from "@/lib/validation";
 import * as z from "zod";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardBody, CardHeader } from "@heroui/react";
 import { ColorSchemeSelector } from "@/components/animations/ColorSchemeSelector";
+import { type EmailComponent } from "@/types/email-components";
+import { useEffect } from "react";
 
 interface ColorSchemeFormProps {
 	defaultValues?: z.infer<typeof colorSchemeSchema>;
-	onFormChange: (data: Partial<z.infer<typeof colorSchemeSchema>>) => void;
+	onFormChange: (
+		data: Partial<z.infer<typeof colorSchemeSchema>> & {
+			components?: EmailComponent[];
+		}
+	) => void;
 }
 
 const defaultColorScheme = {
@@ -38,19 +45,57 @@ export default function ColorSchemeForm({
 		},
 	});
 
-	// Watch form fields for preview
-	form.watch((value) => {
-		onFormChange(value as Partial<z.infer<typeof colorSchemeSchema>>);
-	});
+	// Watch color scheme changes only
+	useEffect(() => {
+		const subscription = form.watch((value) => {
+			const colorScheme = value.colorScheme;
+			if (colorScheme) {
+				onFormChange({
+					colorScheme: {
+						primary: colorScheme.primary || defaultColorScheme.primary,
+						secondary: colorScheme.secondary || defaultColorScheme.secondary,
+						accent: colorScheme.accent || defaultColorScheme.accent,
+						background: colorScheme.background || defaultColorScheme.background,
+					},
+				});
+			}
+		});
+		return () => subscription.unsubscribe();
+	}, [form, onFormChange]);
+
+	const handleTemplateSelect = (components: EmailComponent[]) => {
+		const colorScheme = form.getValues("colorScheme");
+		const formData = {
+			colorScheme: {
+				primary: colorScheme.primary || defaultColorScheme.primary,
+				secondary: colorScheme.secondary || defaultColorScheme.secondary,
+				accent: colorScheme.accent || defaultColorScheme.accent,
+				background: colorScheme.background || defaultColorScheme.background,
+			},
+			components: components,
+		};
+		onFormChange(formData);
+	};
 
 	return (
 		<Form {...form}>
 			<form className="space-y-6">
+				{/* Template Selection Card */}
 				<Card>
 					<CardHeader>
-						<CardTitle>Color Scheme</CardTitle>
+						<h2 className="text-lg font-semibold">Email Template</h2>
 					</CardHeader>
-					<CardContent>
+					<CardBody>
+						<EmailTemplateGrid onSelect={handleTemplateSelect} />
+					</CardBody>
+				</Card>
+
+				{/* Color Scheme Card */}
+				<Card>
+					<CardHeader>
+						<h2 className="text-lg font-semibold">Color Scheme</h2>
+					</CardHeader>
+					<CardBody>
 						<FormField
 							control={form.control}
 							name="colorScheme"
@@ -69,7 +114,7 @@ export default function ColorSchemeForm({
 								</FormItem>
 							)}
 						/>
-					</CardContent>
+					</CardBody>
 				</Card>
 			</form>
 		</Form>

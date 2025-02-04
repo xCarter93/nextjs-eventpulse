@@ -31,10 +31,12 @@ const NewScheduledEmailPage = () => {
 	const searchParams = useSearchParams();
 	const dateParam = searchParams.get("date");
 
+	const handleFormChange = (data: FormData) => {
+		setPreview(data);
+	};
+
 	const handleComponentsChange = (components: EmailComponent[]) => {
-		// Update preview state
 		setPreview((prev) => ({ ...prev, components }));
-		// Update form state
 		formRef.current?.onFormChange({ components });
 	};
 
@@ -47,7 +49,7 @@ const NewScheduledEmailPage = () => {
 				<div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
 					<NewScheduledEmailForm
 						ref={formRef}
-						onFormChange={setPreview}
+						onFormChange={handleFormChange}
 						initialDate={dateParam ? new Date(parseInt(dateParam)) : undefined}
 					/>
 					<EmailBuilder

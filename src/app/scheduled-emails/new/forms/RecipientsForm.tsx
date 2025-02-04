@@ -18,6 +18,7 @@ import { MultiSelect } from "@/components/ui/multi-select";
 import { recipientsSchema } from "@/lib/validation";
 import * as z from "zod";
 import { Id } from "../../../../../convex/_generated/dataModel";
+import { Card, CardBody, CardHeader } from "@heroui/react";
 
 interface RecipientsFormProps {
 	defaultValues?: z.infer<typeof recipientsSchema>;
@@ -57,29 +58,38 @@ export default function RecipientsForm({
 
 	return (
 		<Form {...form}>
-			<form className="space-y-6">
-				<FormField
-					control={form.control}
-					name="recipients"
-					render={({ field: { onChange, ...field } }) => (
-						<FormItem>
-							<FormLabel>Recipients</FormLabel>
-							<FormControl>
-								<MultiSelect
-									options={recipientOptions}
-									selected={Array.isArray(field.value) ? field.value : []}
-									onChange={(values) => onChange(values as Id<"recipients">[])}
-									placeholder="Select recipients..."
-								/>
-							</FormControl>
-							<FormDescription>
-								Select one or more recipients for this email.
-							</FormDescription>
-							<FormMessage />
-						</FormItem>
-					)}
-				/>
-			</form>
+			<Card>
+				<CardHeader>
+					<h2 className="text-lg font-semibold">Recipients</h2>
+				</CardHeader>
+				<CardBody>
+					<form className="space-y-6">
+						<FormField
+							control={form.control}
+							name="recipients"
+							render={({ field: { onChange, ...field } }) => (
+								<FormItem>
+									<FormLabel>Recipients</FormLabel>
+									<FormControl>
+										<MultiSelect
+											options={recipientOptions}
+											selected={Array.isArray(field.value) ? field.value : []}
+											onChange={(values) =>
+												onChange(values as Id<"recipients">[])
+											}
+											placeholder="Select recipients..."
+										/>
+									</FormControl>
+									<FormDescription>
+										Select one or more recipients for this email.
+									</FormDescription>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+					</form>
+				</CardBody>
+			</Card>
 		</Form>
 	);
 }

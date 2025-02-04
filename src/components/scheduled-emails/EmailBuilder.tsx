@@ -9,7 +9,7 @@ import {
 import { EmailBuilderToolbar } from "./EmailBuilderToolbar";
 import { EmailPreview } from "./EmailPreview";
 import { type ColorScheme } from "@/types";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
 	type EmailComponent,
 	type EmailComponentType,
@@ -29,6 +29,11 @@ export function EmailBuilder({
 	const [components, setComponents] = useState<EmailComponent[]>(
 		externalComponents || []
 	);
+
+	// Update internal state when external components change
+	useEffect(() => {
+		setComponents(externalComponents || []);
+	}, [externalComponents]);
 
 	const createComponent = (type: EmailComponentType): EmailComponent => {
 		const id = `${type}-${Date.now()}`;
