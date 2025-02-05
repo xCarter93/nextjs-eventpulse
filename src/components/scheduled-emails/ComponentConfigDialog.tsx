@@ -54,14 +54,35 @@ export function ComponentConfigDialog({
 			title: event.name,
 			date: event.date,
 		})),
-		...(recipients || []).map((recipient) => ({
-			id: recipient._id,
-			type: "birthday" as const,
-			title: `${recipient.name}'s Birthday`,
-			date: recipient.birthday,
-		})),
+		...(recipients || []).map((recipient) => {
+			// For birthdays, we need to check if the month and day haven't occurred this year
+			const birthday = new Date(recipient.birthday);
+			const today = new Date();
+			const thisYearBirthday = new Date(
+				today.getFullYear(),
+				birthday.getMonth(),
+				birthday.getDate()
+			);
+
+			// If this year's birthday has passed, use next year's date
+			if (thisYearBirthday < today) {
+				thisYearBirthday.setFullYear(today.getFullYear() + 1);
+			}
+
+			return {
+				id: recipient._id,
+				type: "birthday" as const,
+				title: `${recipient.name}'s Birthday`,
+				date: thisYearBirthday.getTime(),
+			};
+		}),
 	]
-		.filter((event) => event.date > Date.now())
+		.filter((event) => {
+			if (event.type === "custom") {
+				return event.date > Date.now(); // Filter out past custom events
+			}
+			return true; // Keep all birthdays since we've already adjusted their dates
+		})
 		.sort((a, b) => a.date - b.date);
 
 	const handleSave = () => {

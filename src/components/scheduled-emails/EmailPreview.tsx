@@ -213,7 +213,7 @@ function EmailComponentRenderer({
 									}}
 								>
 									{component.eventId
-										? "Event Title" // TODO: Fetch actual event title
+										? component.placeholderTitle // Use the placeholder title which gets updated in ComponentConfigDialog
 										: component.placeholderTitle}
 								</p>
 								<p
