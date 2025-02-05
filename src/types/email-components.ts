@@ -1,4 +1,9 @@
-export type EmailComponentType = "heading" | "text" | "button" | "image";
+export type EmailComponentType =
+	| "heading"
+	| "text"
+	| "button"
+	| "image"
+	| "event";
 
 export interface BaseEmailComponent {
 	id: string;
@@ -27,11 +32,21 @@ export interface ImageComponent extends BaseEmailComponent {
 	alt: string;
 }
 
+export interface EventComponent extends BaseEmailComponent {
+	type: "event";
+	eventId?: string; // ID of the selected event (custom event or birthday)
+	eventType: "birthday" | "custom"; // Type of event
+	// Placeholder fields when no event is selected
+	placeholderTitle: string;
+	placeholderDate: number;
+}
+
 export type EmailComponent =
 	| HeadingComponent
 	| TextComponent
 	| ButtonComponent
-	| ImageComponent;
+	| ImageComponent
+	| EventComponent;
 
 export interface EmailContent {
 	components: EmailComponent[];

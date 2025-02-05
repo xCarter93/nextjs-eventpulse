@@ -1,5 +1,5 @@
 import { useDraggable } from "@dnd-kit/core";
-import { Text, Heading, Square, Image } from "lucide-react";
+import { Text, Heading, Square, Image, Calendar } from "lucide-react";
 
 interface ToolbarItemProps {
 	id: string;
@@ -41,6 +41,11 @@ export function EmailBuilderToolbar() {
 			id: "image",
 			icon: <Image className="h-5 w-5" aria-label="Image component" />,
 			label: "Image",
+		},
+		{
+			id: "event",
+			icon: <Calendar className="h-5 w-5" aria-label="Event component" />,
+			label: "Event",
 		},
 	];
 

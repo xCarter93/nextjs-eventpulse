@@ -10,7 +10,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { type EmailComponent } from "@/types/email-components";
+import {
+	type EmailComponent,
+	type EventComponent,
+} from "@/types/email-components";
 import { useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -22,6 +25,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import Image from "next/image";
+import { Calendar } from "lucide-react";
 
 interface ComponentConfigDialogProps {
 	component: EmailComponent;
@@ -39,6 +43,26 @@ export function ComponentConfigDialog({
 	const [editedComponent, setEditedComponent] =
 		useState<EmailComponent>(component);
 	const userAnimations = useQuery(api.animations.getUserAnimations);
+	const events = useQuery(api.events.getEvents);
+	const recipients = useQuery(api.recipients.getRecipients);
+
+	// Filter upcoming events (custom events and birthdays)
+	const upcomingEvents = [
+		...(events || []).map((event) => ({
+			id: event._id,
+			type: "custom" as const,
+			title: event.name,
+			date: event.date,
+		})),
+		...(recipients || []).map((recipient) => ({
+			id: recipient._id,
+			type: "birthday" as const,
+			title: `${recipient.name}'s Birthday`,
+			date: recipient.birthday,
+		})),
+	]
+		.filter((event) => event.date > Date.now())
+		.sort((a, b) => a.date - b.date);
 
 	const handleSave = () => {
 		onSave(editedComponent);
@@ -157,6 +181,101 @@ export function ComponentConfigDialog({
 										fill
 										className="object-cover"
 									/>
+								</div>
+							</div>
+						)}
+					</div>
+				);
+
+			case "event":
+				const eventComponent = editedComponent as EventComponent;
+				return (
+					<div className="space-y-4">
+						<div className="space-y-2">
+							<Label>Event Type</Label>
+							<Select
+								value={eventComponent.eventType}
+								onValueChange={(value: "birthday" | "custom") =>
+									setEditedComponent({
+										...eventComponent,
+										eventType: value,
+										eventId: undefined, // Reset selection when changing type
+									})
+								}
+							>
+								<SelectTrigger>
+									<SelectValue placeholder="Choose event type..." />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="birthday">Birthday</SelectItem>
+									<SelectItem value="custom">Custom Event</SelectItem>
+								</SelectContent>
+							</Select>
+						</div>
+
+						<div className="space-y-2">
+							<Label>Select Event</Label>
+							<Select
+								value={eventComponent.eventId}
+								onValueChange={(value) => {
+									const selectedEvent = upcomingEvents.find(
+										(e) => e.id === value
+									);
+									if (selectedEvent) {
+										setEditedComponent({
+											...eventComponent,
+											eventId: value,
+											eventType: selectedEvent.type,
+											placeholderTitle: selectedEvent.title,
+											placeholderDate: selectedEvent.date,
+										});
+									}
+								}}
+							>
+								<SelectTrigger>
+									<SelectValue placeholder="Choose an event..." />
+								</SelectTrigger>
+								<SelectContent>
+									{upcomingEvents
+										.filter(
+											(event) =>
+												!eventComponent.eventType ||
+												event.type === eventComponent.eventType
+										)
+										.map((event) => (
+											<SelectItem key={event.id} value={event.id}>
+												<div className="flex items-center gap-2">
+													<Calendar className="h-4 w-4" />
+													<span>{event.title}</span>
+													<span className="text-muted-foreground">
+														{new Date(event.date).toLocaleDateString()}
+													</span>
+												</div>
+											</SelectItem>
+										))}
+								</SelectContent>
+							</Select>
+						</div>
+
+						{eventComponent.eventId && (
+							<div className="mt-4 p-4 rounded-lg border">
+								<div className="flex items-center gap-2">
+									<Calendar className="h-5 w-5 text-primary" />
+									<div>
+										<p className="font-medium">
+											{eventComponent.placeholderTitle}
+										</p>
+										<p className="text-sm text-muted-foreground">
+											{new Date(
+												eventComponent.placeholderDate
+											).toLocaleDateString(undefined, {
+												weekday: "long",
+												year: "numeric",
+												month: "long",
+												day: "numeric",
+											})}
+										</p>
+									</div>
 								</div>
 							</div>
 						)}

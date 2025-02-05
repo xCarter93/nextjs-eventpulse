@@ -1,4 +1,5 @@
 import { type EmailComponent } from "../types/email-components";
+import { emailIcons } from "../lib/email-icons";
 
 interface ColorScheme {
 	primary: string;
@@ -38,6 +39,29 @@ function renderComponent(component: EmailComponent, colorScheme: ColorScheme) {
 			`;
 		case "image":
 			return `<div style="text-align: center; margin: 0 0 24px;"><img src="${component.url}" alt="${component.alt}" style="max-width: 100%; height: auto; border-radius: 8px;" /></div>`;
+		case "event":
+			return `
+				<table width="100%" cellpadding="0" cellspacing="0" style="margin: 0 0 24px;">
+					<tr>
+						<td style="vertical-align: middle; padding-right: 24px; width: 48px;">
+							<div style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;">
+								${emailIcons.calendar(colorScheme.accent)}
+							</div>
+						</td>
+						<td style="vertical-align: middle;">
+							<p style="color: ${colorScheme.primary}; margin: 0; font-size: 20px; font-weight: 600;">${component.placeholderTitle}</p>
+							<p style="color: ${colorScheme.secondary}; margin: 8px 0 0; font-size: 16px;">
+								${new Date(component.placeholderDate).toLocaleDateString(undefined, {
+									weekday: "long",
+									year: "numeric",
+									month: "long",
+									day: "numeric",
+								})}
+							</p>
+						</td>
+					</tr>
+				</table>
+			`;
 		default:
 			return "";
 	}

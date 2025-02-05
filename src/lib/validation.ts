@@ -4,7 +4,7 @@ import { Id } from "../../convex/_generated/dataModel";
 // Email component schemas
 const baseEmailComponent = z.object({
 	id: z.string(),
-	type: z.enum(["heading", "text", "button", "image"]),
+	type: z.enum(["heading", "text", "button", "image", "event"]),
 });
 
 const headingComponent = baseEmailComponent.extend({
@@ -29,11 +29,20 @@ const imageComponent = baseEmailComponent.extend({
 	alt: z.string(),
 });
 
+const eventComponent = baseEmailComponent.extend({
+	type: z.literal("event"),
+	eventId: z.string().optional(),
+	eventType: z.enum(["birthday", "custom"]),
+	placeholderTitle: z.string(),
+	placeholderDate: z.number(),
+});
+
 const emailComponentSchema = z.discriminatedUnion("type", [
 	headingComponent,
 	textComponent,
 	buttonComponent,
 	imageComponent,
+	eventComponent,
 ]);
 
 export const recipientsSchema = z.object({

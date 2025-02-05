@@ -46,6 +46,14 @@ export function EmailBuilder({
 				return { id, type, content: "Click me", url: "#" };
 			case "image":
 				return { id, type, url: "", alt: "Image description" };
+			case "event":
+				return {
+					id,
+					type,
+					eventType: "custom",
+					placeholderTitle: "Sample Event",
+					placeholderDate: Date.now(),
+				};
 		}
 	};
 

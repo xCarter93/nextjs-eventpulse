@@ -38,6 +38,14 @@ export const scheduleCustomEmail = mutation({
 					type: v.literal("image"),
 					url: v.string(),
 					alt: v.string(),
+				}),
+				v.object({
+					id: v.string(),
+					type: v.literal("event"),
+					eventId: v.optional(v.string()),
+					eventType: v.union(v.literal("birthday"), v.literal("custom")),
+					placeholderTitle: v.string(),
+					placeholderDate: v.number(),
 				})
 			)
 		),
@@ -112,7 +120,7 @@ export const scheduleCustomEmail = mutation({
 					recipientId: args.recipientId,
 					to: recipient.email,
 					subject: args.subject,
-					components: args.components as EmailComponent[],
+					components: args.components,
 					colorScheme: args.colorScheme,
 				}
 			);

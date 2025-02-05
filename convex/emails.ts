@@ -54,6 +54,14 @@ export const sendScheduledEmail = internalAction({
 					type: v.literal("image"),
 					url: v.string(),
 					alt: v.string(),
+				}),
+				v.object({
+					id: v.string(),
+					type: v.literal("event"),
+					eventId: v.optional(v.string()),
+					eventType: v.union(v.literal("birthday"), v.literal("custom")),
+					placeholderTitle: v.string(),
+					placeholderDate: v.number(),
 				})
 			)
 		),

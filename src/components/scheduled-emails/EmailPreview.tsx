@@ -10,6 +10,7 @@ import { ComponentControls } from "./ComponentControls";
 import { ComponentConfigDialog } from "./ComponentConfigDialog";
 import { useState } from "react";
 import Image from "next/image";
+import { Calendar } from "lucide-react";
 
 interface EmailPreviewProps {
 	colorScheme?: ColorScheme;
@@ -171,6 +172,74 @@ function EmailComponentRenderer({
 				<div className="w-full aspect-video bg-muted rounded-lg flex items-center justify-center text-muted-foreground">
 					Add image URL
 				</div>
+			);
+		case "event":
+			return (
+				<table
+					align="center"
+					width="100%"
+					cellPadding="0"
+					cellSpacing="0"
+					role="presentation"
+				>
+					<tbody style={{ width: "100%" }}>
+						<tr style={{ width: "100%" }}>
+							<td
+								data-id="__react-email-column"
+								style={{
+									verticalAlign: "middle",
+									paddingRight: "24px",
+									width: "48px",
+								}}
+							>
+								<div className="w-12 h-12 flex items-center justify-center">
+									<Calendar
+										className="h-12 w-12 text-primary"
+										style={{ color: colorScheme?.accent || "#3B82F6" }}
+									/>
+								</div>
+							</td>
+							<td
+								data-id="__react-email-column"
+								style={{ verticalAlign: "middle" }}
+							>
+								<p
+									style={{
+										fontSize: "20px",
+										lineHeight: "28px",
+										margin: "0px",
+										fontWeight: 600,
+										color: colorScheme?.primary || "rgb(17,24,39)",
+									}}
+								>
+									{component.eventId
+										? "Event Title" // TODO: Fetch actual event title
+										: component.placeholderTitle}
+								</p>
+								<p
+									style={{
+										fontSize: "16px",
+										lineHeight: "24px",
+										margin: "0px",
+										marginTop: "8px",
+										color: colorScheme?.secondary || "rgb(107,114,128)",
+									}}
+								>
+									{new Date(
+										component.eventId
+											? component.placeholderDate // Use placeholder date until we implement event fetching
+											: component.placeholderDate
+									).toLocaleDateString(undefined, {
+										weekday: "long",
+										year: "numeric",
+										month: "long",
+										day: "numeric",
+									})}
+								</p>
+							</td>
+						</tr>
+					</tbody>
+				</table>
 			);
 	}
 }
