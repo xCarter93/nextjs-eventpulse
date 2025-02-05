@@ -1,7 +1,7 @@
 // Collection of email-safe SVG icons that match our Lucide icons
 export const emailIcons = {
 	calendar: () => {
-		return `<img src="/icons/calendar.png" width="48" height="48" style="display: block; outline: none; border: none; text-decoration: none;" alt="Calendar icon" />`;
+		return `<span style="font-size: 48px; line-height: 1; display: block;">🗓️</span>`;
 	},
 	// Add more icons as needed
 } as const;

@@ -5,7 +5,7 @@ import { useDroppable } from "@dnd-kit/core";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { type EmailComponent } from "@/types/email-components";
-import { GripVertical, Calendar } from "lucide-react";
+import { GripVertical } from "lucide-react";
 import { ComponentControls } from "./ComponentControls";
 import { ComponentConfigDialog } from "./ComponentConfigDialog";
 import { useState } from "react";
@@ -192,7 +192,15 @@ function EmailComponentRenderer({
 								}}
 							>
 								<div className="w-12 h-12 flex items-center justify-center">
-									<Calendar className="h-12 w-12" />
+									<span
+										style={{
+											fontSize: "48px",
+											lineHeight: 1,
+											display: "block",
+										}}
+									>
+										🗓️
+									</span>
 								</div>
 							</td>
 							<td
