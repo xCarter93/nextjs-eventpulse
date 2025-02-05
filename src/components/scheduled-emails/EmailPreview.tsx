@@ -5,12 +5,11 @@ import { useDroppable } from "@dnd-kit/core";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { type EmailComponent } from "@/types/email-components";
-import { GripVertical } from "lucide-react";
+import { GripVertical, Calendar } from "lucide-react";
 import { ComponentControls } from "./ComponentControls";
 import { ComponentConfigDialog } from "./ComponentConfigDialog";
 import { useState } from "react";
 import Image from "next/image";
-import { Calendar } from "lucide-react";
 
 interface EmailPreviewProps {
 	colorScheme?: ColorScheme;
@@ -193,10 +192,7 @@ function EmailComponentRenderer({
 								}}
 							>
 								<div className="w-12 h-12 flex items-center justify-center">
-									<Calendar
-										className="h-12 w-12 text-primary"
-										style={{ color: colorScheme?.accent || "#3B82F6" }}
-									/>
+									<Calendar className="h-12 w-12" />
 								</div>
 							</td>
 							<td

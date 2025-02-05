@@ -45,7 +45,7 @@ function renderComponent(component: EmailComponent, colorScheme: ColorScheme) {
 					<tr>
 						<td style="vertical-align: middle; padding-right: 24px; width: 48px;">
 							<div style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;">
-								${emailIcons.calendar(colorScheme.accent)}
+								${emailIcons.calendar()}
 							</div>
 						</td>
 						<td style="vertical-align: middle;">
