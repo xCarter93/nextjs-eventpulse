@@ -30,7 +30,7 @@ function DropZone({ isOver, id }: { isOver: boolean; id: string }) {
 	const { setNodeRef, isOver: isOverCurrent } = useDroppable({
 		id,
 		data: {
-			accepts: ["heading", "text", "button", "image"],
+			accepts: ["heading", "text", "button", "image", "event", "divider"],
 		},
 	});
 
@@ -213,7 +213,7 @@ function EmailComponentRenderer({
 									}}
 								>
 									{component.eventId
-										? component.placeholderTitle // Use the placeholder title which gets updated in ComponentConfigDialog
+										? component.placeholderTitle
 										: component.placeholderTitle}
 								</p>
 								<p
@@ -227,7 +227,7 @@ function EmailComponentRenderer({
 								>
 									{new Date(
 										component.eventId
-											? component.placeholderDate // Use placeholder date until we implement event fetching
+											? component.placeholderDate
 											: component.placeholderDate
 									).toLocaleDateString(undefined, {
 										weekday: "long",
@@ -240,6 +240,13 @@ function EmailComponentRenderer({
 						</tr>
 					</tbody>
 				</table>
+			);
+		case "divider":
+			return (
+				<hr
+					className="w-full my-4"
+					style={{ borderColor: colorScheme?.accent || "#E5E7EB" }}
+				/>
 			);
 	}
 }

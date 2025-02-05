@@ -54,6 +54,8 @@ export function EmailBuilder({
 					placeholderTitle: "Sample Event",
 					placeholderDate: Date.now(),
 				};
+			case "divider":
+				return { id, type };
 		}
 	};
 

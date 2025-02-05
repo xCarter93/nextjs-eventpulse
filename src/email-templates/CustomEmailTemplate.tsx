@@ -62,6 +62,8 @@ function renderComponent(component: EmailComponent, colorScheme: ColorScheme) {
 					</tr>
 				</table>
 			`;
+		case "divider":
+			return `<hr style="border: none; border-top: 1px solid ${colorScheme.accent}; margin: 24px 0;" />`;
 		default:
 			return "";
 	}

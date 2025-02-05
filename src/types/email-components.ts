@@ -3,7 +3,8 @@ export type EmailComponentType =
 	| "text"
 	| "button"
 	| "image"
-	| "event";
+	| "event"
+	| "divider";
 
 export interface BaseEmailComponent {
 	id: string;
@@ -41,12 +42,17 @@ export interface EventComponent extends BaseEmailComponent {
 	placeholderDate: number;
 }
 
+export interface DividerComponent extends BaseEmailComponent {
+	type: "divider";
+}
+
 export type EmailComponent =
 	| HeadingComponent
 	| TextComponent
 	| ButtonComponent
 	| ImageComponent
-	| EventComponent;
+	| EventComponent
+	| DividerComponent;
 
 export interface EmailContent {
 	components: EmailComponent[];

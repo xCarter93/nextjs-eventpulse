@@ -46,6 +46,10 @@ export const scheduleCustomEmail = mutation({
 					eventType: v.union(v.literal("birthday"), v.literal("custom")),
 					placeholderTitle: v.string(),
 					placeholderDate: v.number(),
+				}),
+				v.object({
+					id: v.string(),
+					type: v.literal("divider"),
 				})
 			)
 		),
