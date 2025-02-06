@@ -190,6 +190,34 @@ export const updateRecipientMetadata = mutation({
 			throw new ConvexError("Address management requires a Pro subscription");
 		}
 
+		// If an anniversary date is being set or updated
+		if (args.metadata.anniversaryDate) {
+			// Check if there's an existing anniversary event for this recipient
+			const existingEvents = await ctx.db
+				.query("customEvents")
+				.withIndex("by_userId", (q) => q.eq("userId", user._id))
+				.collect();
+
+			const existingAnniversaryEvent = existingEvents.find(
+				(event) => event.name === `Anniversary with ${existing.name}`
+			);
+
+			// If no existing anniversary event, create one
+			if (!existingAnniversaryEvent) {
+				await ctx.db.insert("customEvents", {
+					userId: user._id,
+					name: `Anniversary with ${existing.name}`,
+					date: args.metadata.anniversaryDate,
+					isRecurring: true,
+				});
+			} else {
+				// Update the existing anniversary event
+				await ctx.db.patch(existingAnniversaryEvent._id, {
+					date: args.metadata.anniversaryDate,
+				});
+			}
+		}
+
 		await ctx.db.patch(args.id, {
 			metadata: args.metadata,
 		});
