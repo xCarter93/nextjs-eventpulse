@@ -87,12 +87,12 @@ const Content = () => {
 				className="flex flex-col items-center gap-6 sm:flex-row"
 			>
 				<Link
-					href="/animations"
+					href="/sign-up"
 					className="relative inline-flex h-12 overflow-hidden rounded-full p-[2px] focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
 				>
 					<span className="absolute inset-[-1000%] animate-[spin_2s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,theme(colors.primary.DEFAULT/0.1)_0%,theme(colors.primary.DEFAULT/0.8)_50%,theme(colors.primary.DEFAULT/0.1)_100%)]" />
 					<span className="inline-flex h-full w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-background px-8 py-1 text-base font-medium text-foreground backdrop-blur-3xl">
-						Upload your first animation
+						Sign Up to get started
 						<ArrowRightIcon className="h-5 w-5" />
 					</span>
 				</Link>
