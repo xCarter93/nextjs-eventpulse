@@ -173,6 +173,14 @@ export function Calendar() {
 		if (!selectedDate) return [];
 		return customEvents.filter((event) => {
 			const eventDate = new Date(event.date);
+			// For recurring events, only check month and day
+			if (event.isRecurring) {
+				return (
+					eventDate.getDate() === selectedDate.getDate() &&
+					eventDate.getMonth() === selectedDate.getMonth()
+				);
+			}
+			// For non-recurring events, check full date including year
 			return (
 				eventDate.getDate() === selectedDate.getDate() &&
 				eventDate.getMonth() === selectedDate.getMonth() &&
@@ -208,6 +216,14 @@ export function Calendar() {
 		const dayCustomEvents = showEvents
 			? customEvents.filter((event) => {
 					const eventDate = new Date(event.date);
+					// For recurring events, only check month and day
+					if (event.isRecurring) {
+						return (
+							eventDate.getDate() === day &&
+							eventDate.getMonth() === currentDate.getMonth()
+						);
+					}
+					// For non-recurring events, check full date including year
 					return (
 						eventDate.getDate() === day &&
 						eventDate.getMonth() === currentDate.getMonth() &&
