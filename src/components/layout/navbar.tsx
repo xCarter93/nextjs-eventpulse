@@ -14,7 +14,6 @@ import {
 	CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import Image from "next/image";
 import {
 	Navbar as HeroNavbar,
 	NavbarBrand,
@@ -26,6 +25,7 @@ import {
 	Button,
 } from "@heroui/react";
 import { useState } from "react";
+import EventPulseLogo from "./EventPulseLogo";
 
 const routes = [
 	{
@@ -79,17 +79,10 @@ export function Navbar() {
 					</NavbarContent>
 
 					<NavbarContent className="lg:flex gap-4" justify="start">
-						<NavbarBrand as={Link} href="/" className="gap-2">
-							<div className="hidden lg:block">
-								<Image
-									src="/EventPulse Logo-Photoroom.png"
-									alt="EventPulse Logo"
-									width={32}
-									height={32}
-									className="h-8 w-8"
-								/>
+						<NavbarBrand as={Link} href="/" className="gap-2 hidden lg:block">
+							<div className="scale-[0.35] origin-left">
+								<EventPulseLogo />
 							</div>
-							<p className="font-bold hidden lg:block">EventPulse</p>
 						</NavbarBrand>
 					</NavbarContent>
 
