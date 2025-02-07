@@ -62,49 +62,47 @@ export default function AnimationsPage() {
 		})) || [];
 
 	return (
-		<>
+		<div className="container py-4 space-y-6">
 			<UserStatsWrapper />
-			<div className="container relative space-y-6 py-4">
-				<div>
-					<h1 className="text-2xl font-bold text-foreground">
-						Custom Animations & Images
-					</h1>
-					<p className="mt-2 text-muted-foreground">
-						Upload and manage your custom GIFs and images for email greetings
-					</p>
-				</div>
+			<div>
+				<h1 className="text-2xl font-bold text-foreground">
+					Custom Animations & Images
+				</h1>
+				<p className="mt-2 text-muted-foreground">
+					Upload and manage your custom GIFs and images for email greetings
+				</p>
+			</div>
 
-				<div className="flex flex-col lg:flex-row gap-6">
-					<Card className="flex-1">
-						<CardHeader>
-							<CardTitle>Your Uploads</CardTitle>
-						</CardHeader>
-						<CardContent>
-							<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 animations-grid">
-								{templates.length > 0 ? (
-									templates.map((template) => (
-										<TemplateCard
-											key={template.id}
-											template={template}
-											isSelected={selectedTemplate?.id === template.id}
-											onSelect={setSelectedTemplate}
-											createdAt={template.createdAt}
-											isCustom={template.isCustom}
-											userTier={user?.subscription.tier as "pro" | "free"}
-										/>
-									))
-								) : (
-									<EmptyState />
-								)}
-							</div>
-						</CardContent>
-					</Card>
+			<div className="flex flex-col lg:flex-row gap-6">
+				<Card className="flex-1">
+					<CardHeader>
+						<CardTitle>Your Uploads</CardTitle>
+					</CardHeader>
+					<CardContent>
+						<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 animations-grid">
+							{templates.length > 0 ? (
+								templates.map((template) => (
+									<TemplateCard
+										key={template.id}
+										template={template}
+										isSelected={selectedTemplate?.id === template.id}
+										onSelect={setSelectedTemplate}
+										createdAt={template.createdAt}
+										isCustom={template.isCustom}
+										userTier={user?.subscription.tier as "pro" | "free"}
+									/>
+								))
+							) : (
+								<EmptyState />
+							)}
+						</div>
+					</CardContent>
+				</Card>
 
-					<div className="w-full lg:w-80 order-first lg:order-last animation-uploader">
-						<CustomAnimationUploader />
-					</div>
+				<div className="w-full lg:w-80 order-first lg:order-last animation-uploader">
+					<CustomAnimationUploader />
 				</div>
 			</div>
-		</>
+		</div>
 	);
 }
