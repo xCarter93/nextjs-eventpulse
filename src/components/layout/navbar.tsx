@@ -1,10 +1,12 @@
 "use client";
 
+import { dark } from "@clerk/themes";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { SignInButton, UserButton } from "@clerk/nextjs";
 import { useUser } from "@clerk/nextjs";
+import { useTheme } from "next-themes";
 import {
 	LayoutDashboard,
 	Users,
@@ -59,6 +61,7 @@ export function Navbar() {
 	const { isSignedIn } = useUser();
 	const pathname = usePathname();
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
+	const { theme } = useTheme();
 
 	return (
 		<div className="sticky top-0 z-50">
@@ -117,6 +120,7 @@ export function Navbar() {
 							{isSignedIn ? (
 								<UserButton
 									appearance={{
+										baseTheme: theme === "dark" ? dark : undefined,
 										elements: {
 											avatarBox: {
 												width: 36,
