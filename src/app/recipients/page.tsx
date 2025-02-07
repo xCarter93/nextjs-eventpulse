@@ -25,6 +25,7 @@ import {
 	TooltipProvider,
 } from "@/components/ui/tooltip";
 import { getSubscriptionLimits } from "@/lib/subscriptions";
+import { UserStatsWrapper } from "@/components/layout/UserStatsWrapper";
 
 export default function RecipientsPage() {
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -39,7 +40,8 @@ export default function RecipientsPage() {
 
 	return (
 		<TooltipProvider>
-			<div className="container py-4 space-y-4 max-w-7xl">
+			<UserStatsWrapper />
+			<div className="container relative py-4 space-y-4 max-w-7xl">
 				<div className="flex flex-col gap-4">
 					<div>
 						<h1 className="text-4xl font-bold tracking-tight">Recipients</h1>
