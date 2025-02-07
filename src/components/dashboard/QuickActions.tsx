@@ -7,7 +7,6 @@ import { useState } from "react";
 import { PremiumModal } from "../premium/PremiumModal";
 import { Card, CardHeader, CardBody } from "@heroui/card";
 import { Users, Wand2, Settings, Star } from "lucide-react";
-import { Accordion, AccordionItem } from "@heroui/accordion";
 
 export function QuickActions() {
 	const subscriptionLevel = useQuery(
@@ -49,66 +48,51 @@ export function QuickActions() {
 	];
 
 	return (
-		<Accordion
-			defaultExpandedKeys={["quick-actions"]}
-			variant="shadow"
-			className="w-full"
-		>
-			<AccordionItem
-				key="quick-actions"
-				title="Quick Actions"
-				startContent={<Wand2 className="h-4 w-4 text-primary" />}
-			>
-				<Card
-					className="w-full quick-actions shadow-none border-0"
-					shadow="none"
-				>
-					<CardHeader className="flex items-center px-4 py-3">
-						<div className="text-sm font-medium">Quick Actions</div>
-					</CardHeader>
-					<CardBody className="px-4 py-3">
-						<div className="grid grid-cols-2 gap-3">
-							{actions.map((action) =>
-								action.isButton ? (
-									<button
-										key={action.name}
-										onClick={action.onClick}
-										className={`flex flex-col items-center p-3 rounded-lg transition-all ${
-											action.disabled
-												? "opacity-50 cursor-not-allowed"
-												: "hover:scale-[1.02] hover:shadow-sm cursor-pointer"
-										}`}
-									>
-										<div className={`p-2 rounded-full ${action.color} mb-2`}>
-											<action.icon className="h-4 w-4" />
-										</div>
-										<span className="text-xs font-medium text-gray-700 dark:text-gray-300">
-											{action.name}
-										</span>
-									</button>
-								) : (
-									<Link
-										key={action.name}
-										href={action.href}
-										className="flex flex-col items-center p-3 rounded-lg transition-all hover:scale-[1.02] hover:shadow-sm cursor-pointer"
-									>
-										<div className={`p-2 rounded-full ${action.color} mb-2`}>
-											<action.icon className="h-4 w-4" />
-										</div>
-										<span className="text-xs font-medium text-gray-700 dark:text-gray-300">
-											{action.name}
-										</span>
-									</Link>
-								)
-							)}
-						</div>
-					</CardBody>
-				</Card>
-			</AccordionItem>
+		<Card className="w-full quick-actions" shadow="sm">
+			<CardHeader className="flex items-center px-4 py-3">
+				<div className="text-sm font-medium">Quick Actions</div>
+			</CardHeader>
+			<CardBody className="px-4 py-3">
+				<div className="grid grid-cols-2 gap-3">
+					{actions.map((action) =>
+						action.isButton ? (
+							<button
+								key={action.name}
+								onClick={action.onClick}
+								className={`flex flex-col items-center p-3 rounded-lg transition-all ${
+									action.disabled
+										? "opacity-50 cursor-not-allowed"
+										: "hover:scale-[1.02] hover:shadow-sm cursor-pointer"
+								}`}
+							>
+								<div className={`p-2 rounded-full ${action.color} mb-2`}>
+									<action.icon className="h-4 w-4" />
+								</div>
+								<span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+									{action.name}
+								</span>
+							</button>
+						) : (
+							<Link
+								key={action.name}
+								href={action.href}
+								className="flex flex-col items-center p-3 rounded-lg transition-all hover:scale-[1.02] hover:shadow-sm cursor-pointer"
+							>
+								<div className={`p-2 rounded-full ${action.color} mb-2`}>
+									<action.icon className="h-4 w-4" />
+								</div>
+								<span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+									{action.name}
+								</span>
+							</Link>
+						)
+					)}
+				</div>
+			</CardBody>
 			<PremiumModal
 				isOpen={showPremiumModal}
 				onClose={() => setShowPremiumModal(false)}
 			/>
-		</Accordion>
+		</Card>
 	);
 }

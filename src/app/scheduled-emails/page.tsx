@@ -4,7 +4,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import Link from "next/link";
-import { UserStatsWrapper } from "@/components/layout/UserStatsWrapper";
 
 export const metadata: Metadata = {
 	title: "Scheduled Emails | EventPulse",
@@ -14,7 +13,6 @@ export const metadata: Metadata = {
 export default function ScheduledEmailsPage() {
 	return (
 		<div className="container py-8">
-			<UserStatsWrapper />
 			<div className="flex flex-col gap-6">
 				<div>
 					<h1 className="text-3xl font-bold tracking-tight">

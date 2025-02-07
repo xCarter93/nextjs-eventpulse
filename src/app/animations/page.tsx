@@ -8,7 +8,6 @@ import { CustomAnimationUploader } from "@/components/animations/CustomAnimation
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Image, Upload, Sparkles, FileImage } from "lucide-react";
-import { UserStatsWrapper } from "@/components/layout/UserStatsWrapper";
 
 function EmptyState() {
 	return (
@@ -62,8 +61,7 @@ export default function AnimationsPage() {
 		})) || [];
 
 	return (
-		<div className="container py-4 space-y-6">
-			<UserStatsWrapper />
+		<div className="space-y-6">
 			<div>
 				<h1 className="text-2xl font-bold text-foreground">
 					Custom Animations & Images

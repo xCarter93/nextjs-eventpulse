@@ -6,7 +6,6 @@ import { getDaysUntilBirthday } from "@/utils/date";
 import { Doc } from "../../../convex/_generated/dataModel";
 import { Card, CardHeader, CardBody } from "@heroui/card";
 import { Calendar, Gift, Clock } from "lucide-react";
-import { Accordion, AccordionItem } from "@heroui/accordion";
 
 interface Event {
 	type: "birthday" | "custom";
@@ -58,95 +57,80 @@ export function UpcomingEvents() {
 		.sort((a, b) => a.daysUntil - b.daysUntil);
 
 	return (
-		<Accordion
-			defaultExpandedKeys={["upcoming-events"]}
-			variant="shadow"
-			className="w-full"
-		>
-			<AccordionItem
-				key="upcoming-events"
-				title="Upcoming Events"
-				startContent={<Calendar className="h-4 w-4 text-primary" />}
-			>
-				<Card
-					className="w-full upcoming-events shadow-none border-0"
-					shadow="none"
-				>
-					<CardHeader className="flex justify-between items-center px-4 py-3">
-						<div className="flex items-center gap-2">
-							<Calendar className="h-4 w-4 text-primary" />
-							<div className="text-sm font-medium">Upcoming Events</div>
-						</div>
-						<div className="text-xs text-gray-500">Next {daysToShow} days</div>
-					</CardHeader>
-					<CardBody className="px-4 py-3">
-						{allEvents.length > 0 ? (
-							<div className="space-y-3">
-								{allEvents.map((event, index) => (
-									<div
-										key={`${event.name}-${index}`}
-										className="flex items-center gap-3 group hover:bg-gray-50 dark:hover:bg-gray-800/50 p-2 rounded-lg transition-colors"
-									>
-										<div
-											className={`p-2 rounded-full ${
-												event.type === "birthday"
-													? "bg-pink-100 text-pink-600 dark:bg-pink-900/20"
-													: "bg-green-100 text-green-600 dark:bg-green-900/20"
-											}`}
-										>
-											{event.type === "birthday" ? (
-												<Gift className="h-3.5 w-3.5" />
-											) : (
-												<Calendar className="h-3.5 w-3.5" />
-											)}
-										</div>
-										<div className="flex-1 min-w-0">
-											<div className="text-sm font-medium truncate">
-												{event.name}
-												{event.type === "custom" && event.isRecurring && (
-													<span className="text-xs text-gray-500 ml-1">↻</span>
-												)}
-											</div>
-											<div className="flex items-center gap-1 text-xs text-gray-500">
-												<Clock className="h-3 w-3" />
-												<span>
-													{event.daysUntil === 0
-														? "Today"
-														: event.daysUntil === 1
-															? "Tomorrow"
-															: `In ${event.daysUntil} days`}
-												</span>
-											</div>
-										</div>
-										<div
-											className={`px-2 py-1 rounded-full text-xs font-medium ${
-												event.daysUntil <= 3
-													? "bg-red-100 text-red-600 dark:bg-red-900/20"
-													: event.daysUntil <= 7
-														? "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20"
-														: "bg-gray-100 text-gray-600 dark:bg-gray-700"
-											}`}
-										>
+		<Card className="w-full upcoming-events" shadow="sm">
+			<CardHeader className="flex justify-between items-center px-4 py-3">
+				<div className="flex items-center gap-2">
+					<Calendar className="h-4 w-4 text-primary" />
+					<div className="text-sm font-medium">Upcoming Events</div>
+				</div>
+				<div className="text-xs text-gray-500">Next {daysToShow} days</div>
+			</CardHeader>
+			<CardBody className="px-4 py-3">
+				{allEvents.length > 0 ? (
+					<div className="space-y-3">
+						{allEvents.map((event, index) => (
+							<div
+								key={`${event.name}-${index}`}
+								className="flex items-center gap-3 group hover:bg-gray-50 dark:hover:bg-gray-800/50 p-2 rounded-lg transition-colors"
+							>
+								<div
+									className={`p-2 rounded-full ${
+										event.type === "birthday"
+											? "bg-pink-100 text-pink-600 dark:bg-pink-900/20"
+											: "bg-green-100 text-green-600 dark:bg-green-900/20"
+									}`}
+								>
+									{event.type === "birthday" ? (
+										<Gift className="h-3.5 w-3.5" />
+									) : (
+										<Calendar className="h-3.5 w-3.5" />
+									)}
+								</div>
+								<div className="flex-1 min-w-0">
+									<div className="text-sm font-medium truncate">
+										{event.name}
+										{event.type === "custom" && event.isRecurring && (
+											<span className="text-xs text-gray-500 ml-1">↻</span>
+										)}
+									</div>
+									<div className="flex items-center gap-1 text-xs text-gray-500">
+										<Clock className="h-3 w-3" />
+										<span>
 											{event.daysUntil === 0
 												? "Today"
 												: event.daysUntil === 1
-													? "1d"
-													: `${event.daysUntil}d`}
-										</div>
+													? "Tomorrow"
+													: `In ${event.daysUntil} days`}
+										</span>
 									</div>
-								))}
-							</div>
-						) : (
-							<div className="flex flex-col items-center justify-center py-6 text-center">
-								<Calendar className="h-8 w-8 text-gray-400 mb-2" />
-								<div className="text-sm text-gray-500">
-									No upcoming events in the next {daysToShow} days
+								</div>
+								<div
+									className={`px-2 py-1 rounded-full text-xs font-medium ${
+										event.daysUntil <= 3
+											? "bg-red-100 text-red-600 dark:bg-red-900/20"
+											: event.daysUntil <= 7
+												? "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20"
+												: "bg-gray-100 text-gray-600 dark:bg-gray-700"
+									}`}
+								>
+									{event.daysUntil === 0
+										? "Today"
+										: event.daysUntil === 1
+											? "1d"
+											: `${event.daysUntil}d`}
 								</div>
 							</div>
-						)}
-					</CardBody>
-				</Card>
-			</AccordionItem>
-		</Accordion>
+						))}
+					</div>
+				) : (
+					<div className="flex flex-col items-center justify-center py-6 text-center">
+						<Calendar className="h-8 w-8 text-gray-400 mb-2" />
+						<div className="text-sm text-gray-500">
+							No upcoming events in the next {daysToShow} days
+						</div>
+					</div>
+				)}
+			</CardBody>
+		</Card>
 	);
 }
