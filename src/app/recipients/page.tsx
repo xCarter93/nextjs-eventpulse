@@ -59,32 +59,30 @@ export default function RecipientsPage() {
 						radius="lg"
 						className="max-w-full"
 					>
-						<div className="flex gap-2">
-							<Tab key="table" title="Table View" />
-							{subscriptionLevel !== "pro" ? (
-								<Tooltip delayDuration={0}>
-									<TooltipTrigger asChild>
-										<div className="cursor-not-allowed">
-											<Tab
-												key="dotted-map"
-												title={
-													<div className="flex items-center gap-1.5">
-														Map View
-														<Lock className="h-3.5 w-3.5 ml-1.5" />
-													</div>
-												}
-												isDisabled
-											/>
-										</div>
-									</TooltipTrigger>
-									<TooltipContent>
-										<p>Upgrade to Pro to view recipient locations on a map</p>
-									</TooltipContent>
-								</Tooltip>
-							) : (
-								<Tab key="dotted-map" title="Map View" />
-							)}
-						</div>
+						<Tab key="table" title="Table View" />
+						{subscriptionLevel !== "pro" ? (
+							<Tooltip delayDuration={0}>
+								<TooltipTrigger asChild>
+									<div className="cursor-not-allowed">
+										<Tab
+											key="dotted-map"
+											title={
+												<div className="flex items-center gap-1.5">
+													Map View
+													<Lock className="h-3.5 w-3.5 ml-1.5" />
+												</div>
+											}
+											isDisabled
+										/>
+									</div>
+								</TooltipTrigger>
+								<TooltipContent>
+									<p>Upgrade to Pro to view recipient locations on a map</p>
+								</TooltipContent>
+							</Tooltip>
+						) : (
+							<Tab key="dotted-map" title="Map View" />
+						)}
 						{hasReachedLimit ? (
 							<Tooltip delayDuration={0}>
 								<TooltipTrigger asChild>
