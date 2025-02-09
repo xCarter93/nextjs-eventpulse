@@ -32,6 +32,7 @@ const TabsTrigger = React.forwardRef<
 			"inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
 			"data-[state=active]:shadow-sm",
 			"hover:bg-secondary/40 hover:text-secondary-foreground",
+			"data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground",
 			"data-[state=active]:animate-in data-[state=active]:fade-in-50",
 			className
 		)}
@@ -48,7 +49,7 @@ const TabsContent = React.forwardRef<
 		ref={ref}
 		className={cn(
 			"mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-			"animate-in fade-in-0 slide-in-from-left-1 data-[state=inactive]:animate-out data-[state=inactive]:fade-out-0 data-[state=inactive]:slide-out-to-left-1",
+			"data-[state=active]:animate-in data-[state=active]:fade-in-0",
 			className
 		)}
 		{...props}

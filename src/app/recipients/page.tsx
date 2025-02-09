@@ -28,6 +28,7 @@ import { getSubscriptionLimits } from "@/lib/subscriptions";
 
 export default function RecipientsPage() {
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
+	const [activeTab, setActiveTab] = useState("table");
 	const subscriptionLevel = useQuery(
 		api.subscriptions.getUserSubscriptionLevel
 	);
@@ -47,7 +48,11 @@ export default function RecipientsPage() {
 					</p>
 				</div>
 				<div className="flex items-center justify-between">
-					<Tabs defaultValue="table" className="w-full">
+					<Tabs
+						defaultValue="table"
+						className="w-full"
+						onValueChange={setActiveTab}
+					>
 						<div className="flex items-center justify-between">
 							<TabsList className="bg-secondary/20">
 								<TabsTrigger
@@ -83,51 +88,52 @@ export default function RecipientsPage() {
 									</TabsTrigger>
 								)}
 							</TabsList>
-							{hasReachedLimit ? (
-								<Tooltip delayDuration={0}>
-									<TooltipTrigger asChild>
-										<div className="cursor-not-allowed">
+							{activeTab === "table" &&
+								(hasReachedLimit ? (
+									<Tooltip delayDuration={0}>
+										<TooltipTrigger asChild>
+											<div className="cursor-not-allowed">
+												<Button
+													isDisabled
+													variant="bordered"
+													isIconOnly
+													color="secondary"
+													radius="lg"
+													className="ml-2 bg-secondary/20"
+												>
+													<Plus className="h-4 w-4" />
+												</Button>
+											</div>
+										</TooltipTrigger>
+										<TooltipContent>
+											<p>
+												You have reached your recipient limit (
+												{limits.maxRecipients}). Upgrade to Pro for unlimited
+												recipients.
+											</p>
+										</TooltipContent>
+									</Tooltip>
+								) : (
+									<Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+										<DialogTrigger asChild>
 											<Button
-												isDisabled
-												variant="bordered"
-												isIconOnly
 												color="secondary"
+												variant="solid"
+												isIconOnly
 												radius="lg"
-												className="ml-2"
+												className="ml-2 bg-secondary hover:bg-secondary/80"
 											>
 												<Plus className="h-4 w-4" />
 											</Button>
-										</div>
-									</TooltipTrigger>
-									<TooltipContent>
-										<p>
-											You have reached your recipient limit (
-											{limits.maxRecipients}). Upgrade to Pro for unlimited
-											recipients.
-										</p>
-									</TooltipContent>
-								</Tooltip>
-							) : (
-								<Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-									<DialogTrigger asChild>
-										<Button
-											color="secondary"
-											variant="shadow"
-											isIconOnly
-											radius="lg"
-											className="ml-2"
-										>
-											<Plus className="h-4 w-4" />
-										</Button>
-									</DialogTrigger>
-									<DialogContent>
-										<DialogHeader>
-											<DialogTitle>Add Recipient</DialogTitle>
-										</DialogHeader>
-										<RecipientForm onSuccess={() => setIsDialogOpen(false)} />
-									</DialogContent>
-								</Dialog>
-							)}
+										</DialogTrigger>
+										<DialogContent>
+											<DialogHeader>
+												<DialogTitle>Add Recipient</DialogTitle>
+											</DialogHeader>
+											<RecipientForm onSuccess={() => setIsDialogOpen(false)} />
+										</DialogContent>
+									</Dialog>
+								))}
 						</div>
 						<TabsContent value="table" className="space-y-4">
 							<Suspense fallback={<div>Loading...</div>}>
