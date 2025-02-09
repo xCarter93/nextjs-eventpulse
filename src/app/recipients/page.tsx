@@ -12,23 +12,17 @@ import {
 	DialogTrigger,
 } from "@/components/ui/dialog";
 import { RecipientForm } from "@/components/recipients/RecipientForm";
-import { useState, useEffect } from "react";
-import { Suspense } from "react";
+import { useState, useEffect, Suspense, lazy } from "react";
 import { LockedFeature } from "@/components/premium/LockedFeature";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { getSubscriptionLimits } from "@/lib/subscriptions";
-import dynamic from "next/dynamic";
 
-// Separate the map component to handle its own loading state
-const DynamicDottedMap = dynamic(
-	() =>
-		import("@/components/recipients/DottedMap").then(
-			(mod) => mod.DottedMapComponent
-		),
-	{
-		ssr: false,
-	}
+// Use React.lazy instead of dynamic import
+const DottedMapComponent = lazy(() =>
+	import("@/components/recipients/DottedMap").then((mod) => ({
+		default: mod.DottedMapComponent,
+	}))
 );
 
 // Loading state component
@@ -48,12 +42,10 @@ function MapContent() {
 	const recipients = useQuery(api.recipients.getRecipients);
 	const user = useQuery(api.users.getUser);
 
-	// Return loading state if data isn't ready
 	if (!recipients || !user) {
 		return <MapLoadingState />;
 	}
 
-	// Return early if no coordinates
 	if (!user.settings?.address?.coordinates) {
 		return (
 			<div className="flex items-center justify-center h-[600px] border rounded-lg bg-muted/10">
@@ -64,18 +56,27 @@ function MapContent() {
 		);
 	}
 
+	// Wrap the actual map component in Suspense
 	return (
 		<Suspense fallback={<MapLoadingState />}>
-			<DynamicDottedMap />
+			<DottedMapComponent />
 		</Suspense>
 	);
 }
 
-// Wrap map component with suspense
+// Wrap map component with suspense for data loading
 function MapWithSuspense() {
 	const subscriptionLevel = useQuery(
 		api.subscriptions.getUserSubscriptionLevel
 	);
+
+	// Start preloading the map component when this component mounts
+	useEffect(() => {
+		if (subscriptionLevel === "pro") {
+			const preloadMap = () => import("@/components/recipients/DottedMap");
+			preloadMap();
+		}
+	}, [subscriptionLevel]);
 
 	return (
 		<Suspense fallback={<MapLoadingState />}>
@@ -101,16 +102,6 @@ export default function RecipientsPage() {
 	const hasReachedLimit = recipients
 		? recipients.length >= limits.maxRecipients
 		: false;
-
-	// Start preloading both component and data on mount if pro user
-	useEffect(() => {
-		if (subscriptionLevel === "pro") {
-			// Preload the map component
-			const preloadDottedMap = () =>
-				import("@/components/recipients/DottedMap");
-			preloadDottedMap();
-		}
-	}, [subscriptionLevel]);
 
 	return (
 		<div className="container space-y-6 max-w-7xl">
