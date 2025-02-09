@@ -12,7 +12,7 @@ import {
 	DialogTrigger,
 } from "@/components/ui/dialog";
 import { RecipientForm } from "@/components/recipients/RecipientForm";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Suspense } from "react";
 import { LockedFeature } from "@/components/premium/LockedFeature";
 import { useQuery } from "convex/react";
@@ -27,7 +27,6 @@ const DottedMapComponent = dynamic(
 			(mod) => mod.DottedMapComponent
 		),
 	{
-		loading: () => <MapLoadingState />,
 		ssr: false,
 	}
 );
@@ -44,10 +43,28 @@ function MapLoadingState() {
 	);
 }
 
+// Wrap map component with suspense
+function MapWithSuspense() {
+	const subscriptionLevel = useQuery(
+		api.subscriptions.getUserSubscriptionLevel
+	);
+
+	return (
+		<Suspense fallback={<MapLoadingState />}>
+			{subscriptionLevel === "pro" ? (
+				<DottedMapComponent />
+			) : (
+				<LockedFeature featureDescription="view recipient locations on a map">
+					<DottedMapComponent />
+				</LockedFeature>
+			)}
+		</Suspense>
+	);
+}
+
 export default function RecipientsPage() {
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
 	const [activeTab, setActiveTab] = useState("table");
-	const [isMapLoading, setIsMapLoading] = useState(true);
 	const subscriptionLevel = useQuery(
 		api.subscriptions.getUserSubscriptionLevel
 	);
@@ -61,18 +78,6 @@ export default function RecipientsPage() {
 	const handleTabHover = () => {
 		const preloadDottedMap = () => import("@/components/recipients/DottedMap");
 		preloadDottedMap();
-	};
-
-	// Reset loading state when switching tabs
-	useEffect(() => {
-		if (activeTab === "dotted-map") {
-			setIsMapLoading(true);
-		}
-	}, [activeTab]);
-
-	// Handle map load complete
-	const handleMapLoad = () => {
-		setIsMapLoading(false);
 	};
 
 	return (
@@ -174,18 +179,7 @@ export default function RecipientsPage() {
 						</Suspense>
 					</TabsContent>
 					<TabsContent value="dotted-map">
-						{subscriptionLevel === "pro" ? (
-							<>
-								{isMapLoading && <MapLoadingState />}
-								<div className={isMapLoading ? "hidden" : ""}>
-									<DottedMapComponent onLoad={handleMapLoad} />
-								</div>
-							</>
-						) : (
-							<LockedFeature featureDescription="view recipient locations on a map">
-								<DottedMapComponent />
-							</LockedFeature>
-						)}
+						<MapWithSuspense />
 					</TabsContent>
 				</Tabs>
 			</div>
