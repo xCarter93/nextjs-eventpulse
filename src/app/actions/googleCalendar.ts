@@ -41,10 +41,10 @@ export async function getGoogleCalendarEvents() {
 		events.data.items?.flatMap((event) => {
 			// Handle all-day events
 			if (event.start?.date) {
-				// For all-day events, create dates at local midnight
-				// Create date in UTC to avoid timezone offset issues
+				// For all-day events, create dates in UTC and add one day to compensate for timezone offset
 				const [year, month, day] = event.start.date.split("-").map(Number);
-				const startDate = new Date(Date.UTC(year, month - 1, day));
+				// Add one day to fix the offset issue
+				const startDate = new Date(Date.UTC(year, month - 1, day + 1));
 
 				// Get end date similarly if it exists
 				let endDate;
@@ -52,7 +52,8 @@ export async function getGoogleCalendarEvents() {
 					const [endYear, endMonth, endDay] = event.end.date
 						.split("-")
 						.map(Number);
-					endDate = new Date(Date.UTC(endYear, endMonth - 1, endDay));
+					// Add one day to fix the offset issue
+					endDate = new Date(Date.UTC(endYear, endMonth - 1, endDay + 1));
 				} else {
 					endDate = new Date(startDate);
 				}
@@ -70,7 +71,7 @@ export async function getGoogleCalendarEvents() {
 							description: event.description || undefined,
 							start: currentDate.getTime(),
 						});
-						// Move to next day using UTC to avoid timezone issues
+						// Move to next day using UTC
 						currentDate.setUTCDate(currentDate.getUTCDate() + 1);
 					}
 					return dates;
@@ -87,7 +88,7 @@ export async function getGoogleCalendarEvents() {
 				];
 			}
 
-			// Handle time-specific events
+			// Handle time-specific events (these already include timezone info)
 			const timestamp = event.start?.dateTime
 				? new Date(event.start.dateTime).getTime()
 				: new Date().getTime();
