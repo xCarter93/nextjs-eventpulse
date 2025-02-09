@@ -1,7 +1,8 @@
 "use client";
 
 import { RecipientsTable } from "@/components/recipients/RecipientsTable";
-import { Tabs, Tab, Button } from "@heroui/react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@heroui/react";
 import { Plus, Lock } from "lucide-react";
 import {
 	Dialog,
@@ -27,9 +28,6 @@ import { getSubscriptionLimits } from "@/lib/subscriptions";
 
 export default function RecipientsPage() {
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
-	const [selectedTab, setSelectedTab] = useState<"table" | "dotted-map">(
-		"table"
-	);
 	const subscriptionLevel = useQuery(
 		api.subscriptions.getUserSubscriptionLevel
 	);
@@ -49,107 +47,104 @@ export default function RecipientsPage() {
 					</p>
 				</div>
 				<div className="flex items-center justify-between">
-					<Tabs
-						selectedKey={selectedTab}
-						onSelectionChange={(key) =>
-							setSelectedTab(key as "table" | "dotted-map")
-						}
-						color="secondary"
-						variant="solid"
-						radius="lg"
-						className="max-w-full"
-					>
-						<Tab key="table" title="Table View" />
-						{subscriptionLevel !== "pro" ? (
-							<Tooltip delayDuration={0}>
-								<TooltipTrigger asChild>
-									<div className="cursor-not-allowed">
-										<Tab
-											key="dotted-map"
-											title={
-												<div className="flex items-center gap-1.5">
+					<Tabs defaultValue="table" className="w-full">
+						<div className="flex items-center justify-between">
+							<TabsList className="bg-secondary/20">
+								<TabsTrigger
+									value="table"
+									className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground"
+								>
+									Table View
+								</TabsTrigger>
+								{subscriptionLevel !== "pro" ? (
+									<Tooltip delayDuration={0}>
+										<TooltipTrigger asChild>
+											<div className="cursor-not-allowed">
+												<TabsTrigger
+													value="dotted-map"
+													disabled
+													className="flex items-center gap-1.5 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground"
+												>
 													Map View
 													<Lock className="h-3.5 w-3.5 ml-1.5" />
-												</div>
-											}
-											isDisabled
-										/>
-									</div>
-								</TooltipTrigger>
-								<TooltipContent>
-									<p>Upgrade to Pro to view recipient locations on a map</p>
-								</TooltipContent>
-							</Tooltip>
-						) : (
-							<Tab key="dotted-map" title="Map View" />
-						)}
-						{hasReachedLimit ? (
-							<Tooltip delayDuration={0}>
-								<TooltipTrigger asChild>
-									<div className="cursor-not-allowed">
+												</TabsTrigger>
+											</div>
+										</TooltipTrigger>
+										<TooltipContent>
+											<p>Upgrade to Pro to view recipient locations on a map</p>
+										</TooltipContent>
+									</Tooltip>
+								) : (
+									<TabsTrigger
+										value="dotted-map"
+										className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground"
+									>
+										Map View
+									</TabsTrigger>
+								)}
+							</TabsList>
+							{hasReachedLimit ? (
+								<Tooltip delayDuration={0}>
+									<TooltipTrigger asChild>
+										<div className="cursor-not-allowed">
+											<Button
+												isDisabled
+												variant="bordered"
+												isIconOnly
+												color="secondary"
+												radius="lg"
+												className="ml-2"
+											>
+												<Plus className="h-4 w-4" />
+											</Button>
+										</div>
+									</TooltipTrigger>
+									<TooltipContent>
+										<p>
+											You have reached your recipient limit (
+											{limits.maxRecipients}). Upgrade to Pro for unlimited
+											recipients.
+										</p>
+									</TooltipContent>
+								</Tooltip>
+							) : (
+								<Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+									<DialogTrigger asChild>
 										<Button
-											isDisabled
-											variant="bordered"
-											isIconOnly
 											color="secondary"
+											variant="shadow"
+											isIconOnly
 											radius="lg"
 											className="ml-2"
 										>
 											<Plus className="h-4 w-4" />
 										</Button>
-									</div>
-								</TooltipTrigger>
-								<TooltipContent>
-									<p>
-										You have reached your recipient limit (
-										{limits.maxRecipients}). Upgrade to Pro for unlimited
-										recipients.
-									</p>
-								</TooltipContent>
-							</Tooltip>
-						) : (
-							<Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-								<DialogTrigger asChild>
-									<Button
-										color="secondary"
-										variant="shadow"
-										isIconOnly
-										radius="lg"
-										className="ml-2"
-									>
-										<Plus className="h-4 w-4" />
-									</Button>
-								</DialogTrigger>
-								<DialogContent>
-									<DialogHeader>
-										<DialogTitle>Add Recipient</DialogTitle>
-									</DialogHeader>
-									<RecipientForm onSuccess={() => setIsDialogOpen(false)} />
-								</DialogContent>
-							</Dialog>
-						)}
-						<div className="mt-4">
-							{selectedTab === "table" && (
-								<div className="space-y-4">
-									<Suspense fallback={<div>Loading...</div>}>
-										<RecipientsTable />
-									</Suspense>
-								</div>
-							)}
-							{selectedTab === "dotted-map" && (
-								<div>
-									<Suspense fallback={<div>Loading...</div>}>
-										{subscriptionLevel === "pro" ? (
-											<DottedMapComponent />
-										) : (
-											<LockedFeature featureDescription="view recipient locations on a map">
-												<DottedMapComponent />
-											</LockedFeature>
-										)}
-									</Suspense>
-								</div>
+									</DialogTrigger>
+									<DialogContent>
+										<DialogHeader>
+											<DialogTitle>Add Recipient</DialogTitle>
+										</DialogHeader>
+										<RecipientForm onSuccess={() => setIsDialogOpen(false)} />
+									</DialogContent>
+								</Dialog>
 							)}
 						</div>
+						<TabsContent value="table" className="space-y-4">
+							<Suspense fallback={<div>Loading...</div>}>
+								<RecipientsTable />
+							</Suspense>
+						</TabsContent>
+						<TabsContent value="dotted-map">
+							<Suspense fallback={<div>Loading...</div>}>
+								{subscriptionLevel === "pro" ? (
+									<DottedMapComponent />
+								) : (
+									<LockedFeature featureDescription="view recipient locations on a map">
+										<DottedMapComponent />
+									</LockedFeature>
+								)}
+							</Suspense>
+						</TabsContent>
 					</Tabs>
 				</div>
 			</div>
