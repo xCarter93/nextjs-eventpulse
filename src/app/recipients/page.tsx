@@ -14,11 +14,30 @@ import {
 import { RecipientForm } from "@/components/recipients/RecipientForm";
 import { useState } from "react";
 import { Suspense } from "react";
-import { DottedMapComponent } from "@/components/recipients/DottedMap";
 import { LockedFeature } from "@/components/premium/LockedFeature";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { getSubscriptionLimits } from "@/lib/subscriptions";
+import dynamic from "next/dynamic";
+
+// Add dynamic import with loading disabled during SSR
+const DottedMapComponent = dynamic(
+	() =>
+		import("@/components/recipients/DottedMap").then(
+			(mod) => mod.DottedMapComponent
+		),
+	{
+		loading: () => (
+			<div className="min-h-[400px] flex items-center justify-center">
+				<div className="text-center space-y-4">
+					<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto"></div>
+					<p className="text-sm text-muted-foreground">Loading map view...</p>
+				</div>
+			</div>
+		),
+		ssr: false,
+	}
+);
 
 export default function RecipientsPage() {
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -85,27 +104,25 @@ export default function RecipientsPage() {
 									content="You have reached your recipient limit. Upgrade to Pro for unlimited recipients."
 									color="secondary"
 								>
-									<div className="cursor-not-allowed">
-										<Button
-											isDisabled
-											variant="bordered"
-											isIconOnly
-											color="secondary"
-											radius="lg"
-											className="ml-2 bg-secondary/20"
-										>
-											<Plus className="h-4 w-4" />
-										</Button>
-									</div>
+									<Button
+										isDisabled
+										variant="bordered"
+										isIconOnly
+										color="secondary"
+										radius="lg"
+										className="ml-2 bg-secondary/20"
+									>
+										<Plus className="h-4 w-4" />
+									</Button>
 								</Tooltip>
 							) : (
-								<Tooltip
-									content="Add New Recipient"
-									color="secondary"
-									placement="bottom"
-								>
-									<Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-										<DialogTrigger asChild>
+								<Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+									<DialogTrigger asChild>
+										<Tooltip
+											content="Add New Recipient"
+											color="secondary"
+											placement="bottom"
+										>
 											<Button
 												color="secondary"
 												variant="solid"
@@ -115,15 +132,15 @@ export default function RecipientsPage() {
 											>
 												<Plus className="h-4 w-4" />
 											</Button>
-										</DialogTrigger>
-										<DialogContent>
-											<DialogHeader>
-												<DialogTitle>Add Recipient</DialogTitle>
-											</DialogHeader>
-											<RecipientForm onSuccess={() => setIsDialogOpen(false)} />
-										</DialogContent>
-									</Dialog>
-								</Tooltip>
+										</Tooltip>
+									</DialogTrigger>
+									<DialogContent>
+										<DialogHeader>
+											<DialogTitle>Add Recipient</DialogTitle>
+										</DialogHeader>
+										<RecipientForm onSuccess={() => setIsDialogOpen(false)} />
+									</DialogContent>
+								</Dialog>
 							))}
 					</div>
 					<TabsContent value="table" className="space-y-4">
@@ -132,26 +149,13 @@ export default function RecipientsPage() {
 						</Suspense>
 					</TabsContent>
 					<TabsContent value="dotted-map">
-						<Suspense
-							fallback={
-								<div className="min-h-[400px] flex items-center justify-center">
-									<div className="text-center space-y-4">
-										<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto"></div>
-										<p className="text-sm text-muted-foreground">
-											Loading map view...
-										</p>
-									</div>
-								</div>
-							}
-						>
-							{subscriptionLevel === "pro" ? (
+						{subscriptionLevel === "pro" ? (
+							<DottedMapComponent />
+						) : (
+							<LockedFeature featureDescription="view recipient locations on a map">
 								<DottedMapComponent />
-							) : (
-								<LockedFeature featureDescription="view recipient locations on a map">
-									<DottedMapComponent />
-								</LockedFeature>
-							)}
-						</Suspense>
+							</LockedFeature>
+						)}
 					</TabsContent>
 				</Tabs>
 			</div>
