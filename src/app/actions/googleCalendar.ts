@@ -42,13 +42,20 @@ export async function getGoogleCalendarEvents() {
 			// Handle all-day events
 			if (event.start?.date) {
 				// For all-day events, create dates at local midnight
-				const startDate = new Date(event.start.date);
-				startDate.setHours(0, 0, 0, 0); // Set to local midnight
+				// Create date in UTC to avoid timezone offset issues
+				const [year, month, day] = event.start.date.split("-").map(Number);
+				const startDate = new Date(Date.UTC(year, month - 1, day));
 
-				const endDate = event.end?.date
-					? new Date(event.end.date)
-					: new Date(startDate);
-				endDate.setHours(0, 0, 0, 0); // Set to local midnight
+				// Get end date similarly if it exists
+				let endDate;
+				if (event.end?.date) {
+					const [endYear, endMonth, endDay] = event.end.date
+						.split("-")
+						.map(Number);
+					endDate = new Date(Date.UTC(endYear, endMonth - 1, endDay));
+				} else {
+					endDate = new Date(startDate);
+				}
 
 				// If it's a multi-day event
 				if (endDate > startDate) {
@@ -63,9 +70,8 @@ export async function getGoogleCalendarEvents() {
 							description: event.description || undefined,
 							start: currentDate.getTime(),
 						});
-						// Move to next day
-						currentDate.setDate(currentDate.getDate() + 1);
-						currentDate.setHours(0, 0, 0, 0);
+						// Move to next day using UTC to avoid timezone issues
+						currentDate.setUTCDate(currentDate.getUTCDate() + 1);
 					}
 					return dates;
 				}
