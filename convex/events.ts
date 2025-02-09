@@ -155,6 +155,11 @@ export const syncGoogleCalendarEvents = mutation({
 			});
 		}
 
+		// Update last sync timestamp
+		await ctx.db.patch(user._id, {
+			lastGoogleCalendarSync: Date.now(),
+		});
+
 		return args.events.length;
 	},
 });

@@ -22,9 +22,6 @@ import { PremiumModal } from "@/components/premium/PremiumModal";
 import { getPublicHolidays } from "@/app/actions/holidays";
 import MissingAddressAlert from "./MissingAddressAlert";
 import { Card, CardBody, CardHeader, Tooltip } from "@heroui/react";
-import { toast } from "sonner";
-import Image from "next/image";
-import { getGoogleCalendarEvents } from "@/app/actions/googleCalendar";
 
 interface Holiday {
 	date: string;
@@ -45,7 +42,6 @@ export function Calendar() {
 	const [isRecurring, setIsRecurring] = useState(false);
 	const [showPremiumModal, setShowPremiumModal] = useState(false);
 	const [holidays, setHolidays] = useState<Holiday[]>([]);
-	const [isSyncing, setIsSyncing] = useState(false);
 	const router = useRouter();
 
 	// Fetch user settings and other data
@@ -59,7 +55,6 @@ export function Calendar() {
 	const subscriptionLevel = useQuery(
 		api.subscriptions.getUserSubscriptionLevel
 	);
-	const syncGoogleCalendar = useMutation(api.events.syncGoogleCalendarEvents);
 
 	const hasAddress = user?.settings?.address?.countryCode;
 	const showHolidaysEnabled = user?.settings?.calendar?.showHolidays ?? true;
@@ -255,22 +250,6 @@ export function Calendar() {
 		};
 	};
 
-	const handleGoogleSync = async () => {
-		try {
-			setIsSyncing(true);
-			const events = await getGoogleCalendarEvents();
-			const eventCount = await syncGoogleCalendar({ events });
-			toast.success(
-				`Successfully synced ${eventCount} events from Google Calendar`
-			);
-		} catch (error) {
-			console.error("Failed to sync Google Calendar:", error);
-			toast.error("Failed to sync Google Calendar");
-		} finally {
-			setIsSyncing(false);
-		}
-	};
-
 	return (
 		<div className="w-full h-full bg-card rounded-lg shadow-sm calendar">
 			{/* Address Required Banner */}
@@ -287,22 +266,6 @@ export function Calendar() {
 						<h2 className="text-lg font-semibold">
 							{monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
 						</h2>
-						<Button
-							variant="outline"
-							size="sm"
-							className="flex items-center gap-2"
-							onClick={handleGoogleSync}
-							disabled={isSyncing}
-						>
-							<Image
-								src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg"
-								alt="Google Calendar"
-								width={16}
-								height={16}
-								className="w-4 h-4"
-							/>
-							{isSyncing ? "Syncing..." : "Sync Google Calendar"}
-						</Button>
 					</div>
 					<div className="flex gap-4 mt-1">
 						<button

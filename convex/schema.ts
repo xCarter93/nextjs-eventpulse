@@ -9,6 +9,7 @@ export default defineSchema({
 		email: v.string(),
 		lastSignedInDate: v.optional(v.number()),
 		hasSeenTour: v.optional(v.boolean()),
+		lastGoogleCalendarSync: v.optional(v.number()),
 		settings: v.optional(
 			v.object({
 				address: v.optional(

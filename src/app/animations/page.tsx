@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { type AnimationTemplate } from "@/types";
 import { TemplateCard } from "@/components/animations/TemplateCard";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CustomAnimationUploader } from "@/components/animations/CustomAnimationUploader";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Image, Upload, Sparkles, FileImage } from "lucide-react";
+import { Pagination, Card, CardBody } from "@heroui/react";
 
 function EmptyState() {
 	return (
@@ -46,19 +46,28 @@ function EmptyState() {
 export default function AnimationsPage() {
 	const [selectedTemplate, setSelectedTemplate] =
 		useState<AnimationTemplate | null>(null);
+	const [currentPage, setCurrentPage] = useState(1);
+	const itemsPerPage = 8; // 2 rows x 4 columns
 
 	const userAnimations = useQuery(api.animations.getUserAnimations);
 	const user = useQuery(api.users.getUser);
 
 	const templates: AnimationTemplate[] =
-		userAnimations?.map((animation) => ({
-			id: animation._id,
-			name: animation.name || "Untitled Animation",
-			description: animation.description || "",
-			previewUrl: animation.url,
-			createdAt: animation._creationTime,
-			isCustom: !animation.isBaseAnimation,
-		})) || [];
+		userAnimations
+			?.map((animation) => ({
+				id: animation._id,
+				name: animation.name || "Untitled Animation",
+				description: animation.description || "",
+				previewUrl: animation.url,
+				createdAt: animation._creationTime,
+				isCustom: !animation.isBaseAnimation,
+			}))
+			?.sort((a, b) => b.createdAt - a.createdAt) || [];
+
+	const totalPages = Math.ceil(templates.length / itemsPerPage);
+	const startIndex = (currentPage - 1) * itemsPerPage;
+	const endIndex = startIndex + itemsPerPage;
+	const currentTemplates = templates.slice(startIndex, endIndex);
 
 	return (
 		<div className="space-y-6">
@@ -72,14 +81,11 @@ export default function AnimationsPage() {
 			</div>
 
 			<div className="flex flex-col lg:flex-row gap-6">
-				<Card className="flex-1">
-					<CardHeader>
-						<CardTitle>Your Uploads</CardTitle>
-					</CardHeader>
-					<CardContent>
+				<Card className="flex-1" radius="lg" shadow="md">
+					<CardBody className="p-6">
 						<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 animations-grid">
-							{templates.length > 0 ? (
-								templates.map((template) => (
+							{currentTemplates.length > 0 ? (
+								currentTemplates.map((template) => (
 									<TemplateCard
 										key={template.id}
 										template={template}
@@ -94,7 +100,24 @@ export default function AnimationsPage() {
 								<EmptyState />
 							)}
 						</div>
-					</CardContent>
+						{templates.length > itemsPerPage && (
+							<div className="flex justify-center mt-6">
+								<Pagination
+									total={totalPages}
+									page={currentPage}
+									onChange={setCurrentPage}
+									showControls
+									size="md"
+									radius="md"
+									variant="bordered"
+									classNames={{
+										wrapper: "gap-2",
+										item: "min-w-8 h-8",
+									}}
+								/>
+							</div>
+						)}
+					</CardBody>
 				</Card>
 
 				<div className="w-full lg:w-80 order-first lg:order-last animation-uploader">
