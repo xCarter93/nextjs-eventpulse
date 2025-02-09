@@ -24,6 +24,7 @@ import MissingAddressAlert from "./MissingAddressAlert";
 import { Card, CardBody, CardHeader, Tooltip } from "@heroui/react";
 import { toast } from "sonner";
 import Image from "next/image";
+import { getGoogleCalendarEvents } from "@/app/actions/googleCalendar";
 
 interface Holiday {
 	date: string;
@@ -257,7 +258,8 @@ export function Calendar() {
 	const handleGoogleSync = async () => {
 		try {
 			setIsSyncing(true);
-			const eventCount = await syncGoogleCalendar();
+			const events = await getGoogleCalendarEvents();
+			const eventCount = await syncGoogleCalendar({ events });
 			toast.success(
 				`Successfully synced ${eventCount} events from Google Calendar`
 			);

@@ -106,7 +106,17 @@ export const listEvents = internalQuery({
 });
 
 export const syncGoogleCalendarEvents = mutation({
-	async handler(ctx) {
+	args: {
+		events: v.array(
+			v.object({
+				id: v.string(),
+				title: v.string(),
+				description: v.optional(v.string()),
+				start: v.string(),
+			})
+		),
+	},
+	async handler(ctx, args) {
 		const identity = await ctx.auth.getUserIdentity();
 
 		if (!identity) {
@@ -135,20 +145,17 @@ export const syncGoogleCalendarEvents = mutation({
 			await ctx.db.delete(event._id);
 		}
 
-		// Fetch new events from Google Calendar
-		const googleEvents = await getGoogleCalendarEvents(identity.subject);
-
 		// Insert new events
-		for (const event of googleEvents) {
+		for (const event of args.events) {
 			await ctx.db.insert("customEvents", {
 				userId: user._id,
-				name: event.title || "Untitled Event",
+				name: event.title,
 				date: new Date(event.start).getTime(),
 				isRecurring: false,
 				source: "google",
 			});
 		}
 
-		return googleEvents.length;
+		return args.events.length;
 	},
 });
