@@ -41,10 +41,14 @@ export async function getGoogleCalendarEvents() {
 		events.data.items?.flatMap((event) => {
 			// Handle all-day events
 			if (event.start?.date) {
-				const startDate = new Date(event.start.date + "T00:00:00Z");
+				// For all-day events, create dates at local midnight
+				const startDate = new Date(event.start.date);
+				startDate.setHours(0, 0, 0, 0); // Set to local midnight
+
 				const endDate = event.end?.date
-					? new Date(event.end.date + "T00:00:00Z")
+					? new Date(event.end.date)
 					: new Date(startDate);
+				endDate.setHours(0, 0, 0, 0); // Set to local midnight
 
 				// If it's a multi-day event
 				if (endDate > startDate) {
@@ -59,7 +63,9 @@ export async function getGoogleCalendarEvents() {
 							description: event.description || undefined,
 							start: currentDate.getTime(),
 						});
-						currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+						// Move to next day
+						currentDate.setDate(currentDate.getDate() + 1);
+						currentDate.setHours(0, 0, 0, 0);
 					}
 					return dates;
 				}
