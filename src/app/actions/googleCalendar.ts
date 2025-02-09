@@ -38,36 +38,56 @@ export async function getGoogleCalendarEvents() {
 	});
 
 	return (
-		events.data.items?.map((event) => {
-			// For all-day events, Google Calendar uses dates in YYYY-MM-DD format
+		events.data.items?.flatMap((event) => {
+			// Handle all-day events
 			if (event.start?.date) {
-				// For all-day events, we need to use the date directly without timezone conversion
-				const [year, month, day] = event.start.date.split("-").map(Number);
-				const timestamp = Date.UTC(year, month - 1, day); // month is 0-based in JavaScript
-				console.log("All-day event:", {
-					originalDate: event.start.date,
-					parsedDate: new Date(timestamp).toISOString(),
-					timestamp,
-				});
-				return {
-					id: event.id || `event-${Date.now()}`,
-					title: event.summary || "Untitled Event",
-					description: event.description || undefined,
-					start: timestamp,
-				};
+				const startDate = new Date(event.start.date + "T00:00:00Z");
+				const endDate = event.end?.date
+					? new Date(event.end.date + "T00:00:00Z")
+					: new Date(startDate);
+
+				// If it's a multi-day event
+				if (endDate > startDate) {
+					const dates = [];
+					const currentDate = new Date(startDate);
+
+					// Create an event for each day until the end date (exclusive)
+					while (currentDate < endDate) {
+						dates.push({
+							id: `${event.id}-${currentDate.toISOString().split("T")[0]}`,
+							title: event.summary || "Untitled Event",
+							description: event.description || undefined,
+							start: currentDate.getTime(),
+						});
+						currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+					}
+					return dates;
+				}
+
+				// Single day event
+				return [
+					{
+						id: event.id || `event-${Date.now()}`,
+						title: event.summary || "Untitled Event",
+						description: event.description || undefined,
+						start: startDate.getTime(),
+					},
+				];
 			}
 
-			// For time-specific events, use dateTime
+			// Handle time-specific events
 			const timestamp = event.start?.dateTime
 				? new Date(event.start.dateTime).getTime()
 				: new Date().getTime();
 
-			return {
-				id: event.id || `event-${Date.now()}`,
-				title: event.summary || "Untitled Event",
-				description: event.description || undefined,
-				start: timestamp,
-			};
+			return [
+				{
+					id: event.id || `event-${Date.now()}`,
+					title: event.summary || "Untitled Event",
+					description: event.description || undefined,
+					start: timestamp,
+				},
+			];
 		}) || []
 	);
 }
