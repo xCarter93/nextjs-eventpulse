@@ -113,5 +113,6 @@ export default defineSchema({
 		name: v.string(),
 		date: v.number(),
 		isRecurring: v.boolean(),
+		source: v.optional(v.union(v.literal("google"), v.literal("manual"))),
 	}).index("by_userId", ["userId"]),
 });

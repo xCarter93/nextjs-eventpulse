@@ -15,6 +15,10 @@ const config: NextConfig = {
 				protocol: "https",
 				hostname: "images.unsplash.com",
 			},
+			{
+				protocol: "https",
+				hostname: "upload.wikimedia.org",
+			},
 		],
 	},
 	env: {
