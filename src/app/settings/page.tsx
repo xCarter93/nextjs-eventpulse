@@ -79,116 +79,114 @@ export default function SettingsPage() {
 	);
 
 	return (
-		<div className="container py-10">
-			<div className="space-y-6">
-				<div>
-					<h2 className="text-2xl font-bold tracking-tight">Settings</h2>
-					<p className="text-muted-foreground">
-						Manage your account settings and preferences.
-					</p>
-				</div>
-				<Separator />
-
-				<Tabs value={activeTab} onValueChange={setActiveTab}>
-					<TabsList>
-						<TabsTrigger value="general">General</TabsTrigger>
-						<TabsTrigger value="notifications">Notifications</TabsTrigger>
-					</TabsList>
-
-					<TabsContent value="general" className="space-y-4">
-						<Card>
-							<CardHeader>
-								<CardTitle>Calendar Settings</CardTitle>
-							</CardHeader>
-							<CardContent>
-								<CalendarSettingsForm
-									value={settings.calendar}
-									onChange={useCallback(
-										(calendar) => {
-											handleSettingsChange("calendar", calendar);
-										},
-										[handleSettingsChange]
-									)}
-								/>
-							</CardContent>
-						</Card>
-
-						<Card>
-							<CardHeader>
-								<CardTitle>Upcoming Events Settings</CardTitle>
-							</CardHeader>
-							<CardContent>
-								<UpcomingEventsSettingsForm
-									value={settings.upcomingEvents}
-									onChange={useCallback(
-										(upcomingEvents) => {
-											handleSettingsChange("upcomingEvents", upcomingEvents);
-										},
-										[handleSettingsChange]
-									)}
-								/>
-							</CardContent>
-						</Card>
-
-						<Card>
-							<CardHeader>
-								<CardTitle>Address</CardTitle>
-							</CardHeader>
-							<CardContent>
-								<AddressForm
-									defaultAddress={
-										settings.address || {
-											line1: "",
-											city: "",
-											state: "",
-											postalCode: "",
-											country: "",
-											countryCode: "",
-											coordinates: {
-												latitude: 0,
-												longitude: 0,
-											},
-										}
-									}
-									onChange={useCallback(
-										(address) => {
-											handleSettingsChange("address", address);
-										},
-										[handleSettingsChange]
-									)}
-								/>
-							</CardContent>
-						</Card>
-
-						<Button onClick={handleSubmit} disabled={isLoading}>
-							{isLoading ? "Saving..." : "Save Changes"}
-						</Button>
-					</TabsContent>
-
-					<TabsContent value="notifications" className="space-y-4">
-						<Card>
-							<CardHeader>
-								<CardTitle>Email Notifications</CardTitle>
-							</CardHeader>
-							<CardContent>
-								<EmailNotificationsForm
-									value={settings.notifications}
-									onChange={useCallback(
-										(notifications) => {
-											handleSettingsChange("notifications", notifications);
-										},
-										[handleSettingsChange]
-									)}
-								/>
-							</CardContent>
-						</Card>
-
-						<Button onClick={handleSubmit} disabled={isLoading}>
-							{isLoading ? "Saving..." : "Save Changes"}
-						</Button>
-					</TabsContent>
-				</Tabs>
+		<div className="container space-y-6">
+			<div>
+				<h1 className="text-2xl font-bold text-foreground">Settings</h1>
+				<p className="mt-2 text-muted-foreground">
+					Manage your account settings and preferences.
+				</p>
 			</div>
+			<Separator />
+
+			<Tabs value={activeTab} onValueChange={setActiveTab}>
+				<TabsList>
+					<TabsTrigger value="general">General</TabsTrigger>
+					<TabsTrigger value="notifications">Notifications</TabsTrigger>
+				</TabsList>
+
+				<TabsContent value="general" className="space-y-4">
+					<Card>
+						<CardHeader>
+							<CardTitle>Calendar Settings</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<CalendarSettingsForm
+								value={settings.calendar}
+								onChange={useCallback(
+									(calendar) => {
+										handleSettingsChange("calendar", calendar);
+									},
+									[handleSettingsChange]
+								)}
+							/>
+						</CardContent>
+					</Card>
+
+					<Card>
+						<CardHeader>
+							<CardTitle>Upcoming Events Settings</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<UpcomingEventsSettingsForm
+								value={settings.upcomingEvents}
+								onChange={useCallback(
+									(upcomingEvents) => {
+										handleSettingsChange("upcomingEvents", upcomingEvents);
+									},
+									[handleSettingsChange]
+								)}
+							/>
+						</CardContent>
+					</Card>
+
+					<Card>
+						<CardHeader>
+							<CardTitle>Address</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<AddressForm
+								defaultAddress={
+									settings.address || {
+										line1: "",
+										city: "",
+										state: "",
+										postalCode: "",
+										country: "",
+										countryCode: "",
+										coordinates: {
+											latitude: 0,
+											longitude: 0,
+										},
+									}
+								}
+								onChange={useCallback(
+									(address) => {
+										handleSettingsChange("address", address);
+									},
+									[handleSettingsChange]
+								)}
+							/>
+						</CardContent>
+					</Card>
+
+					<Button onClick={handleSubmit} disabled={isLoading}>
+						{isLoading ? "Saving..." : "Save Changes"}
+					</Button>
+				</TabsContent>
+
+				<TabsContent value="notifications" className="space-y-4">
+					<Card>
+						<CardHeader>
+							<CardTitle>Email Notifications</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<EmailNotificationsForm
+								value={settings.notifications}
+								onChange={useCallback(
+									(notifications) => {
+										handleSettingsChange("notifications", notifications);
+									},
+									[handleSettingsChange]
+								)}
+							/>
+						</CardContent>
+					</Card>
+
+					<Button onClick={handleSubmit} disabled={isLoading}>
+						{isLoading ? "Saving..." : "Save Changes"}
+					</Button>
+				</TabsContent>
+			</Tabs>
 		</div>
 	);
 }
