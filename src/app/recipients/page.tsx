@@ -12,7 +12,7 @@ import {
 	DialogTrigger,
 } from "@/components/ui/dialog";
 import { RecipientForm } from "@/components/recipients/RecipientForm";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Suspense } from "react";
 import { LockedFeature } from "@/components/premium/LockedFeature";
 import { useQuery } from "convex/react";
@@ -20,8 +20,8 @@ import { api } from "../../../convex/_generated/api";
 import { getSubscriptionLimits } from "@/lib/subscriptions";
 import dynamic from "next/dynamic";
 
-// Move DottedMapComponent outside and add preload function
-const DottedMapComponent = dynamic(
+// Separate the map component to handle its own loading state
+const DynamicDottedMap = dynamic(
 	() =>
 		import("@/components/recipients/DottedMap").then(
 			(mod) => mod.DottedMapComponent
@@ -31,7 +31,7 @@ const DottedMapComponent = dynamic(
 	}
 );
 
-// Separate loading state into its own component
+// Loading state component
 function MapLoadingState() {
 	return (
 		<div className="min-h-[400px] flex items-center justify-center">
@@ -40,6 +40,34 @@ function MapLoadingState() {
 				<p className="text-sm text-muted-foreground">Loading map view...</p>
 			</div>
 		</div>
+	);
+}
+
+// Separate data loading component
+function MapContent() {
+	const recipients = useQuery(api.recipients.getRecipients);
+	const user = useQuery(api.users.getUser);
+
+	// Return loading state if data isn't ready
+	if (!recipients || !user) {
+		return <MapLoadingState />;
+	}
+
+	// Return early if no coordinates
+	if (!user.settings?.address?.coordinates) {
+		return (
+			<div className="flex items-center justify-center h-[600px] border rounded-lg bg-muted/10">
+				<p className="text-muted-foreground">
+					Please set your address in settings to view the map
+				</p>
+			</div>
+		);
+	}
+
+	return (
+		<Suspense fallback={<MapLoadingState />}>
+			<DynamicDottedMap />
+		</Suspense>
 	);
 }
 
@@ -52,10 +80,10 @@ function MapWithSuspense() {
 	return (
 		<Suspense fallback={<MapLoadingState />}>
 			{subscriptionLevel === "pro" ? (
-				<DottedMapComponent />
+				<MapContent />
 			) : (
 				<LockedFeature featureDescription="view recipient locations on a map">
-					<DottedMapComponent />
+					<MapContent />
 				</LockedFeature>
 			)}
 		</Suspense>
@@ -74,11 +102,15 @@ export default function RecipientsPage() {
 		? recipients.length >= limits.maxRecipients
 		: false;
 
-	// Preload the map component when hovering over the tab
-	const handleTabHover = () => {
-		const preloadDottedMap = () => import("@/components/recipients/DottedMap");
-		preloadDottedMap();
-	};
+	// Start preloading both component and data on mount if pro user
+	useEffect(() => {
+		if (subscriptionLevel === "pro") {
+			// Preload the map component
+			const preloadDottedMap = () =>
+				import("@/components/recipients/DottedMap");
+			preloadDottedMap();
+		}
+	}, [subscriptionLevel]);
 
 	return (
 		<div className="container space-y-6 max-w-7xl">
@@ -121,7 +153,6 @@ export default function RecipientsPage() {
 							) : (
 								<TabsTrigger
 									value="dotted-map"
-									onMouseEnter={handleTabHover}
 									className="data-[state=active]:bg-purple-500 data-[state=active]:text-white"
 								>
 									Map View
