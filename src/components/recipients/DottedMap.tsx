@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useMemo } from "react";
+import { useRef, useMemo, useEffect } from "react";
 import { motion } from "motion/react";
 import DottedMap from "dotted-map";
 import Image from "next/image";
@@ -9,13 +9,24 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export function DottedMapComponent() {
+export interface DottedMapComponentProps {
+	onLoad?: () => void;
+}
+
+export function DottedMapComponent({ onLoad }: DottedMapComponentProps) {
 	const svgRef = useRef<SVGSVGElement>(null);
 	const { theme } = useTheme();
 
 	// Fetch recipients data and user data
 	const recipients = useQuery(api.recipients.getRecipients);
 	const user = useQuery(api.users.getUser);
+
+	// Call onLoad when data is ready
+	useEffect(() => {
+		if (recipients && user && onLoad) {
+			onLoad();
+		}
+	}, [recipients, user, onLoad]);
 
 	// Memoize the SVG to prevent recreation on every render
 	const svgMap = useMemo(() => {

@@ -12,7 +12,7 @@ import {
 	DialogTrigger,
 } from "@/components/ui/dialog";
 import { RecipientForm } from "@/components/recipients/RecipientForm";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Suspense } from "react";
 import { LockedFeature } from "@/components/premium/LockedFeature";
 import { useQuery } from "convex/react";
@@ -20,28 +20,34 @@ import { api } from "../../../convex/_generated/api";
 import { getSubscriptionLimits } from "@/lib/subscriptions";
 import dynamic from "next/dynamic";
 
-// Add dynamic import with loading disabled during SSR
+// Move DottedMapComponent outside and add preload function
 const DottedMapComponent = dynamic(
 	() =>
 		import("@/components/recipients/DottedMap").then(
 			(mod) => mod.DottedMapComponent
 		),
 	{
-		loading: () => (
-			<div className="min-h-[400px] flex items-center justify-center">
-				<div className="text-center space-y-4">
-					<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto"></div>
-					<p className="text-sm text-muted-foreground">Loading map view...</p>
-				</div>
-			</div>
-		),
+		loading: () => <MapLoadingState />,
 		ssr: false,
 	}
 );
 
+// Separate loading state into its own component
+function MapLoadingState() {
+	return (
+		<div className="min-h-[400px] flex items-center justify-center">
+			<div className="text-center space-y-4">
+				<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto"></div>
+				<p className="text-sm text-muted-foreground">Loading map view...</p>
+			</div>
+		</div>
+	);
+}
+
 export default function RecipientsPage() {
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
 	const [activeTab, setActiveTab] = useState("table");
+	const [isMapLoading, setIsMapLoading] = useState(true);
 	const subscriptionLevel = useQuery(
 		api.subscriptions.getUserSubscriptionLevel
 	);
@@ -50,6 +56,24 @@ export default function RecipientsPage() {
 	const hasReachedLimit = recipients
 		? recipients.length >= limits.maxRecipients
 		: false;
+
+	// Preload the map component when hovering over the tab
+	const handleTabHover = () => {
+		const preloadDottedMap = () => import("@/components/recipients/DottedMap");
+		preloadDottedMap();
+	};
+
+	// Reset loading state when switching tabs
+	useEffect(() => {
+		if (activeTab === "dotted-map") {
+			setIsMapLoading(true);
+		}
+	}, [activeTab]);
+
+	// Handle map load complete
+	const handleMapLoad = () => {
+		setIsMapLoading(false);
+	};
 
 	return (
 		<div className="container space-y-6 max-w-7xl">
@@ -92,6 +116,7 @@ export default function RecipientsPage() {
 							) : (
 								<TabsTrigger
 									value="dotted-map"
+									onMouseEnter={handleTabHover}
 									className="data-[state=active]:bg-purple-500 data-[state=active]:text-white"
 								>
 									Map View
@@ -150,7 +175,12 @@ export default function RecipientsPage() {
 					</TabsContent>
 					<TabsContent value="dotted-map">
 						{subscriptionLevel === "pro" ? (
-							<DottedMapComponent />
+							<>
+								{isMapLoading && <MapLoadingState />}
+								<div className={isMapLoading ? "hidden" : ""}>
+									<DottedMapComponent onLoad={handleMapLoad} />
+								</div>
+							</>
 						) : (
 							<LockedFeature featureDescription="view recipient locations on a map">
 								<DottedMapComponent />
