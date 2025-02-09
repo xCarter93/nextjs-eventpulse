@@ -1,7 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query, internalQuery } from "./_generated/server";
 import { ConvexError } from "convex/values";
-import { getGoogleCalendarEvents } from "@/components/dashboard/googleCalendar";
 
 export const createEvent = mutation({
 	args: {
@@ -112,7 +111,7 @@ export const syncGoogleCalendarEvents = mutation({
 				id: v.string(),
 				title: v.string(),
 				description: v.optional(v.string()),
-				start: v.string(),
+				start: v.number(),
 			})
 		),
 	},
@@ -150,7 +149,7 @@ export const syncGoogleCalendarEvents = mutation({
 			await ctx.db.insert("customEvents", {
 				userId: user._id,
 				name: event.title,
-				date: new Date(event.start).getTime(),
+				date: event.start,
 				isRecurring: false,
 				source: "google",
 			});

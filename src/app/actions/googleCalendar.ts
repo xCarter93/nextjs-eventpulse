@@ -34,15 +34,31 @@ export async function getGoogleCalendarEvents() {
 		timeMin: new Date().toISOString(),
 		maxResults: 2500,
 		auth: client,
+		timeZone: "UTC",
 	});
 
 	return (
-		events.data.items?.map((event) => ({
-			id: event.id || `event-${Date.now()}`,
-			title: event.summary || "Untitled Event",
-			description: event.description || undefined,
-			start:
-				event.start?.date || event.start?.dateTime || new Date().toISOString(),
-		})) || []
+		events.data.items?.map((event) => {
+			const startDate = event.start?.date
+				? new Date(event.start.date)
+				: event.start?.dateTime
+					? new Date(event.start.dateTime)
+					: new Date();
+
+			const timestamp = event.start?.date
+				? Date.UTC(
+						startDate.getUTCFullYear(),
+						startDate.getUTCMonth(),
+						startDate.getUTCDate()
+					)
+				: startDate.getTime();
+
+			return {
+				id: event.id || `event-${Date.now()}`,
+				title: event.summary || "Untitled Event",
+				description: event.description || undefined,
+				start: timestamp,
+			};
+		}) || []
 	);
 }
