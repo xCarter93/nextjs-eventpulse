@@ -39,19 +39,28 @@ export async function getGoogleCalendarEvents() {
 
 	return (
 		events.data.items?.map((event) => {
-			const startDate = event.start?.date
-				? new Date(event.start.date)
-				: event.start?.dateTime
-					? new Date(event.start.dateTime)
-					: new Date();
+			// For all-day events, Google Calendar uses dates in YYYY-MM-DD format
+			if (event.start?.date) {
+				// For all-day events, we need to use the date directly without timezone conversion
+				const [year, month, day] = event.start.date.split("-").map(Number);
+				const timestamp = Date.UTC(year, month - 1, day); // month is 0-based in JavaScript
+				console.log("All-day event:", {
+					originalDate: event.start.date,
+					parsedDate: new Date(timestamp).toISOString(),
+					timestamp,
+				});
+				return {
+					id: event.id || `event-${Date.now()}`,
+					title: event.summary || "Untitled Event",
+					description: event.description || undefined,
+					start: timestamp,
+				};
+			}
 
-			const timestamp = event.start?.date
-				? Date.UTC(
-						startDate.getUTCFullYear(),
-						startDate.getUTCMonth(),
-						startDate.getUTCDate()
-					)
-				: startDate.getTime();
+			// For time-specific events, use dateTime
+			const timestamp = event.start?.dateTime
+				? new Date(event.start.dateTime).getTime()
+				: new Date().getTime();
 
 			return {
 				id: event.id || `event-${Date.now()}`,
