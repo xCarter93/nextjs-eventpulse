@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 export default function TermsOfService() {
 	return (
 		<div className="container max-w-4xl py-8 space-y-8">
-			<h1 className="text-4xl font-bold">Terms of Service & Privacy Policy</h1>
+			<h1 className="text-4xl font-bold">Terms of Service</h1>
 			<Card>
 				<CardContent className="prose dark:prose-invert pt-6 max-w-none">
 					<h2>1. Introduction</h2>
@@ -59,41 +59,30 @@ export default function TermsOfService() {
 						</li>
 					</ul>
 
-					<h2>5. Privacy Policy</h2>
-					<p>We collect and process your data as follows:</p>
-					<ul>
-						<li>
-							<strong>Account Information:</strong> Email address, name, and
-							account preferences
-						</li>
-						<li>
-							<strong>Recipient Information:</strong> Names, email addresses,
-							and birthdays of your recipients
-						</li>
-						<li>
-							<strong>Usage Data:</strong> How you interact with our service,
-							including animations created and emails sent
-						</li>
-						<li>
-							<strong>Payment Information:</strong> Processed securely through
-							Stripe
-						</li>
-					</ul>
-
-					<h2>6. User Content</h2>
+					<h2>5. User Content</h2>
 					<p>
 						You retain rights to any content you upload, but grant us license to
 						store and display it. You must have rights to any content you
 						upload, and it must not violate any laws or rights of others.
 					</p>
 
-					<h2>7. Service Limitations</h2>
+					<h2>6. Service Limitations</h2>
 					<ul>
 						<li>Free accounts are limited to 5 recipients</li>
 						<li>
 							Custom animations in free accounts are stored for 10 days only
 						</li>
 						<li>We may impose usage limits to prevent abuse of the service</li>
+					</ul>
+
+					<h2>7. Acceptable Use</h2>
+					<p>You agree not to:</p>
+					<ul>
+						<li>Use the service for any illegal purposes</li>
+						<li>Send spam or unsolicited messages</li>
+						<li>Upload malicious content or code</li>
+						<li>Attempt to gain unauthorized access to the service</li>
+						<li>Interfere with other users&apos; use of the service</li>
 					</ul>
 
 					<h2>8. Termination</h2>
@@ -126,7 +115,7 @@ export default function TermsOfService() {
 					</p>
 
 					<div className="mt-8 text-sm text-muted-foreground">
-						<p>Last updated: {new Date().toLocaleDateString()}</p>
+						<p>Last updated: February 09, 2025</p>
 					</div>
 				</CardContent>
 			</Card>

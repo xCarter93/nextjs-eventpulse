@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import SlidePricing from "@/components/pricing/pricing";
 import { DarkGridHero } from "@/components/home-page/dark-grid-hero";
 import { BetaBanner } from "@/components/beta-banner";
 import { Features, featuresData } from "@/components/home-page/features";
+import { Footer } from "@/components/layout/footer";
 
 export default function LandingPage() {
 	return (
@@ -29,28 +29,7 @@ export default function LandingPage() {
 			<SlidePricing />
 
 			{/* Footer */}
-			<footer className="mt-auto">
-				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-					<div className="flex flex-col items-center space-y-2">
-						<p>© 2024 EventPulse. All rights reserved.</p>
-						<p className="flex items-center gap-2">
-							Made with{" "}
-							<span className="inline-block animate-[pulse_1.5s_ease-in-out_infinite] text-red-500">
-								❤️
-							</span>{" "}
-							by{" "}
-							<Link
-								href="https://github.com/xCarter93"
-								target="_blank"
-								rel="noopener noreferrer"
-								className="text-primary hover:underline"
-							>
-								xCarter93
-							</Link>
-						</p>
-					</div>
-				</div>
-			</footer>
+			<Footer />
 		</div>
 	);
 }
