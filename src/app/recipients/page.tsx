@@ -169,12 +169,12 @@ export default function RecipientsPage() {
 								</Tooltip>
 							) : (
 								<Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-									<DialogTrigger asChild>
-										<Tooltip
-											content="Add New Recipient"
-											color="secondary"
-											placement="bottom"
-										>
+									<Tooltip
+										content="Add New Recipient"
+										color="secondary"
+										placement="bottom"
+									>
+										<DialogTrigger asChild>
 											<Button
 												color="secondary"
 												variant="solid"
@@ -184,8 +184,8 @@ export default function RecipientsPage() {
 											>
 												<Plus className="h-4 w-4" />
 											</Button>
-										</Tooltip>
-									</DialogTrigger>
+										</DialogTrigger>
+									</Tooltip>
 									<DialogContent>
 										<DialogHeader>
 											<DialogTitle>Add Recipient</DialogTitle>
