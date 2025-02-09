@@ -81,7 +81,7 @@ export default function AnimationsPage() {
 			</div>
 
 			<div className="flex flex-col lg:flex-row gap-6">
-				<Card className="flex-1" radius="lg" shadow="md">
+				<Card className="flex-1" radius="lg" shadow="md" isBlurred={true}>
 					<CardBody className="p-6">
 						<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 animations-grid">
 							{currentTemplates.length > 0 ? (
