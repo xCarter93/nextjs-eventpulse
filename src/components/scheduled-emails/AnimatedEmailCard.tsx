@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { AnimatedBeam, Circle } from "./AnimatedBeams";
+import { AnimatedBeam } from "./AnimatedBeams";
 import { Avatar, Badge } from "@heroui/react";
 import { formatDistanceToNow } from "date-fns";
 import { Trash2, CheckCircle2, XCircle, Mail } from "lucide-react";
@@ -38,6 +38,19 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 	const user = useQuery(api.users.getUser);
 	const cancelEmail = useMutation(api.scheduledEmails.cancelScheduledEmail);
 
+	const getAvatarColor = () => {
+		switch (status) {
+			case "pending":
+				return "warning";
+			case "completed":
+				return "success";
+			case "canceled":
+				return "danger";
+			default:
+				return "default";
+		}
+	};
+
 	const getBeamColor = () => {
 		switch (status) {
 			case "pending":
@@ -68,20 +81,22 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 			<div ref={containerRef} className="relative w-[75%] mx-auto h-16 my-2">
 				<div className="flex h-full w-full items-center justify-between">
 					{/* From (User) Avatar */}
-					<Circle ref={fromRef} className="border-primary relative">
+					<div ref={fromRef} className="relative">
 						{status === "pending" ? (
 							<Badge
 								isOneChar
 								color="warning"
-								content={<Mail className="h-3 w-3" />}
-								placement="bottom-right"
-								className="[&>span]:bg-orange-500 max-w-[48px] max-h-[48px]"
+								content={<Mail size={12} />}
+								placement="top-right"
+								className="[&>span]:bg-orange-500"
 							>
 								<Avatar
 									name={user?.name || ""}
 									src={user?.image}
 									radius="full"
 									showFallback
+									isBordered
+									color={getAvatarColor()}
 									className="w-12 h-12"
 									classNames={{
 										base: "w-12 h-12",
@@ -96,6 +111,8 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 								src={user?.image}
 								radius="full"
 								showFallback
+								isBordered
+								color={getAvatarColor()}
 								className="w-12 h-12"
 								classNames={{
 									base: "w-12 h-12",
@@ -104,14 +121,16 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 								}}
 							/>
 						)}
-					</Circle>
+					</div>
 
 					{/* To (Recipient) Avatar */}
-					<Circle ref={toRef} className="border-primary">
+					<div ref={toRef}>
 						<Avatar
 							name={email.recipient.name}
 							radius="full"
 							showFallback
+							isBordered
+							color={getAvatarColor()}
 							className="w-12 h-12"
 							classNames={{
 								base: "w-12 h-12",
@@ -119,7 +138,7 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 								fallback: "w-12 h-12",
 							}}
 						/>
-					</Circle>
+					</div>
 				</div>
 
 				{/* Animated Beam */}
