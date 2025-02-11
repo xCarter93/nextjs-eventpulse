@@ -9,7 +9,6 @@ export interface AnimatedBeamProps {
 	containerRef: RefObject<HTMLDivElement | null>;
 	fromRef: RefObject<HTMLDivElement | null>;
 	toRef: RefObject<HTMLDivElement | null>;
-	curvature?: number;
 	reverse?: boolean;
 	pathColor?: string;
 	pathWidth?: number;
@@ -31,15 +30,14 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
 	containerRef,
 	fromRef,
 	toRef,
-	curvature = 0,
 	reverse = false,
 	duration = Math.random() * 3 + 4,
 	delay = 0,
 	pathColor = "gray",
 	pathWidth = 2,
 	pathOpacity = 0.2,
-	gradientStartColor = "#4d40ff",
-	gradientStopColor = "#4043ff",
+	gradientStartColor,
+	gradientStopColor,
 	startXOffset = 0,
 	startYOffset = 0,
 	endXOffset = 0,
@@ -86,10 +84,8 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
 				const endY =
 					rectB.top - containerRect.top + rectB.height / 2 + endYOffset;
 
-				const controlY = startY - curvature;
-				const d = `M ${startX},${startY} Q ${
-					(startX + endX) / 2
-				},${controlY} ${endX},${endY}`;
+				// Use straight line instead of curve
+				const d = `M ${startX},${startY} L ${endX},${endY}`;
 				setPathD(d);
 			}
 		};
@@ -111,7 +107,6 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
 		containerRef,
 		fromRef,
 		toRef,
-		curvature,
 		startXOffset,
 		startYOffset,
 		endXOffset,
@@ -138,59 +133,63 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
 				strokeLinecap="round"
 				strokeDasharray={strokeDasharray}
 			/>
-			<motion.path
-				d={pathD}
-				stroke={`url(#${id})`}
-				strokeLinecap="round"
-				strokeDasharray={strokeDasharray}
-				initial={{
-					strokeWidth: pathWidth,
-					strokeOpacity: 0,
-				}}
-				animate={{
-					strokeWidth: pathWidth * 1.5,
-					strokeOpacity: 1,
-				}}
-				transition={{
-					duration: 2,
-					delay: delay,
-				}}
-			/>
-			<defs>
-				<motion.linearGradient
-					className="transform-gpu"
-					id={id}
-					gradientUnits={"userSpaceOnUse"}
+			{gradientStartColor && gradientStopColor && (
+				<motion.path
+					d={pathD}
+					stroke={`url(#${id})`}
+					strokeLinecap="round"
+					strokeDasharray={strokeDasharray}
 					initial={{
-						x1: "0%",
-						x2: "0%",
-						y1: "0%",
-						y2: "0%",
+						strokeWidth: pathWidth,
+						strokeOpacity: 0,
 					}}
 					animate={{
-						x1: gradientCoordinates.x1,
-						x2: gradientCoordinates.x2,
-						y1: gradientCoordinates.y1,
-						y2: gradientCoordinates.y2,
+						strokeWidth: pathWidth * 1.5,
+						strokeOpacity: 1,
 					}}
 					transition={{
-						delay,
-						duration,
-						ease: [0.16, 1, 0.3, 1],
-						repeat: Infinity,
-						repeatDelay: 0,
+						duration: 2,
+						delay: delay,
 					}}
-				>
-					<stop stopColor={gradientStartColor} stopOpacity="0"></stop>
-					<stop stopColor={gradientStartColor}></stop>
-					<stop offset="32.5%" stopColor={gradientStopColor}></stop>
-					<stop
-						offset="100%"
-						stopColor={gradientStopColor}
-						stopOpacity="0"
-					></stop>
-				</motion.linearGradient>
-			</defs>
+				/>
+			)}
+			{gradientStartColor && gradientStopColor && (
+				<defs>
+					<motion.linearGradient
+						className="transform-gpu"
+						id={id}
+						gradientUnits={"userSpaceOnUse"}
+						initial={{
+							x1: "0%",
+							x2: "0%",
+							y1: "0%",
+							y2: "0%",
+						}}
+						animate={{
+							x1: gradientCoordinates.x1,
+							x2: gradientCoordinates.x2,
+							y1: gradientCoordinates.y1,
+							y2: gradientCoordinates.y2,
+						}}
+						transition={{
+							delay,
+							duration,
+							ease: [0.16, 1, 0.3, 1],
+							repeat: Infinity,
+							repeatDelay: 0,
+						}}
+					>
+						<stop stopColor={gradientStartColor} stopOpacity="0"></stop>
+						<stop stopColor={gradientStartColor}></stop>
+						<stop offset="32.5%" stopColor={gradientStopColor}></stop>
+						<stop
+							offset="100%"
+							stopColor={gradientStopColor}
+							stopOpacity="0"
+						></stop>
+					</motion.linearGradient>
+				</defs>
+			)}
 		</svg>
 	);
 };
@@ -203,7 +202,7 @@ export const Circle = forwardRef<
 		<div
 			ref={ref}
 			className={cn(
-				"z-10 flex h-12 w-12 items-center justify-center rounded-full border-2 bg-white p-3 shadow-[0_0_20px_-12px_rgba(0,0,0,0.8)]",
+				"z-10 flex h-12 w-12 items-center justify-center rounded-full border-2 bg-white p-2 shadow-[0_0_20px_-12px_rgba(0,0,0,0.8)]",
 				className
 			)}
 		>
