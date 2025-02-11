@@ -77,14 +77,10 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
 				const svgHeight = containerRect.height;
 				setSvgDimensions({ width: svgWidth, height: svgHeight });
 
-				const startX =
-					rectA.left - containerRect.left + rectA.width / 2 + startXOffset;
-				const startY =
-					rectA.top - containerRect.top + rectA.height / 2 + startYOffset;
-				const endX =
-					rectB.left - containerRect.left + rectB.width / 2 + endXOffset;
-				const endY =
-					rectB.top - containerRect.top + rectB.height / 2 + endYOffset;
+				const startX = rectA.left - containerRect.left + rectA.width / 2;
+				const startY = rectA.top - containerRect.top + rectA.height / 2;
+				const endX = rectB.left - containerRect.left + rectB.width / 2;
+				const endY = startY; // Keep Y coordinate the same for horizontal line
 
 				// Use straight line
 				const d = `M ${startX},${startY} L ${endX},${endY}`;
@@ -169,17 +165,21 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
 					}}
 				>
 					<motion.g
-						initial={{ pathLength: 0 }}
-						animate={{ pathLength: 1 }}
+						initial={{ pathOffset: 0 }}
+						animate={{ pathOffset: 1 }}
 						transition={{
 							duration,
 							delay,
 							repeat: Infinity,
 							repeatDelay: 0,
+							ease: "linear",
 						}}
 					>
 						<motion.g
-							style={{ offsetPath: `path("${pathD}")`, offsetDistance: "50%" }}
+							style={{
+								offsetPath: `path("${pathD}")`,
+								offsetRotate: "0deg",
+							}}
 						>
 							<Mail className="w-4 h-4 text-orange-500 -translate-y-3" />
 						</motion.g>
