@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { forwardRef, RefObject, useEffect, useId, useState } from "react";
+import { Mail } from "lucide-react";
 
 export interface AnimatedBeamProps {
 	className?: string;
@@ -23,6 +24,7 @@ export interface AnimatedBeamProps {
 	endYOffset?: number;
 	dotted?: boolean;
 	dotSpacing?: number;
+	showEmailIcon?: boolean;
 }
 
 export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
@@ -44,10 +46,10 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
 	endYOffset = 0,
 	dotted = false,
 	dotSpacing = 6,
+	showEmailIcon = false,
 }) => {
 	const id = useId();
 	const [pathD, setPathD] = useState("");
-
 	const [svgDimensions, setSvgDimensions] = useState({ width: 0, height: 0 });
 	const strokeDasharray = dotted ? `${dotSpacing} ${dotSpacing}` : "none";
 	const gradientCoordinates = reverse
@@ -84,7 +86,7 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
 				const endY =
 					rectB.top - containerRect.top + rectB.height / 2 + endYOffset;
 
-				// Use straight line instead of curve
+				// Use straight line
 				const d = `M ${startX},${startY} L ${endX},${endY}`;
 				setPathD(d);
 			}
@@ -153,6 +155,27 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
 					}}
 				/>
 			)}
+			{showEmailIcon && (
+				<motion.g
+					initial={{ opacity: 0 }}
+					animate={{
+						opacity: [0, 1, 1, 0],
+						offsetDistance: ["0%", "0%", "100%", "100%"],
+					}}
+					transition={{
+						duration,
+						delay,
+						repeat: Infinity,
+						repeatDelay: 0,
+						times: [0, 0.1, 0.9, 1],
+					}}
+					style={{
+						offsetPath: `path("${pathD}")`,
+					}}
+				>
+					<Mail className="w-4 h-4 text-primary" />
+				</motion.g>
+			)}
 			{gradientStartColor && gradientStopColor && (
 				<defs>
 					<motion.linearGradient
@@ -202,7 +225,7 @@ export const Circle = forwardRef<
 		<div
 			ref={ref}
 			className={cn(
-				"z-10 flex h-12 w-12 items-center justify-center rounded-full border-2 bg-white p-2 shadow-[0_0_20px_-12px_rgba(0,0,0,0.8)]",
+				"z-10 flex h-12 w-12 items-center justify-center rounded-full border-2 bg-white p-0 shadow-[0_0_20px_-12px_rgba(0,0,0,0.8)]",
 				className
 			)}
 		>

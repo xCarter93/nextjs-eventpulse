@@ -52,68 +52,9 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 	};
 
 	return (
-		<div
-			ref={containerRef}
-			className="relative w-full max-w-[500px] mx-auto h-32 bg-background rounded-lg border p-4 md:shadow-xl"
-		>
-			<div className="flex h-full w-full flex-col items-stretch justify-between">
-				<div className="flex flex-row justify-between">
-					{/* From (User) Avatar */}
-					<Circle ref={fromRef} className="border-primary">
-						<Avatar
-							name={user?.name || ""}
-							src={user?.image}
-							size="sm"
-							radius="full"
-							showFallback
-							classNames={{
-								base: "w-8 h-8",
-							}}
-						/>
-					</Circle>
-
-					{/* To (Recipient) Avatar */}
-					<Circle ref={toRef} className="border-primary">
-						<Avatar
-							name={email.recipient.name}
-							size="sm"
-							radius="full"
-							showFallback
-							classNames={{
-								base: "w-8 h-8",
-							}}
-						/>
-					</Circle>
-				</div>
-			</div>
-
-			{/* Animated Beam */}
-			<AnimatedBeam
-				containerRef={containerRef}
-				fromRef={fromRef}
-				toRef={toRef}
-				pathColor={status === "pending" ? "#6b7280" : getBeamColor()}
-				pathWidth={2}
-				pathOpacity={0.5}
-				gradientStartColor={status === "pending" ? getBeamColor() : undefined}
-				gradientStopColor={status === "pending" ? getBeamColor() : undefined}
-				dotted={status === "pending"}
-				dotSpacing={5}
-			/>
-
-			{/* Status Icons for completed/canceled */}
-			{status !== "pending" && (
-				<div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-					{status === "completed" ? (
-						<CheckCircle2 className="w-6 h-6 text-green-500" />
-					) : (
-						<XCircle className="w-6 h-6 text-red-500" />
-					)}
-				</div>
-			)}
-
-			{/* Email Metadata (Above Beam) */}
-			<div className="absolute left-1/2 -translate-x-1/2 top-2 text-center">
+		<div className="w-full bg-background rounded-lg border p-4 md:shadow-xl">
+			{/* Email Metadata (Top) */}
+			<div className="text-center mb-6">
 				<h3 className="text-sm font-medium">
 					{email.subject || "Birthday Greeting"}
 				</h3>
@@ -123,8 +64,71 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 				</p>
 			</div>
 
-			{/* Additional Metadata (Below Beam) */}
-			<div className="absolute left-1/2 -translate-x-1/2 bottom-2 text-center">
+			{/* Animation Container */}
+			<div
+				ref={containerRef}
+				className="relative w-full max-w-[500px] mx-auto h-20 my-4"
+			>
+				<div className="flex h-full w-full items-center justify-between">
+					{/* From (User) Avatar */}
+					<Circle ref={fromRef} className="border-primary">
+						<Avatar
+							name={user?.name || ""}
+							src={user?.image}
+							radius="full"
+							showFallback
+							classNames={{
+								base: "w-full h-full",
+								img: "w-full h-full object-cover",
+								fallback: "w-full h-full",
+							}}
+						/>
+					</Circle>
+
+					{/* To (Recipient) Avatar */}
+					<Circle ref={toRef} className="border-primary">
+						<Avatar
+							name={email.recipient.name}
+							radius="full"
+							showFallback
+							classNames={{
+								base: "w-full h-full",
+								img: "w-full h-full object-cover",
+								fallback: "w-full h-full",
+							}}
+						/>
+					</Circle>
+				</div>
+
+				{/* Animated Beam */}
+				<AnimatedBeam
+					containerRef={containerRef}
+					fromRef={fromRef}
+					toRef={toRef}
+					pathColor={status === "pending" ? "#6b7280" : getBeamColor()}
+					pathWidth={2}
+					pathOpacity={0.5}
+					gradientStartColor={status === "pending" ? getBeamColor() : undefined}
+					gradientStopColor={status === "pending" ? getBeamColor() : undefined}
+					dotted={status === "pending"}
+					dotSpacing={5}
+					showEmailIcon={status === "pending"}
+				/>
+
+				{/* Status Icons for completed/canceled */}
+				{status !== "pending" && (
+					<div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+						{status === "completed" ? (
+							<CheckCircle2 className="w-6 h-6 text-green-500" />
+						) : (
+							<XCircle className="w-6 h-6 text-red-500" />
+						)}
+					</div>
+				)}
+			</div>
+
+			{/* Additional Metadata (Bottom) */}
+			<div className="text-center mt-6">
 				<p className="text-xs text-muted-foreground">
 					{email.isAutomated
 						? "Automated Birthday Email"
