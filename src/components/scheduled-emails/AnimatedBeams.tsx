@@ -77,13 +77,17 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
 				const svgHeight = containerRect.height;
 				setSvgDimensions({ width: svgWidth, height: svgHeight });
 
-				const startX = rectA.left - containerRect.left + rectA.width / 2;
-				const startY = rectA.top - containerRect.top + rectA.height / 2;
-				const endX = rectB.left - containerRect.left + rectB.width / 2;
-				const endY = startY; // Keep Y coordinate the same for horizontal line
+				// Calculate center points
+				const startX =
+					rectA.left - containerRect.left + rectA.width / 2 + startXOffset;
+				const endX =
+					rectB.left - containerRect.left + rectB.width / 2 + endXOffset;
+
+				// Use the vertical center of the container for Y
+				const centerY = svgHeight / 2;
 
 				// Use straight line
-				const d = `M ${startX},${startY} L ${endX},${endY}`;
+				const d = `M ${startX},${centerY} L ${endX},${centerY}`;
 				setPathD(d);
 			}
 		};
@@ -164,9 +168,15 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
 						repeatDelay: 0,
 					}}
 				>
+					<motion.path
+						d={pathD}
+						fill="none"
+						stroke="transparent"
+						strokeWidth={0}
+					/>
 					<motion.g
-						initial={{ pathOffset: 0 }}
-						animate={{ pathOffset: 1 }}
+						initial={{ offsetDistance: 0 }}
+						animate={{ offsetDistance: 1 }}
 						transition={{
 							duration,
 							delay,
@@ -174,15 +184,12 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
 							repeatDelay: 0,
 							ease: "linear",
 						}}
+						style={{
+							offsetPath: `path("${pathD}")`,
+							offsetRotate: "0deg",
+						}}
 					>
-						<motion.g
-							style={{
-								offsetPath: `path("${pathD}")`,
-								offsetRotate: "0deg",
-							}}
-						>
-							<Mail className="w-4 h-4 text-orange-500 -translate-y-3" />
-						</motion.g>
+						<Mail className="w-4 h-4 text-orange-500 -translate-y-3" />
 					</motion.g>
 				</motion.g>
 			)}
