@@ -2,9 +2,9 @@
 
 import { useRef } from "react";
 import { AnimatedBeam, Circle } from "./AnimatedBeams";
-import { Avatar } from "@heroui/react";
+import { Avatar, Badge } from "@heroui/react";
 import { formatDistanceToNow } from "date-fns";
-import { Trash2, CheckCircle2, XCircle } from "lucide-react";
+import { Trash2, CheckCircle2, XCircle, Mail } from "lucide-react";
 import { Button } from "@heroui/react";
 import { toast } from "sonner";
 import { useMutation, useQuery } from "convex/react";
@@ -68,43 +68,55 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 			<div ref={containerRef} className="relative w-[75%] mx-auto h-16 my-2">
 				<div className="flex h-full w-full items-center justify-between">
 					{/* From (User) Avatar */}
-					<div className="flex flex-col items-center">
-						<Circle ref={fromRef} className="border-primary">
+					<Circle ref={fromRef} className="border-primary relative">
+						{status === "pending" ? (
+							<Badge
+								isOneChar
+								color="warning"
+								content={<Mail className="h-3 w-3" />}
+								placement="bottom-right"
+								className="[&>span]:bg-orange-500"
+							>
+								<Avatar
+									name={user?.name || ""}
+									src={user?.image}
+									radius="full"
+									showFallback
+									classNames={{
+										base: "w-full h-full",
+										img: "w-full h-full object-cover",
+										fallback: "w-full h-full",
+									}}
+								/>
+							</Badge>
+						) : (
 							<Avatar
-								name={(user?.name || "").toUpperCase()}
-								src={user?.image || undefined}
+								name={user?.name || ""}
+								src={user?.image}
 								radius="full"
 								showFallback
 								classNames={{
 									base: "w-full h-full",
 									img: "w-full h-full object-cover",
-									fallback: "w-full h-full text-xs font-semibold",
+									fallback: "w-full h-full",
 								}}
 							/>
-						</Circle>
-						<span className="text-xs text-muted-foreground mt-1">
-							{user?.email || ""}
-						</span>
-					</div>
+						)}
+					</Circle>
 
 					{/* To (Recipient) Avatar */}
-					<div className="flex flex-col items-center">
-						<Circle ref={toRef} className="border-primary">
-							<Avatar
-								name={email.recipient.name.toUpperCase()}
-								radius="full"
-								showFallback
-								classNames={{
-									base: "w-full h-full",
-									img: "w-full h-full object-cover",
-									fallback: "w-full h-full text-xs font-semibold",
-								}}
-							/>
-						</Circle>
-						<span className="text-xs text-muted-foreground mt-1">
-							{email.recipient.email}
-						</span>
-					</div>
+					<Circle ref={toRef} className="border-primary">
+						<Avatar
+							name={email.recipient.name}
+							radius="full"
+							showFallback
+							classNames={{
+								base: "w-full h-full",
+								img: "w-full h-full object-cover",
+								fallback: "w-full h-full",
+							}}
+						/>
+					</Circle>
 				</div>
 
 				{/* Animated Beam */}
@@ -119,7 +131,6 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 					gradientStopColor={status === "pending" ? getBeamColor() : undefined}
 					dotted={status === "pending"}
 					dotSpacing={5}
-					showEmailIcon={status === "pending"}
 				/>
 
 				{/* Status Icons for completed/canceled */}

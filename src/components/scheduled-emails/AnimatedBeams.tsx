@@ -3,7 +3,6 @@
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { forwardRef, RefObject, useEffect, useId, useState } from "react";
-import { Mail } from "lucide-react";
 
 export interface AnimatedBeamProps {
 	className?: string;
@@ -18,9 +17,12 @@ export interface AnimatedBeamProps {
 	gradientStopColor?: string;
 	delay?: number;
 	duration?: number;
+	startXOffset?: number;
+	startYOffset?: number;
+	endXOffset?: number;
+	endYOffset?: number;
 	dotted?: boolean;
 	dotSpacing?: number;
-	showEmailIcon?: boolean;
 }
 
 export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
@@ -36,9 +38,12 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
 	pathOpacity = 0.2,
 	gradientStartColor,
 	gradientStopColor,
+	startXOffset = 0,
+	startYOffset = 0,
+	endXOffset = 0,
+	endYOffset = 0,
 	dotted = false,
 	dotSpacing = 6,
-	showEmailIcon = false,
 }) => {
 	const id = useId();
 	const [pathD, setPathD] = useState("");
@@ -62,36 +67,25 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
 		const updatePath = () => {
 			if (containerRef.current && fromRef.current && toRef.current) {
 				const containerRect = containerRef.current.getBoundingClientRect();
-				const fromRect = fromRef.current.getBoundingClientRect();
-				const toRect = toRef.current.getBoundingClientRect();
+				const rectA = fromRef.current.getBoundingClientRect();
+				const rectB = toRef.current.getBoundingClientRect();
 
 				const svgWidth = containerRect.width;
 				const svgHeight = containerRect.height;
 				setSvgDimensions({ width: svgWidth, height: svgHeight });
 
-				// Calculate the center of the circles relative to the container
-				const fromCenterX =
-					fromRect.left - containerRect.left + fromRect.width / 2;
-				const toCenterX = toRect.left - containerRect.left + toRect.width / 2;
+				const startX =
+					rectA.left - containerRect.left + rectA.width / 2 + startXOffset;
+				const startY =
+					rectA.top - containerRect.top + rectA.height / 2 + startYOffset;
+				const endX =
+					rectB.left - containerRect.left + rectB.width / 2 + endXOffset;
+				const endY =
+					rectB.top - containerRect.top + rectB.height / 2 + endYOffset;
 
-				// Calculate the vertical center of both circles
-				const fromCenterY =
-					fromRect.top - containerRect.top + fromRect.height / 2;
-				const toCenterY = toRect.top - containerRect.top + toRect.height / 2;
-				const centerY = (fromCenterY + toCenterY) / 2;
-
-				// Calculate the start and end points considering circle radius
-				const radius = fromRect.width / 2; // Assuming circles are the same size
-				const startX = fromCenterX + radius; // Start from right edge of left circle
-				const endX = toCenterX - radius; // End at left edge of right circle
-
-				// Create the path
-				const d = `M ${startX},${centerY} L ${endX},${centerY}`;
+				// Use straight line
+				const d = `M ${startX},${startY} L ${endX},${endY}`;
 				setPathD(d);
-
-				// Store the path length for the email animation
-				const pathLength = endX - startX;
-				setAnimationDistance(pathLength);
 			}
 		};
 
@@ -108,9 +102,15 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
 		return () => {
 			resizeObserver.disconnect();
 		};
-	}, [containerRef, fromRef, toRef]);
-
-	const [animationDistance, setAnimationDistance] = useState(0);
+	}, [
+		containerRef,
+		fromRef,
+		toRef,
+		startXOffset,
+		startYOffset,
+		endXOffset,
+		endYOffset,
+	]);
 
 	return (
 		<svg
@@ -151,39 +151,6 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
 						delay: delay,
 					}}
 				/>
-			)}
-			{showEmailIcon && (
-				<motion.g
-					initial={{ x: 0, opacity: 0 }}
-					animate={{
-						x: animationDistance,
-						opacity: [0, 1, 1, 0],
-					}}
-					transition={{
-						x: {
-							duration: duration * 0.8, // Make email slightly faster than beam
-							delay: delay,
-							repeat: Infinity,
-							repeatDelay: 0,
-							ease: "linear",
-						},
-						opacity: {
-							duration: duration * 0.8,
-							delay: delay,
-							repeat: Infinity,
-							repeatDelay: 0,
-							times: [0, 0.1, 0.8, 1],
-						},
-					}}
-				>
-					<Mail
-						className="w-4 h-4 text-orange-500"
-						style={{
-							transformOrigin: "center",
-							transform: "translateY(-12px)",
-						}}
-					/>
-				</motion.g>
 			)}
 			{gradientStartColor && gradientStopColor && (
 				<defs>
