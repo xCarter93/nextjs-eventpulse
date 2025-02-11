@@ -43,6 +43,14 @@ const relationOptions = [
 	{ label: "Sibling", value: "sibling" },
 ];
 
+interface Column {
+	key: string;
+	label: string;
+	allowsSorting?: boolean;
+	align?: "center" | "start" | "end";
+	className?: string;
+}
+
 export function RecipientsTable() {
 	const router = useRouter();
 	const [page, setPage] = useState(1);
@@ -137,6 +145,105 @@ export function RecipientsTable() {
 		page * rowsPerPage
 	);
 
+	const columns = useMemo<Column[]>(() => {
+		return [
+			{
+				key: "name",
+				label: "Name",
+				allowsSorting: true,
+			},
+			{
+				key: "relation",
+				label: "Relationship",
+				className: "hidden md:table-cell",
+			},
+			{
+				key: "birthday",
+				label: "Birthday",
+				allowsSorting: true,
+				className: "hidden md:table-cell",
+			},
+			{
+				key: "actions",
+				label: "Actions",
+				align: "center",
+			},
+		];
+	}, []);
+
+	const renderCell = (recipient: Recipient, columnKey: string | number) => {
+		const key = String(columnKey);
+		switch (key) {
+			case "name":
+				return (
+					<User
+						name={recipient.name}
+						description={recipient.email}
+						classNames={{
+							name: "text-sm font-semibold",
+							description: "text-sm text-default-500",
+						}}
+					/>
+				);
+			case "relation":
+				return (
+					<div className="hidden md:block">
+						<Select
+							defaultSelectedKeys={[recipient.metadata?.relation || ""]}
+							onChange={(e) =>
+								handleUpdateRelation(recipient._id, e.target.value)
+							}
+							className="max-w-[200px]"
+						>
+							{relationOptions.map((option) => (
+								<SelectItem key={option.value} value={option.value}>
+									{option.label}
+								</SelectItem>
+							))}
+						</Select>
+					</div>
+				);
+			case "birthday":
+				return (
+					<div className="hidden md:block">
+						<Input
+							type="date"
+							defaultValue={format(new Date(recipient.birthday), "yyyy-MM-dd")}
+							onBlur={(e) => {
+								const timestamp = new Date(e.target.value).getTime();
+								if (!isNaN(timestamp)) {
+									handleUpdate(recipient._id, "birthday", timestamp);
+								}
+							}}
+						/>
+					</div>
+				);
+			case "actions":
+				return (
+					<div className="relative flex items-center justify-center gap-2">
+						<Tooltip content="View Details">
+							<span
+								className="text-lg text-default-400 cursor-pointer active:opacity-50"
+								onClick={() => router.push(`/recipients/${recipient._id}`)}
+							>
+								<Eye className="h-5 w-5" />
+							</span>
+						</Tooltip>
+						<Tooltip color="danger" content="Delete Recipient">
+							<span
+								className="text-lg text-danger cursor-pointer active:opacity-50"
+								onClick={() => handleDelete(recipient._id)}
+							>
+								<Trash2 className="h-5 w-5" />
+							</span>
+						</Tooltip>
+					</div>
+				);
+			default:
+				return null;
+		}
+	};
+
 	if (!recipients) {
 		return <div className="h-[500px] grid place-items-center">Loading...</div>;
 	}
@@ -155,82 +262,29 @@ export function RecipientsTable() {
 				className="recipients-table"
 			>
 				<TableHeader>
-					<TableColumn key="name" allowsSorting>
-						Name
-					</TableColumn>
-					<TableColumn key="relation">Relationship</TableColumn>
-					<TableColumn key="birthday" allowsSorting>
-						Birthday
-					</TableColumn>
-					<TableColumn key="actions" align="center">
-						Actions
-					</TableColumn>
+					{columns.map((column) => (
+						<TableColumn
+							key={column.key}
+							align={column.align}
+							allowsSorting={column.allowsSorting}
+							className={column.className}
+						>
+							{column.label}
+						</TableColumn>
+					))}
 				</TableHeader>
 				<TableBody items={items} emptyContent="No recipients found">
-					{(recipient) => (
-						<TableRow key={recipient._id}>
-							<TableCell>
-								<User
-									name={recipient.name}
-									description={recipient.email}
-									classNames={{
-										name: "text-sm font-semibold",
-										description: "text-sm text-default-500",
-									}}
-								/>
-							</TableCell>
-							<TableCell>
-								<Select
-									defaultSelectedKeys={[recipient.metadata?.relation || ""]}
-									onChange={(e) =>
-										handleUpdateRelation(recipient._id, e.target.value)
+					{(item) => (
+						<TableRow key={item._id}>
+							{(columnKey) => (
+								<TableCell
+									className={
+										columns.find((col) => col.key === columnKey)?.className
 									}
-									className="max-w-[200px]"
 								>
-									{relationOptions.map((option) => (
-										<SelectItem key={option.value} value={option.value}>
-											{option.label}
-										</SelectItem>
-									))}
-								</Select>
-							</TableCell>
-							<TableCell>
-								<Input
-									type="date"
-									defaultValue={format(
-										new Date(recipient.birthday),
-										"yyyy-MM-dd"
-									)}
-									onBlur={(e) => {
-										const timestamp = new Date(e.target.value).getTime();
-										if (!isNaN(timestamp)) {
-											handleUpdate(recipient._id, "birthday", timestamp);
-										}
-									}}
-								/>
-							</TableCell>
-							<TableCell>
-								<div className="relative flex items-center justify-center gap-2">
-									<Tooltip content="View Details">
-										<span
-											className="text-lg text-default-400 cursor-pointer active:opacity-50"
-											onClick={() =>
-												router.push(`/recipients/${recipient._id}`)
-											}
-										>
-											<Eye className="h-5 w-5" />
-										</span>
-									</Tooltip>
-									<Tooltip color="danger" content="Delete Recipient">
-										<span
-											className="text-lg text-danger cursor-pointer active:opacity-50"
-											onClick={() => handleDelete(recipient._id)}
-										>
-											<Trash2 className="h-5 w-5" />
-										</span>
-									</Tooltip>
-								</div>
-							</TableCell>
+									{renderCell(item, columnKey)}
+								</TableCell>
+							)}
 						</TableRow>
 					)}
 				</TableBody>

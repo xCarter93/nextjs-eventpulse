@@ -18,7 +18,8 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { DatePicker } from "@/components/ui/date-picker";
+import { DatePicker } from "@heroui/react";
+import { parseZonedDateTime } from "@internationalized/date";
 
 const formSchema = z.object({
 	name: z.string().min(2, {
@@ -129,11 +130,29 @@ export function RecipientForm({ recipient, onSuccess }: RecipientFormProps) {
 						name="birthday"
 						render={({ field }) => (
 							<FormItem>
-								<FormLabel>Birthday</FormLabel>
 								<FormControl>
 									<DatePicker
-										selected={field.value}
-										onSelect={field.onChange}
+										disableAnimation
+										showMonthAndYearPickers
+										defaultValue={
+											field.value
+												? parseZonedDateTime(
+														new Date(field.value).toISOString()
+													)
+												: null
+										}
+										onChange={(date) => {
+											if (date) {
+												field.onChange(date.toDate());
+											} else {
+												field.onChange(new Date());
+											}
+										}}
+										label="Birth Date"
+										variant="bordered"
+										labelPlacement="outside"
+										isInvalid={!!form.formState.errors.birthday}
+										errorMessage={form.formState.errors.birthday?.message}
 									/>
 								</FormControl>
 								<FormMessage />

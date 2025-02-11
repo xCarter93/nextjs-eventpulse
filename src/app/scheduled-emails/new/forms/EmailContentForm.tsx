@@ -17,7 +17,12 @@ import * as z from "zod";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { canScheduleForDate } from "@/lib/permissions";
-import { Card, CardBody, CardHeader } from "@heroui/react";
+import { Card, CardBody, CardHeader, DatePicker } from "@heroui/react";
+import {
+	parseZonedDateTime,
+	now,
+	getLocalTimeZone,
+} from "@internationalized/date";
 
 interface EmailContentFormProps {
 	defaultValues?: z.infer<typeof emailContentSchema>;
@@ -97,13 +102,30 @@ export default function EmailContentForm({
 							name="scheduledDate"
 							render={({ field }) => (
 								<FormItem>
-									<FormLabel>Send Date</FormLabel>
 									<FormControl>
-										<Input
-											type="datetime-local"
-											min={minDate.toISOString().slice(0, 16)}
-											max={maxDate.toISOString().slice(0, 16)}
-											{...field}
+										<DatePicker
+											hideTimeZone
+											showMonthAndYearPickers
+											disableAnimation
+											defaultValue={
+												field.value
+													? parseZonedDateTime(
+															new Date(field.value).toISOString()
+														)
+													: now(getLocalTimeZone())
+											}
+											onChange={(date) =>
+												field.onChange(date ? date.toDate() : new Date())
+											}
+											label="Event Date"
+											variant="bordered"
+											labelPlacement="outside"
+											isInvalid={!!form.formState.errors.scheduledDate}
+											errorMessage={
+												form.formState.errors.scheduledDate?.message
+											}
+											minValue={parseZonedDateTime(minDate.toISOString())}
+											maxValue={parseZonedDateTime(maxDate.toISOString())}
 										/>
 									</FormControl>
 									<FormDescription>
