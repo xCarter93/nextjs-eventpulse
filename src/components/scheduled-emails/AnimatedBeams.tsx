@@ -73,11 +73,25 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
 				const fromCenterX =
 					fromRect.left - containerRect.left + fromRect.width / 2;
 				const toCenterX = toRect.left - containerRect.left + toRect.width / 2;
-				const centerY = fromRect.top - containerRect.top + fromRect.height / 2;
+
+				// Calculate the vertical center of both circles
+				const fromCenterY =
+					fromRect.top - containerRect.top + fromRect.height / 2;
+				const toCenterY = toRect.top - containerRect.top + toRect.height / 2;
+				const centerY = (fromCenterY + toCenterY) / 2;
+
+				// Calculate the start and end points considering circle radius
+				const radius = fromRect.width / 2; // Assuming circles are the same size
+				const startX = fromCenterX + radius; // Start from right edge of left circle
+				const endX = toCenterX - radius; // End at left edge of right circle
 
 				// Create the path
-				const d = `M ${fromCenterX},${centerY} L ${toCenterX},${centerY}`;
+				const d = `M ${startX},${centerY} L ${endX},${centerY}`;
 				setPathD(d);
+
+				// Store the path length for the email animation
+				const pathLength = endX - startX;
+				setAnimationDistance(pathLength);
 			}
 		};
 
@@ -95,6 +109,8 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
 			resizeObserver.disconnect();
 		};
 	}, [containerRef, fromRef, toRef]);
+
+	const [animationDistance, setAnimationDistance] = useState(0);
 
 	return (
 		<svg
@@ -140,28 +156,28 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
 				<motion.g
 					initial={{ x: 0, opacity: 0 }}
 					animate={{
-						x: svgDimensions.width,
+						x: animationDistance,
 						opacity: [0, 1, 1, 0],
 					}}
 					transition={{
 						x: {
-							duration,
-							delay,
+							duration: duration * 0.8, // Make email slightly faster than beam
+							delay: delay,
 							repeat: Infinity,
 							repeatDelay: 0,
 							ease: "linear",
 						},
 						opacity: {
-							duration,
-							delay,
+							duration: duration * 0.8,
+							delay: delay,
 							repeat: Infinity,
 							repeatDelay: 0,
-							times: [0, 0.1, 0.9, 1],
+							times: [0, 0.1, 0.8, 1],
 						},
 					}}
 				>
 					<Mail
-						className="w-4 h-4 text-orange-500 -translate-y-3"
+						className="w-4 h-4 text-orange-500"
 						style={{
 							transformOrigin: "center",
 							transform: "translateY(-12px)",
