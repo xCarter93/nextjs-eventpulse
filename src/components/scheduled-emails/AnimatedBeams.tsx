@@ -18,10 +18,6 @@ export interface AnimatedBeamProps {
 	gradientStopColor?: string;
 	delay?: number;
 	duration?: number;
-	startXOffset?: number;
-	startYOffset?: number;
-	endXOffset?: number;
-	endYOffset?: number;
 	dotted?: boolean;
 	dotSpacing?: number;
 	showEmailIcon?: boolean;
@@ -40,10 +36,6 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
 	pathOpacity = 0.2,
 	gradientStartColor,
 	gradientStopColor,
-	startXOffset = 0,
-	startYOffset = 0,
-	endXOffset = 0,
-	endYOffset = 0,
 	dotted = false,
 	dotSpacing = 6,
 	showEmailIcon = false,
@@ -70,24 +62,21 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
 		const updatePath = () => {
 			if (containerRef.current && fromRef.current && toRef.current) {
 				const containerRect = containerRef.current.getBoundingClientRect();
-				const rectA = fromRef.current.getBoundingClientRect();
-				const rectB = toRef.current.getBoundingClientRect();
+				const fromRect = fromRef.current.getBoundingClientRect();
+				const toRect = toRef.current.getBoundingClientRect();
 
 				const svgWidth = containerRect.width;
 				const svgHeight = containerRect.height;
 				setSvgDimensions({ width: svgWidth, height: svgHeight });
 
-				// Calculate center points
-				const startX =
-					rectA.left - containerRect.left + rectA.width / 2 + startXOffset;
-				const endX =
-					rectB.left - containerRect.left + rectB.width / 2 + endXOffset;
+				// Calculate the center of the circles relative to the container
+				const fromCenterX =
+					fromRect.left - containerRect.left + fromRect.width / 2;
+				const toCenterX = toRect.left - containerRect.left + toRect.width / 2;
+				const centerY = fromRect.top - containerRect.top + fromRect.height / 2;
 
-				// Use the vertical center of the container for Y
-				const centerY = svgHeight / 2;
-
-				// Use straight line
-				const d = `M ${startX},${centerY} L ${endX},${centerY}`;
+				// Create the path
+				const d = `M ${fromCenterX},${centerY} L ${toCenterX},${centerY}`;
 				setPathD(d);
 			}
 		};
@@ -105,15 +94,7 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
 		return () => {
 			resizeObserver.disconnect();
 		};
-	}, [
-		containerRef,
-		fromRef,
-		toRef,
-		startXOffset,
-		startYOffset,
-		endXOffset,
-		endYOffset,
-	]);
+	}, [containerRef, fromRef, toRef]);
 
 	return (
 		<svg
@@ -157,40 +138,35 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
 			)}
 			{showEmailIcon && (
 				<motion.g
-					initial={{ opacity: 0 }}
+					initial={{ x: 0, opacity: 0 }}
 					animate={{
+						x: svgDimensions.width,
 						opacity: [0, 1, 1, 0],
 					}}
 					transition={{
-						duration,
-						delay,
-						repeat: Infinity,
-						repeatDelay: 0,
-					}}
-				>
-					<motion.path
-						d={pathD}
-						fill="none"
-						stroke="transparent"
-						strokeWidth={0}
-					/>
-					<motion.g
-						initial={{ offsetDistance: 0 }}
-						animate={{ offsetDistance: 1 }}
-						transition={{
+						x: {
 							duration,
 							delay,
 							repeat: Infinity,
 							repeatDelay: 0,
 							ease: "linear",
-						}}
+						},
+						opacity: {
+							duration,
+							delay,
+							repeat: Infinity,
+							repeatDelay: 0,
+							times: [0, 0.1, 0.9, 1],
+						},
+					}}
+				>
+					<Mail
+						className="w-4 h-4 text-orange-500 -translate-y-3"
 						style={{
-							offsetPath: `path("${pathD}")`,
-							offsetRotate: "0deg",
+							transformOrigin: "center",
+							transform: "translateY(-12px)",
 						}}
-					>
-						<Mail className="w-4 h-4 text-orange-500 -translate-y-3" />
-					</motion.g>
+					/>
 				</motion.g>
 			)}
 			{gradientStartColor && gradientStopColor && (
