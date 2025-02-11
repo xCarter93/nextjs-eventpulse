@@ -81,7 +81,10 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 			<div ref={containerRef} className="relative w-[75%] mx-auto h-16 my-2">
 				<div className="flex h-full w-full items-center justify-between">
 					{/* From (User) Avatar */}
-					<div ref={fromRef} className="relative z-10">
+					<div
+						ref={fromRef}
+						className="relative z-10 rounded-full bg-background"
+					>
 						{status === "pending" ? (
 							<Badge
 								isOneChar
@@ -124,7 +127,7 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 					</div>
 
 					{/* To (Recipient) Avatar */}
-					<div ref={toRef} className="z-10">
+					<div ref={toRef} className="z-10 rounded-full bg-background">
 						<Avatar
 							name={email.recipient.name}
 							radius="full"
