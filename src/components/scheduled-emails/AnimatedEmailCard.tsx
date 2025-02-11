@@ -75,17 +75,18 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 								color="warning"
 								content={<Mail className="h-3 w-3" />}
 								placement="bottom-right"
-								className="[&>span]:bg-orange-500"
+								className="[&>span]:bg-orange-500 max-w-[48px] max-h-[48px]"
 							>
 								<Avatar
 									name={user?.name || ""}
 									src={user?.image}
 									radius="full"
 									showFallback
+									className="w-12 h-12"
 									classNames={{
-										base: "w-full h-full",
-										img: "w-full h-full object-cover",
-										fallback: "w-full h-full",
+										base: "w-12 h-12",
+										img: "object-cover",
+										fallback: "w-12 h-12",
 									}}
 								/>
 							</Badge>
@@ -95,10 +96,11 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 								src={user?.image}
 								radius="full"
 								showFallback
+								className="w-12 h-12"
 								classNames={{
-									base: "w-full h-full",
-									img: "w-full h-full object-cover",
-									fallback: "w-full h-full",
+									base: "w-12 h-12",
+									img: "object-cover",
+									fallback: "w-12 h-12",
 								}}
 							/>
 						)}
@@ -110,10 +112,11 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 							name={email.recipient.name}
 							radius="full"
 							showFallback
+							className="w-12 h-12"
 							classNames={{
-								base: "w-full h-full",
-								img: "w-full h-full object-cover",
-								fallback: "w-full h-full",
+								base: "w-12 h-12",
+								img: "object-cover",
+								fallback: "w-12 h-12",
 							}}
 						/>
 					</Circle>
