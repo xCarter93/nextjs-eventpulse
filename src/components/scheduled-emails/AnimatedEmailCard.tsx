@@ -52,9 +52,9 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 	};
 
 	return (
-		<div className="w-full bg-background rounded-lg border p-4 md:shadow-xl">
+		<div className="relative w-full bg-background rounded-lg border p-4 md:shadow-xl">
 			{/* Email Metadata (Top) */}
-			<div className="text-center mb-6">
+			<div className="text-center mb-3">
 				<h3 className="text-sm font-medium">
 					{email.subject || "Birthday Greeting"}
 				</h3>
@@ -65,10 +65,7 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 			</div>
 
 			{/* Animation Container */}
-			<div
-				ref={containerRef}
-				className="relative w-full max-w-[500px] mx-auto h-20 my-4"
-			>
+			<div ref={containerRef} className="relative w-[75%] mx-auto h-16 my-2">
 				<div className="flex h-full w-full items-center justify-between">
 					{/* From (User) Avatar */}
 					<Circle ref={fromRef} className="border-primary">
@@ -128,7 +125,7 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 			</div>
 
 			{/* Additional Metadata (Bottom) */}
-			<div className="text-center mt-6">
+			<div className="text-center mt-3">
 				<p className="text-xs text-muted-foreground">
 					{email.isAutomated
 						? "Automated Birthday Email"
@@ -149,7 +146,7 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 					color="danger"
 					variant="ghost"
 					size="sm"
-					className="absolute top-2 right-2"
+					className="absolute top-4 right-4"
 					onPress={() => {
 						toast.promise(cancelEmail({ scheduledEmailId: email._id }), {
 							loading: "Canceling email...",

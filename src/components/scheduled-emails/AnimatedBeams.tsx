@@ -160,7 +160,7 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
 					initial={{ opacity: 0 }}
 					animate={{
 						opacity: [0, 1, 1, 0],
-						offsetDistance: ["0%", "0%", "100%", "100%"],
+						pathOffset: [0, 0, 1, 1],
 					}}
 					transition={{
 						duration,
@@ -169,11 +169,18 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
 						repeatDelay: 0,
 						times: [0, 0.1, 0.9, 1],
 					}}
-					style={{
-						offsetPath: `path("${pathD}")`,
-					}}
 				>
-					<Mail className="w-4 h-4 text-primary" />
+					<motion.path
+						d={pathD}
+						fill="none"
+						stroke="transparent"
+						strokeWidth={0}
+						style={{ offsetPath: `path("${pathD}")` }}
+					>
+						<motion.g style={{ offsetPath: `path("${pathD}")` }}>
+							<Mail className="w-4 h-4 text-orange-500" />
+						</motion.g>
+					</motion.path>
 				</motion.g>
 			)}
 			{gradientStartColor && gradientStopColor && (
