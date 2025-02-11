@@ -68,33 +68,43 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 			<div ref={containerRef} className="relative w-[75%] mx-auto h-16 my-2">
 				<div className="flex h-full w-full items-center justify-between">
 					{/* From (User) Avatar */}
-					<Circle ref={fromRef} className="border-primary">
-						<Avatar
-							name={user?.name || ""}
-							src={user?.image}
-							radius="full"
-							showFallback
-							classNames={{
-								base: "w-full h-full",
-								img: "w-full h-full object-cover",
-								fallback: "w-full h-full",
-							}}
-						/>
-					</Circle>
+					<div className="flex flex-col items-center">
+						<Circle ref={fromRef} className="border-primary">
+							<Avatar
+								name={(user?.name || "").toUpperCase()}
+								src={user?.image || undefined}
+								radius="full"
+								showFallback
+								classNames={{
+									base: "w-full h-full",
+									img: "w-full h-full object-cover",
+									fallback: "w-full h-full text-xs font-semibold",
+								}}
+							/>
+						</Circle>
+						<span className="text-xs text-muted-foreground mt-1">
+							{user?.email || ""}
+						</span>
+					</div>
 
 					{/* To (Recipient) Avatar */}
-					<Circle ref={toRef} className="border-primary">
-						<Avatar
-							name={email.recipient.name}
-							radius="full"
-							showFallback
-							classNames={{
-								base: "w-full h-full",
-								img: "w-full h-full object-cover",
-								fallback: "w-full h-full",
-							}}
-						/>
-					</Circle>
+					<div className="flex flex-col items-center">
+						<Circle ref={toRef} className="border-primary">
+							<Avatar
+								name={email.recipient.name.toUpperCase()}
+								radius="full"
+								showFallback
+								classNames={{
+									base: "w-full h-full",
+									img: "w-full h-full object-cover",
+									fallback: "w-full h-full text-xs font-semibold",
+								}}
+							/>
+						</Circle>
+						<span className="text-xs text-muted-foreground mt-1">
+							{email.recipient.email}
+						</span>
+					</div>
 				</div>
 
 				{/* Animated Beam */}
