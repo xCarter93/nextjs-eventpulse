@@ -7,19 +7,8 @@ import { Id } from "../../../convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
-
-import { Button } from "@/components/ui/button";
-import {
-	Form,
-	FormControl,
-	FormField,
-	FormItem,
-	FormLabel,
-	FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { DatePicker } from "@heroui/react";
-import { parseZonedDateTime } from "@internationalized/date";
+import { Form, Input, Button, DatePicker } from "@heroui/react";
+import { CalendarDate, getLocalTimeZone } from "@internationalized/date";
 
 const formSchema = z.object({
 	name: z.string().min(2, {
@@ -49,7 +38,13 @@ export function RecipientForm({ recipient, onSuccess }: RecipientFormProps) {
 	const addRecipient = useMutation(api.recipients.addRecipient);
 	const updateRecipient = useMutation(api.recipients.updateRecipient);
 
-	const form = useForm<FormValues>({
+	const {
+		register,
+		handleSubmit,
+		formState: { errors },
+		setValue,
+		watch,
+	} = useForm<FormValues>({
 		resolver: zodResolver(formSchema),
 		defaultValues: recipient
 			? {
@@ -89,87 +84,70 @@ export function RecipientForm({ recipient, onSuccess }: RecipientFormProps) {
 		}
 	}
 
+	const birthdayValue = watch("birthday");
+
 	return (
-		<Form {...form}>
-			<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-				<div className="space-y-4">
-					<FormField
-						control={form.control}
-						name="name"
-						render={({ field }) => (
-							<FormItem>
-								<FormLabel>Name</FormLabel>
-								<FormControl>
-									<Input placeholder="John Doe" {...field} />
-								</FormControl>
-								<FormMessage />
-							</FormItem>
-						)}
-					/>
+		<Form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+			<Input
+				{...register("name")}
+				label="Name"
+				placeholder="John Doe"
+				isRequired
+				variant="bordered"
+				labelPlacement="outside"
+				isInvalid={!!errors.name}
+				errorMessage={errors.name?.message}
+			/>
 
-					<FormField
-						control={form.control}
-						name="email"
-						render={({ field }) => (
-							<FormItem>
-								<FormLabel>Email</FormLabel>
-								<FormControl>
-									<Input
-										type="email"
-										placeholder="john@example.com"
-										{...field}
-									/>
-								</FormControl>
-								<FormMessage />
-							</FormItem>
-						)}
-					/>
+			<Input
+				{...register("email")}
+				type="email"
+				label="Email"
+				placeholder="john@example.com"
+				isRequired
+				variant="bordered"
+				labelPlacement="outside"
+				isInvalid={!!errors.email}
+				errorMessage={errors.email?.message}
+			/>
 
-					<FormField
-						control={form.control}
-						name="birthday"
-						render={({ field }) => (
-							<FormItem>
-								<FormControl>
-									<DatePicker
-										disableAnimation
-										showMonthAndYearPickers
-										defaultValue={
-											field.value
-												? parseZonedDateTime(
-														new Date(field.value).toISOString()
-													)
-												: null
-										}
-										onChange={(date) => {
-											if (date) {
-												field.onChange(date.toDate());
-											} else {
-												field.onChange(new Date());
-											}
-										}}
-										label="Birth Date"
-										variant="bordered"
-										labelPlacement="outside"
-										isInvalid={!!form.formState.errors.birthday}
-										errorMessage={form.formState.errors.birthday?.message}
-									/>
-								</FormControl>
-								<FormMessage />
-							</FormItem>
-						)}
-					/>
-				</div>
+			<DatePicker
+				disableAnimation
+				showMonthAndYearPickers
+				value={
+					birthdayValue
+						? new CalendarDate(
+								birthdayValue.getFullYear(),
+								birthdayValue.getMonth() + 1,
+								birthdayValue.getDate()
+							)
+						: null
+				}
+				onChange={(date) => {
+					if (date) {
+						const jsDate = date.toDate(getLocalTimeZone());
+						setValue("birthday", jsDate, { shouldValidate: true });
+					}
+				}}
+				label="Birth Date"
+				variant="bordered"
+				labelPlacement="outside"
+				isRequired
+				isInvalid={!!errors.birthday}
+				errorMessage={errors.birthday?.message}
+				popoverProps={{
+					inert: false,
+				}}
+			/>
 
-				<div className="flex justify-center space-x-3">
-					<Button type="button" variant="outline" onClick={() => onSuccess()}>
-						Cancel
-					</Button>
-					<Button type="submit">
-						{recipient ? "Save Changes" : "Add Recipient"}
-					</Button>
-				</div>
-			</form>
+			<div className="flex justify-center space-x-3">
+				<Button type="button" variant="bordered" onClick={() => onSuccess()}>
+					Cancel
+				</Button>
+				<Button type="submit" color="primary">
+					{recipient ? "Save Changes" : "Add Recipient"}
+				</Button>
+			</div>
 		</Form>
 	);
 }

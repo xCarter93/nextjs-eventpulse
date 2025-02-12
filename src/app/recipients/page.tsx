@@ -2,15 +2,16 @@
 
 import { RecipientsTable } from "@/components/recipients/RecipientsTable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button, Tooltip } from "@heroui/react";
-import { Plus, Lock } from "lucide-react";
 import {
-	Dialog,
-	DialogContent,
-	DialogHeader,
-	DialogTitle,
-	DialogTrigger,
-} from "@/components/ui/dialog";
+	Button,
+	Tooltip,
+	Modal,
+	ModalContent,
+	ModalHeader,
+	ModalBody,
+	useDisclosure,
+} from "@heroui/react";
+import { Plus, Lock } from "lucide-react";
 import { RecipientForm } from "@/components/recipients/RecipientForm";
 import { useState, useEffect, Suspense, lazy } from "react";
 import { LockedFeature } from "@/components/premium/LockedFeature";
@@ -92,7 +93,7 @@ function MapWithSuspense() {
 }
 
 export default function RecipientsPage() {
-	const [isDialogOpen, setIsDialogOpen] = useState(false);
+	const { isOpen, onOpen, onOpenChange } = useDisclosure();
 	const [activeTab, setActiveTab] = useState("table");
 	const subscriptionLevel = useQuery(
 		api.subscriptions.getUserSubscriptionLevel
@@ -168,31 +169,44 @@ export default function RecipientsPage() {
 									</Button>
 								</Tooltip>
 							) : (
-								<Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+								<>
 									<Tooltip
 										content="Add New Recipient"
 										color="secondary"
 										placement="bottom"
 									>
-										<DialogTrigger asChild>
-											<Button
-												color="secondary"
-												variant="solid"
-												isIconOnly
-												radius="lg"
-												className="ml-2 bg-purple-500 hover:bg-purple-600"
-											>
-												<Plus className="h-4 w-4" />
-											</Button>
-										</DialogTrigger>
+										<Button
+											color="secondary"
+											variant="solid"
+											isIconOnly
+											radius="lg"
+											className="ml-2 bg-purple-500 hover:bg-purple-600"
+											onPress={onOpen}
+										>
+											<Plus className="h-4 w-4" />
+										</Button>
 									</Tooltip>
-									<DialogContent>
-										<DialogHeader>
-											<DialogTitle>Add Recipient</DialogTitle>
-										</DialogHeader>
-										<RecipientForm onSuccess={() => setIsDialogOpen(false)} />
-									</DialogContent>
-								</Dialog>
+									<Modal
+										isOpen={isOpen}
+										onOpenChange={onOpenChange}
+										placement="top-center"
+									>
+										<ModalContent>
+											{(onClose) => (
+												<>
+													<ModalHeader>
+														<h2 className="text-lg font-semibold">
+															Add Recipient
+														</h2>
+													</ModalHeader>
+													<ModalBody>
+														<RecipientForm onSuccess={onClose} />
+													</ModalBody>
+												</>
+											)}
+										</ModalContent>
+									</Modal>
+								</>
 							))}
 					</div>
 					<TabsContent value="table" className="space-y-4">
