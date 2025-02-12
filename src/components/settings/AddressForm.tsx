@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Form } from "@/components/ui/form";
+import { Form } from "@heroui/react";
 import { AddressAutofillForm } from "@/components/address-autofill/AddressAutofillForm";
 import { AddressData, RecipientAddressData } from "@/app/settings/types";
 import { useEffect } from "react";
@@ -63,15 +63,22 @@ export function AddressForm({
 		});
 	}, [form, defaultAddress]);
 
+	const handleSubmit = form.handleSubmit(() => {
+		// This is just to satisfy HeroUI's Form requirement for onSubmit
+		// The actual updates are handled by the onChange prop
+	});
+
 	return (
-		<Form {...form}>
-			<AddressAutofillForm
-				form={form}
-				onAddressChange={(address) => {
-					onChange(address as AddressData);
-				}}
-				isRecipientForm={false}
-			/>
+		<Form onSubmit={handleSubmit} className="w-full">
+			<div className="w-full">
+				<AddressAutofillForm
+					form={form}
+					onAddressChange={(address) => {
+						onChange(address as AddressData);
+					}}
+					isRecipientForm={false}
+				/>
+			</div>
 		</Form>
 	);
 }

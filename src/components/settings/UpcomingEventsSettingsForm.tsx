@@ -1,7 +1,6 @@
 "use client";
 
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { Input } from "@heroui/react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { LockedFeature } from "@/components/premium/LockedFeature";
@@ -50,94 +49,80 @@ export function UpcomingEventsSettingsForm({
 
 	return (
 		<TooltipProvider>
-			<div className="space-y-4">
-				<div className="grid gap-4 sm:grid-cols-2">
+			<div className="w-full">
+				<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 					{subscriptionLevel === "pro" ? (
 						<>
-							<div className="space-y-2">
-								<Label
-									htmlFor="days-to-show"
-									className="flex flex-col space-y-1"
-								>
-									<span>Days to Show</span>
-									<span className="font-normal text-sm text-muted-foreground">
-										Number of days to look ahead
-									</span>
-								</Label>
+							<div className="w-full">
 								<Input
 									id="days-to-show"
 									type="number"
-									min="1"
-									max="365"
-									value={value.daysToShow}
+									min={1}
+									max={365}
+									value={value.daysToShow.toString()}
 									onChange={(e) =>
 										handleInputChange("daysToShow", e.target.value)
 									}
+									label="Days to Show"
+									labelPlacement="outside"
+									description="Number of days to look ahead"
+									variant="bordered"
+									className="w-full"
 								/>
 							</div>
 
-							<div className="space-y-2">
-								<Label htmlFor="max-events" className="flex flex-col space-y-1">
-									<span>Maximum Events</span>
-									<span className="font-normal text-sm text-muted-foreground">
-										Maximum number of events to display
-									</span>
-								</Label>
+							<div className="w-full">
 								<Input
 									id="max-events"
 									type="number"
-									min="1"
-									max="50"
-									value={value.maxEvents}
+									min={1}
+									max={50}
+									value={value.maxEvents.toString()}
 									onChange={(e) =>
 										handleInputChange("maxEvents", e.target.value)
 									}
+									label="Maximum Events"
+									labelPlacement="outside"
+									description="Maximum number of events to display"
+									variant="bordered"
+									className="w-full"
 								/>
 							</div>
 						</>
 					) : (
-						<LockedFeature featureDescription="customize upcoming events display">
-							<div className="space-y-4">
-								<div className="space-y-2">
-									<Label
-										htmlFor="days-to-show"
-										className="flex flex-col space-y-1"
-									>
-										<span>Days to Show</span>
-										<span className="font-normal text-sm text-muted-foreground">
-											Free users see events for the next {DEFAULT_DAYS_TO_SHOW}{" "}
-											days
-										</span>
-									</Label>
+						<>
+							<div className="w-full">
+								<LockedFeature featureDescription="customize upcoming events display">
 									<Input
 										id="days-to-show"
 										type="number"
-										value={DEFAULT_DAYS_TO_SHOW}
-										className="max-w-[180px]"
-										disabled
+										value={DEFAULT_DAYS_TO_SHOW.toString()}
+										isDisabled
+										label="Days to Show"
+										labelPlacement="outside"
+										description={`Free users see events for the next ${DEFAULT_DAYS_TO_SHOW} days`}
+										variant="bordered"
+										className="w-full"
 									/>
-								</div>
+								</LockedFeature>
+							</div>
 
-								<div className="space-y-2">
-									<Label
-										htmlFor="max-events"
-										className="flex flex-col space-y-1"
-									>
-										<span>Maximum Events</span>
-										<span className="font-normal text-sm text-muted-foreground">
-											Free users see up to {DEFAULT_MAX_EVENTS} events
-										</span>
-									</Label>
+							<div className="w-full">
+								<LockedFeature featureDescription="customize upcoming events display">
 									<Input
 										id="max-events"
 										type="number"
-										value={DEFAULT_MAX_EVENTS}
-										className="max-w-[180px]"
-										disabled
+										value={DEFAULT_MAX_EVENTS.toString()}
+										isDisabled
+										label="Maximum Events"
+										labelPlacement="outside"
+										description={`Free users see up to ${DEFAULT_MAX_EVENTS} events`}
+										variant="bordered"
+										className="w-full"
 									/>
-								</div>
+								</LockedFeature>
 							</div>
-						</LockedFeature>
+						</>
 					)}
 				</div>
 			</div>

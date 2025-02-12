@@ -18,7 +18,7 @@ function EmptyState() {
 						{[Image, Upload, Sparkles, FileImage].map((Icon, i) => (
 							<div
 								key={i}
-								className="p-4 bg-muted/40 rounded-xl group hover:bg-primary/5 transition-all duration-300"
+								className="p-4 bg-muted/30 rounded-xl group hover:bg-primary/10 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300"
 							>
 								<Icon
 									className="w-8 h-8 text-muted-foreground group-hover:text-primary group-hover:scale-110 transition-all duration-300"
@@ -27,7 +27,7 @@ function EmptyState() {
 							</div>
 						))}
 					</div>
-					<div className="absolute inset-0 bg-gradient-to-t from-background to-transparent pointer-events-none" />
+					<div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent pointer-events-none" />
 				</div>
 				<div>
 					<h3 className="text-lg font-semibold text-foreground mb-2">

@@ -1,13 +1,12 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { Card, CardBody, CardHeader, Button } from "@heroui/react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
 import { AddressForm } from "@/components/settings/AddressForm";
 import { CalendarSettingsForm } from "@/components/settings/CalendarSettingsForm";
 import { UpcomingEventsSettingsForm } from "@/components/settings/UpcomingEventsSettingsForm";
 import { EmailNotificationsForm } from "@/components/settings/EmailNotificationsForm";
-import { Button } from "@/components/ui/button";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
@@ -88,18 +87,35 @@ export default function SettingsPage() {
 			</div>
 			<Separator />
 
-			<Tabs value={activeTab} onValueChange={setActiveTab}>
-				<TabsList>
-					<TabsTrigger value="general">General</TabsTrigger>
-					<TabsTrigger value="notifications">Notifications</TabsTrigger>
-				</TabsList>
+			<Tabs
+				defaultValue={activeTab}
+				value={activeTab}
+				onValueChange={setActiveTab}
+				className="w-full"
+			>
+				<div className="flex items-center justify-between">
+					<TabsList className="bg-secondary/20">
+						<TabsTrigger
+							value="general"
+							className="data-[state=active]:bg-purple-500 data-[state=active]:text-white"
+						>
+							General
+						</TabsTrigger>
+						<TabsTrigger
+							value="notifications"
+							className="data-[state=active]:bg-purple-500 data-[state=active]:text-white"
+						>
+							Notifications
+						</TabsTrigger>
+					</TabsList>
+				</div>
 
 				<TabsContent value="general" className="space-y-4">
 					<Card>
 						<CardHeader>
-							<CardTitle>Calendar Settings</CardTitle>
+							<h3 className="text-lg font-semibold">Calendar Settings</h3>
 						</CardHeader>
-						<CardContent>
+						<CardBody>
 							<CalendarSettingsForm
 								value={settings.calendar}
 								onChange={useCallback(
@@ -109,14 +125,16 @@ export default function SettingsPage() {
 									[handleSettingsChange]
 								)}
 							/>
-						</CardContent>
+						</CardBody>
 					</Card>
 
 					<Card>
 						<CardHeader>
-							<CardTitle>Upcoming Events Settings</CardTitle>
+							<h3 className="text-lg font-semibold">
+								Upcoming Events Settings
+							</h3>
 						</CardHeader>
-						<CardContent>
+						<CardBody>
 							<UpcomingEventsSettingsForm
 								value={settings.upcomingEvents}
 								onChange={useCallback(
@@ -126,14 +144,14 @@ export default function SettingsPage() {
 									[handleSettingsChange]
 								)}
 							/>
-						</CardContent>
+						</CardBody>
 					</Card>
 
 					<Card>
 						<CardHeader>
-							<CardTitle>Address</CardTitle>
+							<h3 className="text-lg font-semibold">Address</h3>
 						</CardHeader>
-						<CardContent>
+						<CardBody>
 							<AddressForm
 								defaultAddress={
 									settings.address || {
@@ -156,20 +174,27 @@ export default function SettingsPage() {
 									[handleSettingsChange]
 								)}
 							/>
-						</CardContent>
+						</CardBody>
 					</Card>
 
-					<Button onClick={handleSubmit} disabled={isLoading}>
-						{isLoading ? "Saving..." : "Save Changes"}
-					</Button>
+					<div className="flex justify-end">
+						<Button
+							onPress={handleSubmit}
+							isDisabled={isLoading}
+							color="primary"
+							className="bg-purple-500 hover:bg-purple-600"
+						>
+							{isLoading ? "Saving..." : "Save Changes"}
+						</Button>
+					</div>
 				</TabsContent>
 
 				<TabsContent value="notifications" className="space-y-4">
 					<Card>
 						<CardHeader>
-							<CardTitle>Email Notifications</CardTitle>
+							<h3 className="text-lg font-semibold">Email Notifications</h3>
 						</CardHeader>
-						<CardContent>
+						<CardBody>
 							<EmailNotificationsForm
 								value={settings.notifications}
 								onChange={useCallback(
@@ -179,12 +204,19 @@ export default function SettingsPage() {
 									[handleSettingsChange]
 								)}
 							/>
-						</CardContent>
+						</CardBody>
 					</Card>
 
-					<Button onClick={handleSubmit} disabled={isLoading}>
-						{isLoading ? "Saving..." : "Save Changes"}
-					</Button>
+					<div className="flex justify-end">
+						<Button
+							onPress={handleSubmit}
+							isDisabled={isLoading}
+							color="primary"
+							className="bg-purple-500 hover:bg-purple-600"
+						>
+							{isLoading ? "Saving..." : "Save Changes"}
+						</Button>
+					</div>
 				</TabsContent>
 			</Tabs>
 		</div>

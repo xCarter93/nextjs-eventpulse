@@ -2,14 +2,7 @@
 
 import { AddressAutofill } from "@mapbox/search-js-react";
 import { env } from "@/env";
-import {
-	FormControl,
-	FormField,
-	FormItem,
-	FormLabel,
-	FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { Input } from "@heroui/react";
 import { UseFormReturn } from "react-hook-form";
 import { AddressData, RecipientAddressData } from "@/app/settings/types";
 
@@ -28,6 +21,8 @@ export function AddressAutofillForm({
 	onAddressChange,
 	isRecipientForm = false,
 }: AddressAutofillFormProps) {
+	const countryValue = form.watch("address.country");
+
 	const handleRetrieve = (response: {
 		features: Array<{
 			properties: {
@@ -95,6 +90,7 @@ export function AddressAutofillForm({
 			form.setValue("address.country", newAddress.country, {
 				shouldValidate: true,
 			});
+
 			if (!isRecipientForm) {
 				form.setValue(
 					"address.countryCode",
@@ -111,110 +107,87 @@ export function AddressAutofillForm({
 	};
 
 	return (
-		<div className="space-y-4">
-			<div className="space-y-2">
-				<FormField
-					control={form.control}
-					name="address.line1"
-					render={({ field }) => (
-						<FormItem>
-							<FormLabel>Street Address</FormLabel>
-							<FormControl>
-								<AddressAutofill
-									accessToken={env.NEXT_PUBLIC_MAPBOX_API_KEY}
-									onRetrieve={handleRetrieve}
-								>
-									<Input
-										{...field}
-										autoComplete="shipping address-line1"
-										placeholder="Start typing to search address..."
-										className="focus-visible:ring-2"
-									/>
-								</AddressAutofill>
-							</FormControl>
-							<FormMessage />
-						</FormItem>
-					)}
-				/>
+		<div className="flex flex-col gap-4">
+			<div>
+				<AddressAutofill
+					accessToken={env.NEXT_PUBLIC_MAPBOX_API_KEY}
+					onRetrieve={handleRetrieve}
+				>
+					<Input
+						{...form.register("address.line1")}
+						autoComplete="shipping address-line1"
+						placeholder="Start typing to search address..."
+						label="Street Address"
+						variant="bordered"
+						labelPlacement="outside"
+						isRequired
+						isInvalid={!!form.formState.errors.address?.line1}
+						errorMessage={form.formState.errors.address?.line1?.message}
+						className="mb-4"
+					/>
+				</AddressAutofill>
 			</div>
 
-			<div className="space-y-2">
-				<FormField
-					control={form.control}
-					name="address.line2"
-					render={({ field }) => (
-						<FormItem>
-							<FormLabel>Apartment, suite, etc.</FormLabel>
-							<FormControl>
-								<Input
-									{...field}
-									autoComplete="shipping address-line2"
-									placeholder="Optional"
-								/>
-							</FormControl>
-							<FormMessage />
-						</FormItem>
-					)}
+			<div>
+				<Input
+					{...form.register("address.line2")}
+					autoComplete="shipping address-line2"
+					placeholder="Optional"
+					label="Apartment, suite, etc."
+					variant="bordered"
+					labelPlacement="outside"
+					isInvalid={!!form.formState.errors.address?.line2}
+					errorMessage={form.formState.errors.address?.line2?.message}
+					className="mb-4"
 				/>
 			</div>
 
 			<div className="grid grid-cols-2 gap-4">
-				<FormField
-					control={form.control}
-					name="address.city"
-					render={({ field }) => (
-						<FormItem>
-							<FormLabel>City</FormLabel>
-							<FormControl>
-								<Input {...field} autoComplete="shipping address-level2" />
-							</FormControl>
-							<FormMessage />
-						</FormItem>
-					)}
+				<Input
+					{...form.register("address.city")}
+					autoComplete="shipping address-level2"
+					label="City"
+					variant="bordered"
+					labelPlacement="outside"
+					isRequired
+					isInvalid={!!form.formState.errors.address?.city}
+					errorMessage={form.formState.errors.address?.city?.message}
 				/>
 
-				<FormField
-					control={form.control}
-					name="address.state"
-					render={({ field }) => (
-						<FormItem>
-							<FormLabel>State / Province</FormLabel>
-							<FormControl>
-								<Input {...field} autoComplete="shipping address-level1" />
-							</FormControl>
-							<FormMessage />
-						</FormItem>
-					)}
+				<Input
+					{...form.register("address.state")}
+					autoComplete="shipping address-level1"
+					label="State / Province"
+					variant="bordered"
+					labelPlacement="outside"
+					isRequired
+					isInvalid={!!form.formState.errors.address?.state}
+					errorMessage={form.formState.errors.address?.state?.message}
 				/>
 			</div>
 
 			<div className="grid grid-cols-2 gap-4">
-				<FormField
-					control={form.control}
-					name="address.postalCode"
-					render={({ field }) => (
-						<FormItem>
-							<FormLabel>Postal Code</FormLabel>
-							<FormControl>
-								<Input {...field} autoComplete="shipping postal-code" />
-							</FormControl>
-							<FormMessage />
-						</FormItem>
-					)}
+				<Input
+					{...form.register("address.postalCode")}
+					autoComplete="shipping postal-code"
+					label="Postal Code"
+					variant="bordered"
+					labelPlacement="outside"
+					isRequired
+					isInvalid={!!form.formState.errors.address?.postalCode}
+					errorMessage={form.formState.errors.address?.postalCode?.message}
 				/>
 
-				<FormField
-					control={form.control}
-					name="address.country"
-					render={({ field }) => (
-						<FormItem>
-							<FormLabel>Country</FormLabel>
-							<FormControl>
-								<Input {...field} autoComplete="shipping country" readOnly />
-							</FormControl>
-							<FormMessage />
-						</FormItem>
-					)}
+				<Input
+					value={countryValue}
+					autoComplete="shipping country"
+					label="Country"
+					variant="bordered"
+					labelPlacement="outside"
+					isRequired
+					isReadOnly
+					isInvalid={!!form.formState.errors.address?.country}
+					errorMessage={form.formState.errors.address?.country?.message}
 				/>
 			</div>
 		</div>

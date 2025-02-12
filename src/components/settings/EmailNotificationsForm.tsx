@@ -1,8 +1,6 @@
 "use client";
 
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Input } from "@/components/ui/input";
+import { Switch, Input } from "@heroui/react";
 import { NotificationSettings } from "@/app/settings/types";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -64,41 +62,33 @@ export function EmailNotificationsForm({
 			<div className="space-y-6">
 				{subscriptionLevel === "pro" ? (
 					<div className="space-y-2">
-						<Label htmlFor="reminder-days" className="flex flex-col space-y-1">
-							<span>Reminder Days</span>
-							<span className="font-normal text-sm text-muted-foreground">
-								Number of days before an event to send reminders
-							</span>
-						</Label>
 						<Input
 							id="reminder-days"
 							type="number"
-							min="0"
-							max="30"
-							value={value.reminderDays}
+							min={0}
+							max={30}
+							value={value.reminderDays.toString()}
 							onChange={(e) => handleReminderDaysChange(e.target.value)}
 							className="max-w-[180px]"
+							label="Reminder Days"
+							labelPlacement="outside"
+							description="Number of days before an event to send reminders"
+							variant="bordered"
 						/>
 					</div>
 				) : (
 					<LockedFeature featureDescription="customize reminder days">
 						<div className="space-y-2">
-							<Label
-								htmlFor="reminder-days"
-								className="flex flex-col space-y-1"
-							>
-								<span>Reminder Days</span>
-								<span className="font-normal text-sm text-muted-foreground">
-									Free users receive reminders {DEFAULT_REMINDER_DAYS} days
-									before events
-								</span>
-							</Label>
 							<Input
 								id="reminder-days"
 								type="number"
-								value={DEFAULT_REMINDER_DAYS}
+								value={DEFAULT_REMINDER_DAYS.toString()}
 								className="max-w-[180px]"
-								disabled
+								isDisabled
+								label="Reminder Days"
+								labelPlacement="outside"
+								description={`Free users receive reminders ${DEFAULT_REMINDER_DAYS} days before events`}
+								variant="bordered"
 							/>
 						</div>
 					</LockedFeature>
@@ -108,59 +98,56 @@ export function EmailNotificationsForm({
 					<h4 className="text-sm font-medium">Email Reminders</h4>
 					<div className="space-y-4">
 						<div className="flex items-center justify-between space-x-2">
-							<Label
-								htmlFor="events-reminders"
-								className="flex flex-col space-y-1"
-							>
-								<span>Event Reminders</span>
-								<span className="font-normal text-sm text-muted-foreground">
+							<div className="flex flex-col">
+								<span className="text-sm font-medium">Event Reminders</span>
+								<span className="text-sm text-default-500">
 									Receive reminders for upcoming events
 								</span>
-							</Label>
+							</div>
 							<Switch
 								id="events-reminders"
-								checked={value.emailReminders.events}
-								onCheckedChange={(checked) =>
+								isSelected={value.emailReminders.events}
+								onValueChange={(checked) =>
 									handleToggleChange("events", checked)
 								}
+								color="primary"
+								size="lg"
 							/>
 						</div>
 
 						<div className="flex items-center justify-between space-x-2">
-							<Label
-								htmlFor="birthdays-reminders"
-								className="flex flex-col space-y-1"
-							>
-								<span>Birthday Reminders</span>
-								<span className="font-normal text-sm text-muted-foreground">
+							<div className="flex flex-col">
+								<span className="text-sm font-medium">Birthday Reminders</span>
+								<span className="text-sm text-default-500">
 									Receive reminders for upcoming birthdays
 								</span>
-							</Label>
+							</div>
 							<Switch
 								id="birthdays-reminders"
-								checked={value.emailReminders.birthdays}
-								onCheckedChange={(checked) =>
+								isSelected={value.emailReminders.birthdays}
+								onValueChange={(checked) =>
 									handleToggleChange("birthdays", checked)
 								}
+								color="primary"
+								size="lg"
 							/>
 						</div>
 
 						<div className="flex items-center justify-between space-x-2">
-							<Label
-								htmlFor="holidays-reminders"
-								className="flex flex-col space-y-1"
-							>
-								<span>Holiday Reminders</span>
-								<span className="font-normal text-sm text-muted-foreground">
+							<div className="flex flex-col">
+								<span className="text-sm font-medium">Holiday Reminders</span>
+								<span className="text-sm text-default-500">
 									Receive reminders for upcoming holidays
 								</span>
-							</Label>
+							</div>
 							<Switch
 								id="holidays-reminders"
-								checked={value.emailReminders.holidays}
-								onCheckedChange={(checked) =>
+								isSelected={value.emailReminders.holidays}
+								onValueChange={(checked) =>
 									handleToggleChange("holidays", checked)
 								}
+								color="primary"
+								size="lg"
 							/>
 						</div>
 					</div>
