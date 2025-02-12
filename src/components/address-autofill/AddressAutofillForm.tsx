@@ -22,6 +22,11 @@ export function AddressAutofillForm({
 	isRecipientForm = false,
 }: AddressAutofillFormProps) {
 	const countryValue = form.watch("address.country");
+	const line1Value = form.watch("address.line1");
+	const line2Value = form.watch("address.line2");
+	const cityValue = form.watch("address.city");
+	const stateValue = form.watch("address.state");
+	const postalCodeValue = form.watch("address.postalCode");
 
 	const handleRetrieve = (response: {
 		features: Array<{
@@ -115,6 +120,7 @@ export function AddressAutofillForm({
 				>
 					<Input
 						{...form.register("address.line1")}
+						value={line1Value}
 						autoComplete="shipping address-line1"
 						placeholder="Start typing to search address..."
 						label="Street Address"
@@ -131,6 +137,7 @@ export function AddressAutofillForm({
 			<div>
 				<Input
 					{...form.register("address.line2")}
+					value={line2Value}
 					autoComplete="shipping address-line2"
 					placeholder="Optional"
 					label="Apartment, suite, etc."
@@ -145,6 +152,7 @@ export function AddressAutofillForm({
 			<div className="grid grid-cols-2 gap-4">
 				<Input
 					{...form.register("address.city")}
+					value={cityValue}
 					autoComplete="shipping address-level2"
 					label="City"
 					variant="bordered"
@@ -156,6 +164,7 @@ export function AddressAutofillForm({
 
 				<Input
 					{...form.register("address.state")}
+					value={stateValue}
 					autoComplete="shipping address-level1"
 					label="State / Province"
 					variant="bordered"
@@ -169,6 +178,7 @@ export function AddressAutofillForm({
 			<div className="grid grid-cols-2 gap-4">
 				<Input
 					{...form.register("address.postalCode")}
+					value={postalCodeValue}
 					autoComplete="shipping postal-code"
 					label="Postal Code"
 					variant="bordered"
