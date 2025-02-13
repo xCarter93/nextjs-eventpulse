@@ -36,17 +36,25 @@ function DropZone({ isOver, id }: { isOver: boolean; id: string }) {
 	return (
 		<div
 			ref={setNodeRef}
-			className={`w-full h-4 my-2 rounded-lg transition-all duration-200 ${
+			className={`w-full my-2 rounded-lg transition-all duration-200 border-2 border-dashed ${
 				isOver && isOverCurrent
-					? "h-24 bg-primary/10 border-2 border-dashed border-primary"
-					: "border-2 border-transparent hover:border-muted"
+					? "h-24 border-primary bg-primary/10"
+					: "h-12 border-muted hover:border-primary/50 hover:bg-muted/5"
 			}`}
 		>
-			{isOver && isOverCurrent && (
-				<div className="flex items-center justify-center h-full">
-					<p className="text-sm text-primary">Drop component here</p>
-				</div>
-			)}
+			<div className="flex items-center justify-center h-full">
+				<p
+					className={`text-sm ${
+						isOver && isOverCurrent
+							? "text-primary font-medium"
+							: "text-muted-foreground"
+					}`}
+				>
+					{isOver && isOverCurrent
+						? "Drop component here"
+						: "Drag components here"}
+				</p>
+			</div>
 		</div>
 	);
 }

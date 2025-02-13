@@ -11,6 +11,8 @@ import { steps } from "@/app/scheduled-emails/new/steps";
 import Breadcrumbs from "@/app/scheduled-emails/new/Breadcrumbs";
 import { scheduledEmailFormSchema } from "@/lib/validation";
 import * as z from "zod";
+import { EmailBuilder } from "@/components/scheduled-emails/EmailBuilder";
+import { type EmailComponent } from "@/types/email-components";
 
 interface NewScheduledEmailFormProps {
 	onFormChange: (data: FormData) => void;
@@ -157,47 +159,65 @@ export const NewScheduledEmailForm = forwardRef<
 	}
 
 	return (
-		<div className="space-y-8">
-			<Breadcrumbs currentStep={currentStep} setCurrentStep={setCurrentStep} />
+		<div className="grid grid-cols-[40%_60%] gap-8">
+			<div className="space-y-8">
+				<Breadcrumbs
+					currentStep={currentStep}
+					setCurrentStep={setCurrentStep}
+				/>
 
-			<CurrentStepComponent
-				defaultValues={formData}
-				onFormChange={handleFormChange}
-			/>
+				<CurrentStepComponent
+					defaultValues={formData}
+					onFormChange={handleFormChange}
+				/>
 
-			<div className="flex justify-between">
-				<Button
-					variant="outline"
-					onClick={() => {
-						const currentIndex = steps.findIndex((s) => s.key === currentStep);
-						if (currentIndex > 0) {
-							setCurrentStep(steps[currentIndex - 1].key);
-						}
-					}}
-					disabled={currentStep === steps[0].key}
-				>
-					Previous
-				</Button>
-
-				{currentStep === steps[steps.length - 1].key ? (
-					<Button onClick={handleSubmit} disabled={isSubmitting}>
-						{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-						Schedule Email
-					</Button>
-				) : (
+				<div className="flex justify-between">
 					<Button
+						variant="outline"
 						onClick={() => {
 							const currentIndex = steps.findIndex(
 								(s) => s.key === currentStep
 							);
-							if (currentIndex < steps.length - 1) {
-								setCurrentStep(steps[currentIndex + 1].key);
+							if (currentIndex > 0) {
+								setCurrentStep(steps[currentIndex - 1].key);
 							}
 						}}
+						disabled={currentStep === steps[0].key}
 					>
-						Next
+						Previous
 					</Button>
-				)}
+
+					{currentStep === steps[steps.length - 1].key ? (
+						<Button onClick={handleSubmit} disabled={isSubmitting}>
+							{isSubmitting && (
+								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+							)}
+							Schedule Email
+						</Button>
+					) : (
+						<Button
+							onClick={() => {
+								const currentIndex = steps.findIndex(
+									(s) => s.key === currentStep
+								);
+								if (currentIndex < steps.length - 1) {
+									setCurrentStep(steps[currentIndex + 1].key);
+								}
+							}}
+						>
+							Next
+						</Button>
+					)}
+				</div>
+			</div>
+			<div className="h-[calc(100vh-12rem)] sticky top-8">
+				<EmailBuilder
+					colorScheme={formData.colorScheme}
+					components={formData.components}
+					onComponentsChange={(components: EmailComponent[]) =>
+						handleFormChange({ components })
+					}
+				/>
 			</div>
 		</div>
 	);

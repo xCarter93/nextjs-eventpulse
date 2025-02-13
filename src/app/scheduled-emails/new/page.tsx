@@ -4,40 +4,17 @@ import {
 	NewScheduledEmailForm,
 	type NewScheduledEmailFormRef,
 } from "@/components/scheduled-emails/NewScheduledEmailForm";
-import { EmailBuilder } from "@/components/scheduled-emails/EmailBuilder";
 import { HelpDrawer } from "@/components/scheduled-emails/HelpDrawer";
-import { useState, useRef } from "react";
+import { useRef } from "react";
 import { useSearchParams } from "next/navigation";
-import { type EmailComponent } from "@/types/email-components";
-import { scheduledEmailFormSchema } from "@/lib/validation";
-import * as z from "zod";
-
-type FormData = z.infer<typeof scheduledEmailFormSchema>;
 
 const NewScheduledEmailPage = () => {
-	const [preview, setPreview] = useState<FormData>({
-		recipients: [],
-		components: [],
-		subject: "",
-		scheduledDate: "",
-		colorScheme: {
-			primary: "#3B82F6",
-			secondary: "#60A5FA",
-			accent: "#F59E0B",
-			background: "#F3F4F6",
-		},
-	});
 	const formRef = useRef<NewScheduledEmailFormRef>(null);
 	const searchParams = useSearchParams();
 	const dateParam = searchParams.get("date");
 
-	const handleFormChange = (data: FormData) => {
-		setPreview(data);
-	};
-
-	const handleComponentsChange = (components: EmailComponent[]) => {
-		setPreview((prev) => ({ ...prev, components }));
-		formRef.current?.onFormChange({ components });
+	const handleFormChange = () => {
+		// Form data is now handled internally by NewScheduledEmailForm
 	};
 
 	return (
@@ -46,18 +23,11 @@ const NewScheduledEmailPage = () => {
 				<div className="fixed top-24 right-4 md:right-8 z-50">
 					<HelpDrawer />
 				</div>
-				<div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-					<NewScheduledEmailForm
-						ref={formRef}
-						onFormChange={handleFormChange}
-						initialDate={dateParam ? new Date(parseInt(dateParam)) : undefined}
-					/>
-					<EmailBuilder
-						components={preview.components}
-						colorScheme={preview.colorScheme}
-						onComponentsChange={handleComponentsChange}
-					/>
-				</div>
+				<NewScheduledEmailForm
+					ref={formRef}
+					onFormChange={handleFormChange}
+					initialDate={dateParam ? new Date(parseInt(dateParam)) : undefined}
+				/>
 			</div>
 		</div>
 	);
