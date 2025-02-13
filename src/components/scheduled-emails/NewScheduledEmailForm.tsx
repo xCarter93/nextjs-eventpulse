@@ -3,7 +3,7 @@
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Loader2, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, forwardRef, useImperativeHandle } from "react";
@@ -13,6 +13,7 @@ import { scheduledEmailFormSchema } from "@/lib/validation";
 import * as z from "zod";
 import { EmailBuilder } from "@/components/scheduled-emails/EmailBuilder";
 import { type EmailComponent } from "@/types/email-components";
+import { Card, CardBody, CardHeader, Skeleton } from "@heroui/react";
 
 interface NewScheduledEmailFormProps {
 	onFormChange: (data: FormData) => void;
@@ -211,13 +212,43 @@ export const NewScheduledEmailForm = forwardRef<
 				</div>
 			</div>
 			<div className="h-[calc(100vh-12rem)] sticky top-8">
-				<EmailBuilder
-					colorScheme={formData.colorScheme}
-					components={formData.components}
-					onComponentsChange={(components: EmailComponent[]) =>
-						handleFormChange({ components })
-					}
-				/>
+				{currentStep === "color-scheme" ? (
+					<EmailBuilder
+						colorScheme={formData.colorScheme}
+						components={formData.components}
+						onComponentsChange={(components: EmailComponent[]) =>
+							handleFormChange({ components })
+						}
+					/>
+				) : (
+					<Card className="h-full">
+						<CardHeader>
+							<div className="flex items-center gap-3">
+								<div className="p-3 rounded-lg bg-primary/10">
+									<Mail className="w-5 h-5 text-primary" />
+								</div>
+								<h3 className="text-lg font-semibold">Email Preview</h3>
+							</div>
+						</CardHeader>
+						<CardBody>
+							<div className="flex flex-col items-center justify-center h-full space-y-6 py-12">
+								<div className="space-y-4 w-full max-w-md">
+									<Skeleton className="h-8 w-3/4 mx-auto rounded-lg" />
+									<Skeleton className="h-32 w-full rounded-lg" />
+									<div className="space-y-2">
+										<Skeleton className="h-4 w-full rounded-lg" />
+										<Skeleton className="h-4 w-5/6 rounded-lg" />
+										<Skeleton className="h-4 w-4/6 rounded-lg" />
+									</div>
+								</div>
+								<p className="text-muted-foreground text-center max-w-sm">
+									Your email preview will appear here when you reach the
+									&ldquo;What&rdquo; step
+								</p>
+							</div>
+						</CardBody>
+					</Card>
+				)}
 			</div>
 		</div>
 	);
