@@ -2,9 +2,6 @@
 
 import { ScheduledEmailsList } from "@/components/scheduled-emails/ScheduledEmailsList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button, Tooltip } from "@heroui/react";
-import { Plus } from "lucide-react";
-import Link from "next/link";
 
 export function ScheduledEmailsContent() {
 	return (
@@ -38,23 +35,6 @@ export function ScheduledEmailsContent() {
 							Canceled
 						</TabsTrigger>
 					</TabsList>
-					<Link href="/scheduled-emails/new">
-						<Tooltip
-							content="Create New Scheduled Email"
-							color="secondary"
-							placement="bottom"
-						>
-							<Button
-								color="secondary"
-								variant="solid"
-								isIconOnly
-								radius="lg"
-								className="bg-purple-500 hover:bg-purple-600"
-							>
-								<Plus className="h-4 w-4" />
-							</Button>
-						</Tooltip>
-					</Link>
 				</div>
 				<TabsContent value="pending">
 					<ScheduledEmailsList filterStatus="pending" />

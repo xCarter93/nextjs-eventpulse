@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { ScheduledEmailsContent } from "@/components/scheduled-emails/ScheduledEmailsContent";
+import { PageWithStats } from "@/components/shared/PageWithStats";
 
 export const metadata: Metadata = {
 	title: "Scheduled Emails | EventPulse",
@@ -7,5 +8,9 @@ export const metadata: Metadata = {
 };
 
 export default function ScheduledEmailsPage() {
-	return <ScheduledEmailsContent />;
+	return (
+		<PageWithStats>
+			<ScheduledEmailsContent />
+		</PageWithStats>
+	);
 }

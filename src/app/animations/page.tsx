@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { type AnimationTemplate } from "@/types";
 import { TemplateCard } from "@/components/animations/TemplateCard";
-import { CustomAnimationUploader } from "@/components/animations/CustomAnimationUploader";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Image, Upload, Sparkles, FileImage } from "lucide-react";
 import { Pagination, Card, CardBody } from "@heroui/react";
+import { PageWithStats } from "@/components/shared/PageWithStats";
 
 function EmptyState() {
 	return (
@@ -34,8 +34,9 @@ function EmptyState() {
 						No animations yet
 					</h3>
 					<p className="text-sm text-muted-foreground">
-						Upload your first animation using the uploader on the right. You can
-						use GIFs, JPGs, or PNGs to create custom animations.
+						Click the &ldquo;Upload Animation&rdquo; quick action to upload your
+						first animation. You can use GIFs, JPGs, or PNGs to create custom
+						animations.
 					</p>
 				</div>
 			</div>
@@ -47,7 +48,7 @@ export default function AnimationsPage() {
 	const [selectedTemplate, setSelectedTemplate] =
 		useState<AnimationTemplate | null>(null);
 	const [currentPage, setCurrentPage] = useState(1);
-	const itemsPerPage = 8; // 2 rows x 4 columns
+	const itemsPerPage = 8;
 
 	const userAnimations = useQuery(api.animations.getUserAnimations);
 	const user = useQuery(api.users.getUser);
@@ -70,17 +71,17 @@ export default function AnimationsPage() {
 	const currentTemplates = templates.slice(startIndex, endIndex);
 
 	return (
-		<div className="space-y-6">
-			<div>
-				<h1 className="text-2xl font-bold text-foreground">
-					Custom Animations & Images
-				</h1>
-				<p className="mt-2 text-muted-foreground">
-					Upload and manage your custom GIFs and images for email greetings
-				</p>
-			</div>
+		<PageWithStats>
+			<div className="space-y-6">
+				<div>
+					<h1 className="text-2xl font-bold text-foreground">
+						Custom Animations & Images
+					</h1>
+					<p className="mt-2 text-muted-foreground">
+						Upload and manage your custom GIFs and images for email greetings
+					</p>
+				</div>
 
-			<div className="flex flex-col lg:flex-row gap-6">
 				<Card className="flex-1" radius="lg" shadow="md" isBlurred={true}>
 					<CardBody className="p-6">
 						<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 animations-grid">
@@ -119,11 +120,7 @@ export default function AnimationsPage() {
 						)}
 					</CardBody>
 				</Card>
-
-				<div className="w-full lg:w-80 order-first lg:order-last animation-uploader">
-					<CustomAnimationUploader />
-				</div>
 			</div>
-		</div>
+		</PageWithStats>
 	);
 }

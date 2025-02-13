@@ -2,22 +2,13 @@
 
 import { RecipientsTable } from "@/components/recipients/RecipientsTable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-	Button,
-	Tooltip,
-	Modal,
-	ModalContent,
-	ModalHeader,
-	ModalBody,
-	useDisclosure,
-} from "@heroui/react";
-import { Plus, Lock } from "lucide-react";
-import { RecipientForm } from "@/components/recipients/RecipientForm";
-import { useState, useEffect, Suspense, lazy } from "react";
+import { Tooltip } from "@heroui/react";
+import { Lock } from "lucide-react";
+import { Suspense, lazy, useEffect } from "react";
 import { LockedFeature } from "@/components/premium/LockedFeature";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { getSubscriptionLimits } from "@/lib/subscriptions";
+import { PageWithStats } from "@/components/shared/PageWithStats";
 
 // Use React.lazy instead of dynamic import
 const DottedMapComponent = lazy(() =>
@@ -93,31 +84,20 @@ function MapWithSuspense() {
 }
 
 export default function RecipientsPage() {
-	const { isOpen, onOpen, onOpenChange } = useDisclosure();
-	const [activeTab, setActiveTab] = useState("table");
 	const subscriptionLevel = useQuery(
 		api.subscriptions.getUserSubscriptionLevel
 	);
-	const recipients = useQuery(api.recipients.getRecipients);
-	const limits = getSubscriptionLimits(subscriptionLevel ?? "free");
-	const hasReachedLimit = recipients
-		? recipients.length >= limits.maxRecipients
-		: false;
 
 	return (
-		<div className="container space-y-6 max-w-7xl">
-			<div>
-				<h1 className="text-2xl font-bold text-foreground">Recipients</h1>
-				<p className="mt-2 text-muted-foreground">
-					Manage your recipients and their information.
-				</p>
-			</div>
-			<div className="flex items-center justify-between">
-				<Tabs
-					defaultValue="table"
-					className="w-full"
-					onValueChange={setActiveTab}
-				>
+		<PageWithStats>
+			<div className="space-y-6">
+				<div>
+					<h1 className="text-2xl font-bold text-foreground">Recipients</h1>
+					<p className="mt-2 text-muted-foreground">
+						Manage your recipients and their information.
+					</p>
+				</div>
+				<Tabs defaultValue="table" className="w-full">
 					<div className="flex items-center justify-between">
 						<TabsList className="bg-secondary/20">
 							<TabsTrigger
@@ -151,63 +131,6 @@ export default function RecipientsPage() {
 								</TabsTrigger>
 							)}
 						</TabsList>
-						{activeTab === "table" &&
-							(hasReachedLimit ? (
-								<Tooltip
-									content="You have reached your recipient limit. Upgrade to Pro for unlimited recipients."
-									color="secondary"
-								>
-									<Button
-										isDisabled
-										variant="bordered"
-										isIconOnly
-										color="secondary"
-										radius="lg"
-										className="ml-2 bg-secondary/20"
-									>
-										<Plus className="h-4 w-4" />
-									</Button>
-								</Tooltip>
-							) : (
-								<>
-									<Tooltip
-										content="Add New Recipient"
-										color="secondary"
-										placement="bottom"
-									>
-										<Button
-											color="secondary"
-											variant="solid"
-											isIconOnly
-											radius="lg"
-											className="ml-2 bg-purple-500 hover:bg-purple-600"
-											onPress={onOpen}
-										>
-											<Plus className="h-4 w-4" />
-										</Button>
-									</Tooltip>
-									<Modal
-										isOpen={isOpen}
-										onOpenChange={onOpenChange}
-										placement="top-center"
-									>
-										<ModalContent>
-											{(onClose) => (
-												<>
-													<ModalHeader>
-														<h2 className="text-lg font-semibold">
-															Add Recipient
-														</h2>
-													</ModalHeader>
-													<ModalBody>
-														<RecipientForm onSuccess={onClose} />
-													</ModalBody>
-												</>
-											)}
-										</ModalContent>
-									</Modal>
-								</>
-							))}
 					</div>
 					<TabsContent value="table" className="space-y-4">
 						<Suspense fallback={<div>Loading...</div>}>
@@ -219,6 +142,6 @@ export default function RecipientsPage() {
 					</TabsContent>
 				</Tabs>
 			</div>
-		</div>
+		</PageWithStats>
 	);
 }

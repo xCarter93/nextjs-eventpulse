@@ -9,7 +9,13 @@ import { Upload } from "lucide-react";
 import Link from "next/link";
 import { Id } from "../../../convex/_generated/dataModel";
 
-export function CustomAnimationUploader() {
+interface CustomAnimationUploaderProps {
+	onSuccess?: () => void;
+}
+
+export function CustomAnimationUploader({
+	onSuccess,
+}: CustomAnimationUploaderProps) {
 	const generateUploadUrl = useMutation(api.animations.generateUploadUrl);
 	const saveAnimation = useMutation(api.animations.saveAnimation);
 	const user = useQuery(api.users.getUser);
@@ -61,6 +67,7 @@ export function CustomAnimationUploader() {
 			});
 
 			toast.success("Animation uploaded successfully");
+			onSuccess?.();
 		} catch (error) {
 			console.error("Error uploading animation:", error);
 			toast.error("Failed to upload animation");
