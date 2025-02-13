@@ -4,7 +4,7 @@ import { useRef } from "react";
 import { AnimatedBeam } from "./AnimatedBeams";
 import { Avatar, Badge, Card, CardBody } from "@heroui/react";
 import { formatDistanceToNow } from "date-fns";
-import { Trash2, CheckCircle2, XCircle, Mail } from "lucide-react";
+import { Trash2, CheckCircle2, XCircle, Mail, UserRound } from "lucide-react";
 import { Button } from "@heroui/react";
 import { toast } from "sonner";
 import { useMutation, useQuery } from "convex/react";
@@ -105,9 +105,15 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 										isBordered
 										color={getAvatarColor()}
 										className="w-12 h-12"
+										fallback={
+											<UserRound
+												className="animate-pulse w-6 h-6 text-default-500"
+												size={24}
+											/>
+										}
 										classNames={{
 											base: "w-12 h-12",
-											img: "object-cover",
+											img: "object-cover opacity-100",
 											fallback: "w-12 h-12",
 										}}
 									/>
@@ -121,9 +127,15 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 									isBordered
 									color={getAvatarColor()}
 									className="w-12 h-12"
+									fallback={
+										<UserRound
+											className="animate-pulse w-6 h-6 text-default-500"
+											size={24}
+										/>
+									}
 									classNames={{
 										base: "w-12 h-12",
-										img: "object-cover",
+										img: "object-cover opacity-100",
 										fallback: "w-12 h-12",
 									}}
 								/>
@@ -139,9 +151,15 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 								isBordered
 								color={getAvatarColor()}
 								className="w-12 h-12"
+								fallback={
+									<UserRound
+										className="animate-pulse w-6 h-6 text-default-500"
+										size={24}
+									/>
+								}
 								classNames={{
 									base: "w-12 h-12",
-									img: "object-cover",
+									img: "object-cover opacity-100",
 									fallback: "w-12 h-12",
 								}}
 							/>
