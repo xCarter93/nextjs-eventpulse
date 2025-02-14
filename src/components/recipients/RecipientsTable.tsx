@@ -60,7 +60,7 @@ export function RecipientsTable() {
 	});
 
 	// Number of items per page
-	const rowsPerPage = 10;
+	const rowsPerPage = 5;
 
 	const recipients = useQuery(api.recipients.getRecipients);
 	const updateRecipient = useMutation(api.recipients.updateRecipient);
