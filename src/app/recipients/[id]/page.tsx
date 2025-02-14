@@ -31,12 +31,12 @@ export default function RecipientPage() {
 	}
 
 	return (
-		<div className="container py-6">
-			<Card>
-				<CardHeader>
+		<div className="w-full px-6">
+			<Card className="w-full">
+				<CardHeader className="px-6">
 					<h1 className="text-2xl font-bold">{recipient.name}</h1>
 				</CardHeader>
-				<CardBody>
+				<CardBody className="px-6">
 					<RecipientMetadataForm recipient={recipient} />
 				</CardBody>
 			</Card>

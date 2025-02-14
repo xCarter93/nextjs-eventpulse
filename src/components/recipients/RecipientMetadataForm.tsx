@@ -54,9 +54,6 @@ const addressSchema = z.object({
 });
 
 const formSchema = z.object({
-	name: z.string().min(2, {
-		message: "Name must be at least 2 characters.",
-	}),
 	email: z.string().email({
 		message: "Please enter a valid email address.",
 	}),
@@ -119,7 +116,6 @@ export function RecipientMetadataForm({
 	const form = useForm<FormValues>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
-			name: recipient.name,
 			email: recipient.email,
 			birthday: new Date(recipient.birthday),
 			relation: recipient.metadata?.relation,
@@ -151,7 +147,6 @@ export function RecipientMetadataForm({
 	// Update form when recipient metadata changes
 	useEffect(() => {
 		reset({
-			name: recipient.name,
 			email: recipient.email,
 			birthday: new Date(recipient.birthday),
 			relation: recipient.metadata?.relation,
@@ -195,7 +190,7 @@ export function RecipientMetadataForm({
 			// Update basic recipient info
 			await updateRecipient({
 				id: recipient._id,
-				name: data.name,
+				name: recipient.name,
 				email: data.email,
 				birthday: data.birthday.getTime(),
 			});
@@ -223,157 +218,172 @@ export function RecipientMetadataForm({
 	return (
 		<Form
 			onSubmit={handleSubmit(onSubmit)}
-			className="w-full space-y-8"
+			className="w-full max-w-none"
 			validationBehavior="aria"
 		>
 			<div className="space-y-8">
 				<div>
 					<h3 className="text-lg font-semibold mb-6">Basic Information</h3>
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-						<Input
-							value={watch("name") || ""}
-							onChange={(e) => setValue("name", e.target.value)}
-							label="Name"
-							placeholder="John Doe"
-							isInvalid={!!errors.name}
-							errorMessage={errors.name?.message}
-							variant="bordered"
-							labelPlacement="outside"
-							isRequired
-							className="w-full"
-						/>
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
+						<div className="w-full">
+							<Input
+								value={watch("email") || ""}
+								onChange={(e) => setValue("email", e.target.value)}
+								label="Email"
+								placeholder="john@example.com"
+								type="email"
+								isInvalid={!!errors.email}
+								errorMessage={errors.email?.message}
+								variant="bordered"
+								labelPlacement="outside"
+								isRequired
+								classNames={{
+									input: "w-full",
+									base: "w-full",
+								}}
+							/>
+						</div>
 
-						<Input
-							value={watch("email") || ""}
-							onChange={(e) => setValue("email", e.target.value)}
-							label="Email"
-							placeholder="john@example.com"
-							type="email"
-							isInvalid={!!errors.email}
-							errorMessage={errors.email?.message}
-							variant="bordered"
-							labelPlacement="outside"
-							isRequired
-							className="w-full"
-						/>
-
-						<DatePicker
-							label="Birthday"
-							value={
-								birthday
-									? new CalendarDate(
-											birthday.getFullYear(),
-											birthday.getMonth() + 1,
-											birthday.getDate()
-										)
-									: null
-							}
-							onChange={(date) => {
-								if (date) {
-									const jsDate = date.toDate(getLocalTimeZone());
-									setValue("birthday", jsDate);
-								}
-							}}
-							isInvalid={!!errors.birthday}
-							errorMessage={errors.birthday?.message}
-							variant="bordered"
-							labelPlacement="outside"
-							isRequired
-							className="w-full"
-						/>
-
-						<Select
-							label="Relationship"
-							selectedKeys={relation ? [relation] : []}
-							onChange={(e) => {
-								const value = e.target.value as
-									| "friend"
-									| "parent"
-									| "spouse"
-									| "sibling";
-								setValue("relation", value);
-							}}
-							isInvalid={!!errors.relation}
-							errorMessage={errors.relation?.message}
-							variant="bordered"
-							labelPlacement="outside"
-							isRequired
-							className="w-full"
-						>
-							<SelectItem key="friend" value="friend">
-								Friend
-							</SelectItem>
-							<SelectItem key="parent" value="parent">
-								Parent
-							</SelectItem>
-							<SelectItem key="spouse" value="spouse">
-								Spouse
-							</SelectItem>
-							<SelectItem key="sibling" value="sibling">
-								Sibling
-							</SelectItem>
-						</Select>
-
-						{relation === "spouse" && (
+						<div className="w-full">
 							<DatePicker
-								label="Anniversary Date"
+								label="Birthday"
 								value={
-									anniversaryDate
+									birthday
 										? new CalendarDate(
-												anniversaryDate.getFullYear(),
-												anniversaryDate.getMonth() + 1,
-												anniversaryDate.getDate()
+												birthday.getFullYear(),
+												birthday.getMonth() + 1,
+												birthday.getDate()
 											)
 										: null
 								}
 								onChange={(date) => {
 									if (date) {
 										const jsDate = date.toDate(getLocalTimeZone());
-										setValue("anniversaryDate", jsDate);
+										setValue("birthday", jsDate);
 									}
 								}}
-								isInvalid={!!errors.anniversaryDate}
-								errorMessage={errors.anniversaryDate?.message}
+								isInvalid={!!errors.birthday}
+								errorMessage={errors.birthday?.message}
 								variant="bordered"
 								labelPlacement="outside"
-								isRequired={relation === "spouse"}
-								className="w-full"
+								isRequired
+								classNames={{
+									base: "w-full",
+								}}
 							/>
+						</div>
+
+						<div className="w-full">
+							<Select
+								label="Relationship"
+								selectedKeys={relation ? [relation] : []}
+								onChange={(e) => {
+									const value = e.target.value as
+										| "friend"
+										| "parent"
+										| "spouse"
+										| "sibling";
+									setValue("relation", value);
+								}}
+								isInvalid={!!errors.relation}
+								errorMessage={errors.relation?.message}
+								variant="bordered"
+								labelPlacement="outside"
+								isRequired
+								classNames={{
+									trigger: "w-full",
+									base: "w-full",
+								}}
+							>
+								<SelectItem key="friend" value="friend">
+									Friend
+								</SelectItem>
+								<SelectItem key="parent" value="parent">
+									Parent
+								</SelectItem>
+								<SelectItem key="spouse" value="spouse">
+									Spouse
+								</SelectItem>
+								<SelectItem key="sibling" value="sibling">
+									Sibling
+								</SelectItem>
+							</Select>
+						</div>
+
+						{relation === "spouse" && (
+							<div className="w-full">
+								<DatePicker
+									label="Anniversary Date"
+									value={
+										anniversaryDate
+											? new CalendarDate(
+													anniversaryDate.getFullYear(),
+													anniversaryDate.getMonth() + 1,
+													anniversaryDate.getDate()
+												)
+											: null
+									}
+									onChange={(date) => {
+										if (date) {
+											const jsDate = date.toDate(getLocalTimeZone());
+											setValue("anniversaryDate", jsDate);
+										}
+									}}
+									isInvalid={!!errors.anniversaryDate}
+									errorMessage={errors.anniversaryDate?.message}
+									variant="bordered"
+									labelPlacement="outside"
+									isRequired={relation === "spouse"}
+									classNames={{
+										base: "w-full",
+									}}
+								/>
+							</div>
 						)}
 
-						<Input
-							value={watch("nickname") || ""}
-							onChange={(e) => setValue("nickname", e.target.value)}
-							label="Nickname"
-							placeholder="Enter nickname"
-							isInvalid={!!errors.nickname}
-							errorMessage={errors.nickname?.message}
-							variant="bordered"
-							labelPlacement="outside"
-							description="Optional: Add a nickname for this recipient"
-							className="w-full"
-						/>
+						<div className="w-full">
+							<Input
+								value={watch("nickname") || ""}
+								onChange={(e) => setValue("nickname", e.target.value)}
+								label="Nickname"
+								placeholder="Enter nickname"
+								isInvalid={!!errors.nickname}
+								errorMessage={errors.nickname?.message}
+								variant="bordered"
+								labelPlacement="outside"
+								description="Optional: Add a nickname for this recipient"
+								classNames={{
+									input: "w-full",
+									base: "w-full",
+								}}
+							/>
+						</div>
 
-						<Input
-							label="Phone Number"
-							placeholder="(555) 555-5555"
-							value={
-								watch("phoneNumber")
-									? formatPhoneNumber(watch("phoneNumber"))
-									: ""
-							}
-							onChange={(e) => {
-								const digits = e.target.value.replace(/\D/g, "");
-								setValue("phoneNumber", digits);
-							}}
-							isInvalid={!!errors.phoneNumber}
-							errorMessage={errors.phoneNumber?.message}
-							variant="bordered"
-							labelPlacement="outside"
-							description="Optional: Add a phone number"
-							pattern="[\d\(\)\-\s]+"
-							className="w-full"
-						/>
+						<div className="w-full">
+							<Input
+								label="Phone Number"
+								placeholder="(555) 555-5555"
+								value={
+									watch("phoneNumber")
+										? formatPhoneNumber(watch("phoneNumber"))
+										: ""
+								}
+								onChange={(e) => {
+									const digits = e.target.value.replace(/\D/g, "");
+									setValue("phoneNumber", digits);
+								}}
+								isInvalid={!!errors.phoneNumber}
+								errorMessage={errors.phoneNumber?.message}
+								variant="bordered"
+								labelPlacement="outside"
+								description="Optional: Add a phone number"
+								pattern="[\d\(\)\-\s]+"
+								classNames={{
+									input: "w-full",
+									base: "w-full",
+								}}
+							/>
+						</div>
 					</div>
 				</div>
 
@@ -415,17 +425,21 @@ export function RecipientMetadataForm({
 						onChange={(e) => setValue("notes", e.target.value)}
 						label="Notes"
 						placeholder="Add any additional notes"
-						className="w-full min-h-[100px]"
+						className="w-full"
 						isInvalid={!!errors.notes}
 						errorMessage={errors.notes?.message}
 						variant="bordered"
 						labelPlacement="outside"
 						description="Optional: Add any additional notes about this recipient"
+						classNames={{
+							input: "w-full min-h-[100px]",
+							base: "w-full",
+						}}
 					/>
 				</div>
 			</div>
 
-			<div className="flex justify-end">
+			<div className="flex justify-end mt-8">
 				<Button
 					type="submit"
 					color="primary"
