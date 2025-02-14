@@ -221,11 +221,11 @@ export function RecipientMetadataForm({
 	return (
 		<Form
 			onSubmit={handleSubmit(onSubmit)}
-			className="w-full"
+			className="w-full max-w-none"
 			validationBehavior="aria"
 		>
-			<div className="space-y-4">
-				<Card className="w-full">
+			<div className="w-full space-y-4">
+				<Card className="w-full max-w-none">
 					<CardHeader>
 						<h3 className="text-lg font-semibold">Contact Information</h3>
 					</CardHeader>
@@ -273,7 +273,7 @@ export function RecipientMetadataForm({
 					</CardBody>
 				</Card>
 
-				<Card className="w-full">
+				<Card className="w-full max-w-none">
 					<CardHeader>
 						<h3 className="text-lg font-semibold">Personal Details</h3>
 					</CardHeader>
@@ -387,7 +387,7 @@ export function RecipientMetadataForm({
 					</CardBody>
 				</Card>
 
-				<Card className="w-full">
+				<Card className="w-full max-w-none">
 					<CardHeader>
 						<h3 className="text-lg font-semibold">Address Information</h3>
 					</CardHeader>
@@ -422,7 +422,7 @@ export function RecipientMetadataForm({
 					</CardBody>
 				</Card>
 
-				<Card className="w-full">
+				<Card className="w-full max-w-none">
 					<CardHeader>
 						<h3 className="text-lg font-semibold">Additional Notes</h3>
 					</CardHeader>
