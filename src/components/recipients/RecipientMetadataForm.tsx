@@ -223,13 +223,13 @@ export function RecipientMetadataForm({
 	return (
 		<Form
 			onSubmit={handleSubmit(onSubmit)}
-			className="space-y-8"
+			className="w-full space-y-8"
 			validationBehavior="aria"
 		>
-			<div className="space-y-6">
+			<div className="space-y-8">
 				<div>
-					<h3 className="text-lg font-semibold mb-4">Basic Information</h3>
-					<div className="grid grid-cols-2 gap-4">
+					<h3 className="text-lg font-semibold mb-6">Basic Information</h3>
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 						<Input
 							value={watch("name") || ""}
 							onChange={(e) => setValue("name", e.target.value)}
@@ -240,6 +240,7 @@ export function RecipientMetadataForm({
 							variant="bordered"
 							labelPlacement="outside"
 							isRequired
+							className="w-full"
 						/>
 
 						<Input
@@ -253,6 +254,7 @@ export function RecipientMetadataForm({
 							variant="bordered"
 							labelPlacement="outside"
 							isRequired
+							className="w-full"
 						/>
 
 						<DatePicker
@@ -277,6 +279,7 @@ export function RecipientMetadataForm({
 							variant="bordered"
 							labelPlacement="outside"
 							isRequired
+							className="w-full"
 						/>
 
 						<Select
@@ -295,6 +298,7 @@ export function RecipientMetadataForm({
 							variant="bordered"
 							labelPlacement="outside"
 							isRequired
+							className="w-full"
 						>
 							<SelectItem key="friend" value="friend">
 								Friend
@@ -333,6 +337,7 @@ export function RecipientMetadataForm({
 								variant="bordered"
 								labelPlacement="outside"
 								isRequired={relation === "spouse"}
+								className="w-full"
 							/>
 						)}
 
@@ -346,6 +351,7 @@ export function RecipientMetadataForm({
 							variant="bordered"
 							labelPlacement="outside"
 							description="Optional: Add a nickname for this recipient"
+							className="w-full"
 						/>
 
 						<Input
@@ -366,12 +372,13 @@ export function RecipientMetadataForm({
 							labelPlacement="outside"
 							description="Optional: Add a phone number"
 							pattern="[\d\(\)\-\s]+"
+							className="w-full"
 						/>
 					</div>
 				</div>
 
 				<div>
-					<h3 className="text-lg font-semibold mb-4">Address Information</h3>
+					<h3 className="text-lg font-semibold mb-6">Address Information</h3>
 					{isSubscriptionActive ? (
 						<AddressAutofillForm
 							form={addressForm}
@@ -402,13 +409,13 @@ export function RecipientMetadataForm({
 				</div>
 
 				<div>
-					<h3 className="text-lg font-semibold mb-4">Additional Notes</h3>
+					<h3 className="text-lg font-semibold mb-6">Additional Notes</h3>
 					<Textarea
 						value={watch("notes") || ""}
 						onChange={(e) => setValue("notes", e.target.value)}
 						label="Notes"
 						placeholder="Add any additional notes"
-						className="min-h-[100px]"
+						className="w-full min-h-[100px]"
 						isInvalid={!!errors.notes}
 						errorMessage={errors.notes?.message}
 						variant="bordered"
