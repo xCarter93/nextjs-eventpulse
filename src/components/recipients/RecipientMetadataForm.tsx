@@ -15,6 +15,9 @@ import {
 	SelectItem,
 	Textarea,
 	Form,
+	Card,
+	CardHeader,
+	CardBody,
 } from "@heroui/react";
 import { DatePicker } from "@heroui/react";
 import { LockedFeature } from "@/components/premium/LockedFeature";
@@ -221,172 +224,175 @@ export function RecipientMetadataForm({
 			className="w-full"
 			validationBehavior="aria"
 		>
-			<div className="w-full space-y-8">
-				<div className="w-full">
-					<h3 className="text-lg font-semibold mb-6">Basic Information</h3>
-					<div className="w-full grid grid-cols-1 md:grid-cols-2 gap-6">
-						<div className="w-full">
-							<Input
-								value={watch("email") || ""}
-								onChange={(e) => setValue("email", e.target.value)}
-								label="Email"
-								placeholder="john@example.com"
-								type="email"
-								isInvalid={!!errors.email}
-								errorMessage={errors.email?.message}
-								variant="bordered"
-								labelPlacement="outside"
-								isRequired
-								className="w-full"
-							/>
-						</div>
+			<div className="space-y-4">
+				<Card className="w-full">
+					<CardHeader>
+						<h3 className="text-lg font-semibold">Contact Information</h3>
+					</CardHeader>
+					<CardBody>
+						<div className="w-full grid grid-cols-1 md:grid-cols-2 gap-6">
+							<div className="w-full">
+								<Input
+									value={watch("email") || ""}
+									onChange={(e) => setValue("email", e.target.value)}
+									label="Email"
+									placeholder="john@example.com"
+									type="email"
+									isInvalid={!!errors.email}
+									errorMessage={errors.email?.message}
+									variant="bordered"
+									labelPlacement="outside"
+									isRequired
+									className="w-full"
+								/>
+							</div>
 
-						<div className="w-full">
-							<DatePicker
-								label="Birthday"
-								value={
-									birthday
-										? new CalendarDate(
-												birthday.getFullYear(),
-												birthday.getMonth() + 1,
-												birthday.getDate()
-											)
-										: null
-								}
-								onChange={(date) => {
-									if (date) {
-										const jsDate = date.toDate(getLocalTimeZone());
-										setValue("birthday", jsDate);
+							<div className="w-full">
+								<Input
+									label="Phone Number"
+									placeholder="(555) 555-5555"
+									value={
+										watch("phoneNumber")
+											? formatPhoneNumber(watch("phoneNumber"))
+											: ""
 									}
-								}}
-								isInvalid={!!errors.birthday}
-								errorMessage={errors.birthday?.message}
-								variant="bordered"
-								labelPlacement="outside"
-								isRequired
-								className="w-full"
-							/>
+									onChange={(e) => {
+										const digits = e.target.value.replace(/\D/g, "");
+										setValue("phoneNumber", digits);
+									}}
+									isInvalid={!!errors.phoneNumber}
+									errorMessage={errors.phoneNumber?.message}
+									variant="bordered"
+									labelPlacement="outside"
+									description="Optional: Add a phone number"
+									pattern="[\d\(\)\-\s]+"
+									className="w-full"
+								/>
+							</div>
 						</div>
+					</CardBody>
+				</Card>
 
-						<div className="w-full">
-							<Select
-								label="Relationship"
-								selectedKeys={relation ? [relation] : []}
-								onChange={(e) => {
-									const value = e.target.value as
-										| "friend"
-										| "parent"
-										| "spouse"
-										| "sibling";
-									setValue("relation", value);
-								}}
-								isInvalid={!!errors.relation}
-								errorMessage={errors.relation?.message}
-								variant="bordered"
-								labelPlacement="outside"
-								isRequired
-								className="w-full"
-							>
-								<SelectItem key="friend" value="friend">
-									Friend
-								</SelectItem>
-								<SelectItem key="parent" value="parent">
-									Parent
-								</SelectItem>
-								<SelectItem key="spouse" value="spouse">
-									Spouse
-								</SelectItem>
-								<SelectItem key="sibling" value="sibling">
-									Sibling
-								</SelectItem>
-							</Select>
-						</div>
-
-						{relation === "spouse" && (
+				<Card className="w-full">
+					<CardHeader>
+						<h3 className="text-lg font-semibold">Personal Details</h3>
+					</CardHeader>
+					<CardBody>
+						<div className="w-full grid grid-cols-1 md:grid-cols-2 gap-6">
 							<div className="w-full">
 								<DatePicker
-									label="Anniversary Date"
+									label="Birthday"
 									value={
-										anniversaryDate
+										birthday
 											? new CalendarDate(
-													anniversaryDate.getFullYear(),
-													anniversaryDate.getMonth() + 1,
-													anniversaryDate.getDate()
+													birthday.getFullYear(),
+													birthday.getMonth() + 1,
+													birthday.getDate()
 												)
 											: null
 									}
 									onChange={(date) => {
 										if (date) {
 											const jsDate = date.toDate(getLocalTimeZone());
-											setValue("anniversaryDate", jsDate);
+											setValue("birthday", jsDate);
 										}
 									}}
-									isInvalid={!!errors.anniversaryDate}
-									errorMessage={errors.anniversaryDate?.message}
+									isInvalid={!!errors.birthday}
+									errorMessage={errors.birthday?.message}
 									variant="bordered"
 									labelPlacement="outside"
-									isRequired={relation === "spouse"}
+									isRequired
 									className="w-full"
 								/>
 							</div>
-						)}
 
-						<div className="w-full">
-							<Input
-								value={watch("nickname") || ""}
-								onChange={(e) => setValue("nickname", e.target.value)}
-								label="Nickname"
-								placeholder="Enter nickname"
-								isInvalid={!!errors.nickname}
-								errorMessage={errors.nickname?.message}
-								variant="bordered"
-								labelPlacement="outside"
-								description="Optional: Add a nickname for this recipient"
-								className="w-full"
-							/>
+							<div className="w-full">
+								<Select
+									label="Relationship"
+									selectedKeys={relation ? [relation] : []}
+									onChange={(e) => {
+										const value = e.target.value as
+											| "friend"
+											| "parent"
+											| "spouse"
+											| "sibling";
+										setValue("relation", value);
+									}}
+									isInvalid={!!errors.relation}
+									errorMessage={errors.relation?.message}
+									variant="bordered"
+									labelPlacement="outside"
+									isRequired
+									className="w-full"
+								>
+									<SelectItem key="friend" value="friend">
+										Friend
+									</SelectItem>
+									<SelectItem key="parent" value="parent">
+										Parent
+									</SelectItem>
+									<SelectItem key="spouse" value="spouse">
+										Spouse
+									</SelectItem>
+									<SelectItem key="sibling" value="sibling">
+										Sibling
+									</SelectItem>
+								</Select>
+							</div>
+
+							{relation === "spouse" && (
+								<div className="w-full">
+									<DatePicker
+										label="Anniversary Date"
+										value={
+											anniversaryDate
+												? new CalendarDate(
+														anniversaryDate.getFullYear(),
+														anniversaryDate.getMonth() + 1,
+														anniversaryDate.getDate()
+													)
+												: null
+										}
+										onChange={(date) => {
+											if (date) {
+												const jsDate = date.toDate(getLocalTimeZone());
+												setValue("anniversaryDate", jsDate);
+											}
+										}}
+										isInvalid={!!errors.anniversaryDate}
+										errorMessage={errors.anniversaryDate?.message}
+										variant="bordered"
+										labelPlacement="outside"
+										isRequired={relation === "spouse"}
+										className="w-full"
+									/>
+								</div>
+							)}
+
+							<div className="w-full">
+								<Input
+									value={watch("nickname") || ""}
+									onChange={(e) => setValue("nickname", e.target.value)}
+									label="Nickname"
+									placeholder="Enter nickname"
+									isInvalid={!!errors.nickname}
+									errorMessage={errors.nickname?.message}
+									variant="bordered"
+									labelPlacement="outside"
+									description="Optional: Add a nickname for this recipient"
+									className="w-full"
+								/>
+							</div>
 						</div>
+					</CardBody>
+				</Card>
 
-						<div className="w-full">
-							<Input
-								label="Phone Number"
-								placeholder="(555) 555-5555"
-								value={
-									watch("phoneNumber")
-										? formatPhoneNumber(watch("phoneNumber"))
-										: ""
-								}
-								onChange={(e) => {
-									const digits = e.target.value.replace(/\D/g, "");
-									setValue("phoneNumber", digits);
-								}}
-								isInvalid={!!errors.phoneNumber}
-								errorMessage={errors.phoneNumber?.message}
-								variant="bordered"
-								labelPlacement="outside"
-								description="Optional: Add a phone number"
-								pattern="[\d\(\)\-\s]+"
-								className="w-full"
-							/>
-						</div>
-					</div>
-				</div>
-
-				<div className="w-full">
-					<h3 className="text-lg font-semibold mb-6">Address Information</h3>
-					{isSubscriptionActive ? (
-						<AddressAutofillForm
-							form={addressForm}
-							onAddressChange={(address) => {
-								setValue("address", address as RecipientAddressData);
-								addressForm.setValue(
-									"address",
-									address as RecipientAddressData
-								);
-							}}
-							isRecipientForm={true}
-						/>
-					) : (
-						<LockedFeature featureDescription="add recipient addresses and view them on a map">
+				<Card className="w-full">
+					<CardHeader>
+						<h3 className="text-lg font-semibold">Address Information</h3>
+					</CardHeader>
+					<CardBody>
+						{isSubscriptionActive ? (
 							<AddressAutofillForm
 								form={addressForm}
 								onAddressChange={(address) => {
@@ -398,35 +404,53 @@ export function RecipientMetadataForm({
 								}}
 								isRecipientForm={true}
 							/>
-						</LockedFeature>
-					)}
-				</div>
+						) : (
+							<LockedFeature featureDescription="add recipient addresses and view them on a map">
+								<AddressAutofillForm
+									form={addressForm}
+									onAddressChange={(address) => {
+										setValue("address", address as RecipientAddressData);
+										addressForm.setValue(
+											"address",
+											address as RecipientAddressData
+										);
+									}}
+									isRecipientForm={true}
+								/>
+							</LockedFeature>
+						)}
+					</CardBody>
+				</Card>
 
-				<div className="w-full">
-					<h3 className="text-lg font-semibold mb-6">Additional Notes</h3>
-					<Textarea
-						value={watch("notes") || ""}
-						onChange={(e) => setValue("notes", e.target.value)}
-						label="Notes"
-						placeholder="Add any additional notes"
-						isInvalid={!!errors.notes}
-						errorMessage={errors.notes?.message}
-						variant="bordered"
-						labelPlacement="outside"
-						description="Optional: Add any additional notes about this recipient"
-						className="w-full min-h-[100px]"
-					/>
-				</div>
-			</div>
+				<Card className="w-full">
+					<CardHeader>
+						<h3 className="text-lg font-semibold">Additional Notes</h3>
+					</CardHeader>
+					<CardBody>
+						<Textarea
+							value={watch("notes") || ""}
+							onChange={(e) => setValue("notes", e.target.value)}
+							label="Notes"
+							placeholder="Add any additional notes"
+							isInvalid={!!errors.notes}
+							errorMessage={errors.notes?.message}
+							variant="bordered"
+							labelPlacement="outside"
+							description="Optional: Add any additional notes about this recipient"
+							className="w-full min-h-[100px]"
+						/>
+					</CardBody>
+				</Card>
 
-			<div className="flex justify-end mt-8">
-				<Button
-					type="submit"
-					color="primary"
-					className="bg-purple-500 hover:bg-purple-600"
-				>
-					Save Changes
-				</Button>
+				<div className="flex justify-end">
+					<Button
+						type="submit"
+						color="primary"
+						className="bg-purple-500 hover:bg-purple-600"
+					>
+						Save Changes
+					</Button>
+				</div>
 			</div>
 		</Form>
 	);

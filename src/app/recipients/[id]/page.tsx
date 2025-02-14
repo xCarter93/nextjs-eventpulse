@@ -36,10 +36,10 @@ export default function RecipientPage() {
 				<CardHeader className="px-6">
 					<h1 className="text-2xl font-bold">{recipient.name}</h1>
 				</CardHeader>
-				<CardBody className="px-6">
-					<RecipientMetadataForm recipient={recipient} />
-				</CardBody>
 			</Card>
+			<div className="mt-6 space-y-4">
+				<RecipientMetadataForm recipient={recipient} />
+			</div>
 		</div>
 	);
 }
