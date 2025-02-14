@@ -3,8 +3,7 @@
 import { useParams } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardBody, CardHeader, Skeleton } from "@heroui/react";
 import { format } from "date-fns";
 import { RecipientMetadataForm } from "../../../../src/components/recipients/RecipientMetadataForm";
 import { Id } from "../../../../convex/_generated/dataModel";
@@ -20,13 +19,13 @@ export default function RecipientPage() {
 			<div className="container py-6">
 				<Card>
 					<CardHeader>
-						<CardTitle>
+						<h1 className="text-2xl font-bold">
 							<Skeleton className="h-8 w-48" />
-						</CardTitle>
+						</h1>
 					</CardHeader>
-					<CardContent className="space-y-6">
+					<CardBody>
 						<Skeleton className="h-48 w-full" />
-					</CardContent>
+					</CardBody>
 				</Card>
 			</div>
 		);
@@ -36,20 +35,16 @@ export default function RecipientPage() {
 		<div className="container py-6">
 			<Card>
 				<CardHeader>
-					<CardTitle>{recipient.name}</CardTitle>
+					<h1 className="text-2xl font-bold">{recipient.name}</h1>
 				</CardHeader>
-				<CardContent className="space-y-6">
+				<CardBody className="space-y-6">
 					<div className="grid grid-cols-2 gap-4">
 						<div>
-							<h3 className="text-sm font-medium text-muted-foreground">
-								Email
-							</h3>
+							<h3 className="text-sm font-medium text-default-500">Email</h3>
 							<p className="mt-1">{recipient.email}</p>
 						</div>
 						<div>
-							<h3 className="text-sm font-medium text-muted-foreground">
-								Birthday
-							</h3>
+							<h3 className="text-sm font-medium text-default-500">Birthday</h3>
 							<p className="mt-1">
 								{format(recipient.birthday, "MMMM d, yyyy")}
 							</p>
@@ -62,7 +57,7 @@ export default function RecipientPage() {
 						</h2>
 						<RecipientMetadataForm recipient={recipient} />
 					</div>
-				</CardContent>
+				</CardBody>
 			</Card>
 		</div>
 	);

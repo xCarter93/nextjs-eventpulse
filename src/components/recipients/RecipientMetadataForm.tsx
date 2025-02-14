@@ -8,29 +8,19 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
 import { useEffect } from "react";
-
-import { Button } from "@/components/ui/button";
 import {
-	Form,
-	FormControl,
-	FormField,
-	FormItem,
-	FormLabel,
-	FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { DatePicker } from "@/components/ui/date-picker";
-import {
+	Button,
+	Input,
 	Select,
-	SelectContent,
 	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+	Textarea,
+	Form,
+} from "@heroui/react";
+import { DatePicker } from "@heroui/react";
 import { LockedFeature } from "@/components/premium/LockedFeature";
 import { AddressAutofillForm } from "@/components/address-autofill/AddressAutofillForm";
 import { RecipientAddressData } from "@/app/settings/types";
+import { CalendarDate, getLocalTimeZone } from "@internationalized/date";
 
 const formatPhoneNumber = (value: string) => {
 	// Remove all non-digits
@@ -64,19 +54,36 @@ const addressSchema = z.object({
 });
 
 const formSchema = z.object({
+	name: z.string().min(2, {
+		message: "Name must be at least 2 characters.",
+	}),
+	email: z.string().email({
+		message: "Please enter a valid email address.",
+	}),
+	birthday: z.date({
+		required_error: "Please select a date.",
+	}),
 	relation: z.enum(["friend", "parent", "spouse", "sibling"]).optional(),
 	anniversaryDate: z.date().optional(),
-	notes: z.string().optional(),
-	nickname: z.string().optional(),
-	phoneNumber: z.string().optional(),
+	notes: z.string().default(""),
+	nickname: z.string().default(""),
+	phoneNumber: z.string().default(""),
 	address: addressSchema,
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
+// Create a separate form for address fields to match AddressAutofillForm's expected type
+type AddressFormFields = {
+	address: RecipientAddressData;
+};
+
 interface RecipientMetadataFormProps {
 	recipient: {
 		_id: Id<"recipients">;
+		name: string;
+		email: string;
+		birthday: number;
 		metadata?: {
 			relation?: "friend" | "parent" | "spouse" | "sibling";
 			anniversaryDate?: number;
@@ -94,6 +101,7 @@ export function RecipientMetadataForm({
 	const updateRecipientMetadata = useMutation(
 		api.recipients.updateRecipientMetadata
 	);
+	const updateRecipient = useMutation(api.recipients.updateRecipient);
 	const subscription = useQuery(api.subscriptions.getUserSubscription);
 	const isSubscriptionActive =
 		subscription && new Date(subscription.stripeCurrentPeriodEnd) > new Date();
@@ -111,6 +119,9 @@ export function RecipientMetadataForm({
 	const form = useForm<FormValues>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
+			name: recipient.name,
+			email: recipient.email,
+			birthday: new Date(recipient.birthday),
 			relation: recipient.metadata?.relation,
 			anniversaryDate: recipient.metadata?.anniversaryDate
 				? new Date(recipient.metadata.anniversaryDate)
@@ -122,9 +133,27 @@ export function RecipientMetadataForm({
 		},
 	});
 
+	// Create a separate form for address fields
+	const addressForm = useForm<AddressFormFields>({
+		defaultValues: {
+			address: defaultAddress,
+		},
+	});
+
+	const {
+		handleSubmit,
+		formState: { errors },
+		setValue,
+		watch,
+		reset,
+	} = form;
+
 	// Update form when recipient metadata changes
 	useEffect(() => {
-		form.reset({
+		reset({
+			name: recipient.name,
+			email: recipient.email,
+			birthday: new Date(recipient.birthday),
 			relation: recipient.metadata?.relation,
 			anniversaryDate: recipient.metadata?.anniversaryDate
 				? new Date(recipient.metadata.anniversaryDate)
@@ -142,12 +171,36 @@ export function RecipientMetadataForm({
 				coordinates: recipient.metadata?.address?.coordinates || undefined,
 			},
 		});
-	}, [form, recipient.metadata]);
 
-	const relation = form.watch("relation");
+		// Also reset the address form
+		addressForm.reset({
+			address: {
+				line1: recipient.metadata?.address?.line1 || undefined,
+				line2: recipient.metadata?.address?.line2 || undefined,
+				city: recipient.metadata?.address?.city || undefined,
+				state: recipient.metadata?.address?.state || undefined,
+				postalCode: recipient.metadata?.address?.postalCode || undefined,
+				country: recipient.metadata?.address?.country || undefined,
+				coordinates: recipient.metadata?.address?.coordinates || undefined,
+			},
+		});
+	}, [reset, recipient, addressForm]);
+
+	const relation = watch("relation");
+	const anniversaryDate = watch("anniversaryDate");
+	const birthday = watch("birthday");
 
 	async function onSubmit(data: FormValues) {
 		try {
+			// Update basic recipient info
+			await updateRecipient({
+				id: recipient._id,
+				name: data.name,
+				email: data.email,
+				birthday: data.birthday.getTime(),
+			});
+
+			// Update metadata
 			await updateRecipientMetadata({
 				id: recipient._id,
 				metadata: {
@@ -156,119 +209,191 @@ export function RecipientMetadataForm({
 					notes: data.notes,
 					nickname: data.nickname,
 					phoneNumber: data.phoneNumber,
-					...(isSubscriptionActive ? { address: data.address } : {}),
+					...(isSubscriptionActive
+						? { address: addressForm.getValues().address }
+						: {}),
 				},
 			});
-			toast.success("Recipient metadata updated successfully");
+			toast.success("Recipient updated successfully");
 		} catch {
-			toast.error("Failed to update recipient metadata");
+			toast.error("Failed to update recipient");
 		}
 	}
 
 	return (
-		<Form {...form}>
-			<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-				<div className="grid grid-cols-2 gap-6">
-					<FormField
-						control={form.control}
-						name="relation"
-						render={({ field }) => (
-							<FormItem>
-								<FormLabel>Relationship</FormLabel>
-								<Select
-									onValueChange={field.onChange}
-									defaultValue={field.value}
-								>
-									<FormControl>
-										<SelectTrigger>
-											<SelectValue placeholder="Select relationship" />
-										</SelectTrigger>
-									</FormControl>
-									<SelectContent>
-										<SelectItem value="friend">Friend</SelectItem>
-										<SelectItem value="parent">Parent</SelectItem>
-										<SelectItem value="spouse">Spouse</SelectItem>
-										<SelectItem value="sibling">Sibling</SelectItem>
-									</SelectContent>
-								</Select>
-								<FormMessage />
-							</FormItem>
-						)}
-					/>
-
-					{relation === "spouse" && (
-						<FormField
-							control={form.control}
-							name="anniversaryDate"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Anniversary Date</FormLabel>
-									<FormControl>
-										<DatePicker
-											selected={field.value}
-											onSelect={field.onChange}
-										/>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
+		<Form
+			onSubmit={handleSubmit(onSubmit)}
+			className="space-y-8"
+			validationBehavior="aria"
+		>
+			<div className="space-y-6">
+				<div>
+					<h3 className="text-lg font-semibold mb-4">Basic Information</h3>
+					<div className="grid grid-cols-2 gap-4">
+						<Input
+							value={watch("name") || ""}
+							onChange={(e) => setValue("name", e.target.value)}
+							label="Name"
+							placeholder="John Doe"
+							isInvalid={!!errors.name}
+							errorMessage={errors.name?.message}
+							variant="bordered"
+							labelPlacement="outside"
+							isRequired
 						/>
-					)}
 
-					<FormField
-						control={form.control}
-						name="nickname"
-						render={({ field }) => (
-							<FormItem>
-								<FormLabel>Nickname</FormLabel>
-								<FormControl>
-									<Input placeholder="Enter nickname" {...field} />
-								</FormControl>
-								<FormMessage />
-							</FormItem>
-						)}
-					/>
+						<Input
+							value={watch("email") || ""}
+							onChange={(e) => setValue("email", e.target.value)}
+							label="Email"
+							placeholder="john@example.com"
+							type="email"
+							isInvalid={!!errors.email}
+							errorMessage={errors.email?.message}
+							variant="bordered"
+							labelPlacement="outside"
+							isRequired
+						/>
 
-					<FormField
-						control={form.control}
-						name="phoneNumber"
-						render={({ field }) => (
-							<FormItem>
-								<FormLabel>Phone Number</FormLabel>
-								<FormControl>
-									<Input
-										placeholder="(555) 555-5555"
-										{...field}
-										value={field.value ? formatPhoneNumber(field.value) : ""}
-										onChange={(e) => {
-											// Store only digits in the form state
-											const digits = e.target.value.replace(/\D/g, "");
-											field.onChange(digits);
-										}}
-									/>
-								</FormControl>
-								<FormMessage />
-							</FormItem>
+						<DatePicker
+							label="Birthday"
+							value={
+								birthday
+									? new CalendarDate(
+											birthday.getFullYear(),
+											birthday.getMonth() + 1,
+											birthday.getDate()
+										)
+									: null
+							}
+							onChange={(date) => {
+								if (date) {
+									const jsDate = date.toDate(getLocalTimeZone());
+									setValue("birthday", jsDate);
+								}
+							}}
+							isInvalid={!!errors.birthday}
+							errorMessage={errors.birthday?.message}
+							variant="bordered"
+							labelPlacement="outside"
+							isRequired
+						/>
+
+						<Select
+							label="Relationship"
+							selectedKeys={relation ? [relation] : []}
+							onChange={(e) => {
+								const value = e.target.value as
+									| "friend"
+									| "parent"
+									| "spouse"
+									| "sibling";
+								setValue("relation", value);
+							}}
+							isInvalid={!!errors.relation}
+							errorMessage={errors.relation?.message}
+							variant="bordered"
+							labelPlacement="outside"
+							isRequired
+						>
+							<SelectItem key="friend" value="friend">
+								Friend
+							</SelectItem>
+							<SelectItem key="parent" value="parent">
+								Parent
+							</SelectItem>
+							<SelectItem key="spouse" value="spouse">
+								Spouse
+							</SelectItem>
+							<SelectItem key="sibling" value="sibling">
+								Sibling
+							</SelectItem>
+						</Select>
+
+						{relation === "spouse" && (
+							<DatePicker
+								label="Anniversary Date"
+								value={
+									anniversaryDate
+										? new CalendarDate(
+												anniversaryDate.getFullYear(),
+												anniversaryDate.getMonth() + 1,
+												anniversaryDate.getDate()
+											)
+										: null
+								}
+								onChange={(date) => {
+									if (date) {
+										const jsDate = date.toDate(getLocalTimeZone());
+										setValue("anniversaryDate", jsDate);
+									}
+								}}
+								isInvalid={!!errors.anniversaryDate}
+								errorMessage={errors.anniversaryDate?.message}
+								variant="bordered"
+								labelPlacement="outside"
+								isRequired={relation === "spouse"}
+							/>
 						)}
-					/>
+
+						<Input
+							value={watch("nickname") || ""}
+							onChange={(e) => setValue("nickname", e.target.value)}
+							label="Nickname"
+							placeholder="Enter nickname"
+							isInvalid={!!errors.nickname}
+							errorMessage={errors.nickname?.message}
+							variant="bordered"
+							labelPlacement="outside"
+							description="Optional: Add a nickname for this recipient"
+						/>
+
+						<Input
+							label="Phone Number"
+							placeholder="(555) 555-5555"
+							value={
+								watch("phoneNumber")
+									? formatPhoneNumber(watch("phoneNumber"))
+									: ""
+							}
+							onChange={(e) => {
+								const digits = e.target.value.replace(/\D/g, "");
+								setValue("phoneNumber", digits);
+							}}
+							isInvalid={!!errors.phoneNumber}
+							errorMessage={errors.phoneNumber?.message}
+							variant="bordered"
+							labelPlacement="outside"
+							description="Optional: Add a phone number"
+							pattern="[\d\(\)\-\s]+"
+						/>
+					</div>
 				</div>
 
-				<div className="space-y-4">
-					<h3 className="font-medium">Address Information</h3>
+				<div>
+					<h3 className="text-lg font-semibold mb-4">Address Information</h3>
 					{isSubscriptionActive ? (
 						<AddressAutofillForm
-							form={form}
+							form={addressForm}
 							onAddressChange={(address) => {
-								form.setValue("address", address as RecipientAddressData);
+								setValue("address", address as RecipientAddressData);
+								addressForm.setValue(
+									"address",
+									address as RecipientAddressData
+								);
 							}}
 							isRecipientForm={true}
 						/>
 					) : (
 						<LockedFeature featureDescription="add recipient addresses and view them on a map">
 							<AddressAutofillForm
-								form={form}
+								form={addressForm}
 								onAddressChange={(address) => {
-									form.setValue("address", address as RecipientAddressData);
+									setValue("address", address as RecipientAddressData);
+									addressForm.setValue(
+										"address",
+										address as RecipientAddressData
+									);
 								}}
 								isRecipientForm={true}
 							/>
@@ -276,28 +401,32 @@ export function RecipientMetadataForm({
 					)}
 				</div>
 
-				<FormField
-					control={form.control}
-					name="notes"
-					render={({ field }) => (
-						<FormItem>
-							<FormLabel>Notes</FormLabel>
-							<FormControl>
-								<Textarea
-									placeholder="Add any additional notes"
-									className="min-h-[100px]"
-									{...field}
-								/>
-							</FormControl>
-							<FormMessage />
-						</FormItem>
-					)}
-				/>
-
-				<div className="flex justify-end">
-					<Button type="submit">Save Changes</Button>
+				<div>
+					<h3 className="text-lg font-semibold mb-4">Additional Notes</h3>
+					<Textarea
+						value={watch("notes") || ""}
+						onChange={(e) => setValue("notes", e.target.value)}
+						label="Notes"
+						placeholder="Add any additional notes"
+						className="min-h-[100px]"
+						isInvalid={!!errors.notes}
+						errorMessage={errors.notes?.message}
+						variant="bordered"
+						labelPlacement="outside"
+						description="Optional: Add any additional notes about this recipient"
+					/>
 				</div>
-			</form>
+			</div>
+
+			<div className="flex justify-end">
+				<Button
+					type="submit"
+					color="primary"
+					className="bg-purple-500 hover:bg-purple-600"
+				>
+					Save Changes
+				</Button>
+			</div>
 		</Form>
 	);
 }
