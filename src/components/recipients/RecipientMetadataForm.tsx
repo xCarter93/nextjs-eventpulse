@@ -218,13 +218,13 @@ export function RecipientMetadataForm({
 	return (
 		<Form
 			onSubmit={handleSubmit(onSubmit)}
-			className="w-full max-w-none"
+			className="w-full"
 			validationBehavior="aria"
 		>
-			<div className="space-y-8">
-				<div>
+			<div className="w-full space-y-8">
+				<div className="w-full">
 					<h3 className="text-lg font-semibold mb-6">Basic Information</h3>
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
+					<div className="w-full grid grid-cols-1 md:grid-cols-2 gap-6">
 						<div className="w-full">
 							<Input
 								value={watch("email") || ""}
@@ -237,10 +237,7 @@ export function RecipientMetadataForm({
 								variant="bordered"
 								labelPlacement="outside"
 								isRequired
-								classNames={{
-									input: "w-full",
-									base: "w-full",
-								}}
+								className="w-full"
 							/>
 						</div>
 
@@ -267,9 +264,7 @@ export function RecipientMetadataForm({
 								variant="bordered"
 								labelPlacement="outside"
 								isRequired
-								classNames={{
-									base: "w-full",
-								}}
+								className="w-full"
 							/>
 						</div>
 
@@ -290,10 +285,7 @@ export function RecipientMetadataForm({
 								variant="bordered"
 								labelPlacement="outside"
 								isRequired
-								classNames={{
-									trigger: "w-full",
-									base: "w-full",
-								}}
+								className="w-full"
 							>
 								<SelectItem key="friend" value="friend">
 									Friend
@@ -334,9 +326,7 @@ export function RecipientMetadataForm({
 									variant="bordered"
 									labelPlacement="outside"
 									isRequired={relation === "spouse"}
-									classNames={{
-										base: "w-full",
-									}}
+									className="w-full"
 								/>
 							</div>
 						)}
@@ -352,10 +342,7 @@ export function RecipientMetadataForm({
 								variant="bordered"
 								labelPlacement="outside"
 								description="Optional: Add a nickname for this recipient"
-								classNames={{
-									input: "w-full",
-									base: "w-full",
-								}}
+								className="w-full"
 							/>
 						</div>
 
@@ -378,16 +365,13 @@ export function RecipientMetadataForm({
 								labelPlacement="outside"
 								description="Optional: Add a phone number"
 								pattern="[\d\(\)\-\s]+"
-								classNames={{
-									input: "w-full",
-									base: "w-full",
-								}}
+								className="w-full"
 							/>
 						</div>
 					</div>
 				</div>
 
-				<div>
+				<div className="w-full">
 					<h3 className="text-lg font-semibold mb-6">Address Information</h3>
 					{isSubscriptionActive ? (
 						<AddressAutofillForm
@@ -418,23 +402,19 @@ export function RecipientMetadataForm({
 					)}
 				</div>
 
-				<div>
+				<div className="w-full">
 					<h3 className="text-lg font-semibold mb-6">Additional Notes</h3>
 					<Textarea
 						value={watch("notes") || ""}
 						onChange={(e) => setValue("notes", e.target.value)}
 						label="Notes"
 						placeholder="Add any additional notes"
-						className="w-full"
 						isInvalid={!!errors.notes}
 						errorMessage={errors.notes?.message}
 						variant="bordered"
 						labelPlacement="outside"
 						description="Optional: Add any additional notes about this recipient"
-						classNames={{
-							input: "w-full min-h-[100px]",
-							base: "w-full",
-						}}
+						className="w-full min-h-[100px]"
 					/>
 				</div>
 			</div>
