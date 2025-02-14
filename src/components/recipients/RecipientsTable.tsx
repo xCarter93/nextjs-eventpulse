@@ -256,7 +256,15 @@ export function RecipientsTable() {
 				onSortChange={setSortDescriptor}
 				bottomContent={
 					<div className="flex justify-center">
-						<Pagination total={pages} page={page} onChange={setPage} />
+						<Pagination
+							isCompact
+							showControls
+							showShadow
+							color="primary"
+							total={pages}
+							page={page}
+							onChange={setPage}
+						/>
 					</div>
 				}
 				className="recipients-table"
