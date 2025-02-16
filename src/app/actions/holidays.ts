@@ -1,12 +1,21 @@
 "use server";
 
 import { env } from "@/env";
+import {
+	HOLIDAY_CALENDAR_MAP,
+	CountryCode,
+} from "@/utils/holidayCalendarConfig";
 
-interface Holiday {
-	name: string;
-	date: string;
-	type: string;
-	country: string;
+interface GoogleCalendarEvent {
+	summary: string;
+	description: string;
+	start: {
+		date: string;
+	};
+	end: {
+		date: string;
+	};
+	status: string;
 }
 
 export async function getPublicHolidays(
@@ -16,15 +25,26 @@ export async function getPublicHolidays(
 	Array<{ date: string; name: string; localName: string; type: string }>
 > {
 	try {
-		const apiKey = env.API_NINJA_API_KEY;
+		const apiKey = env.GOOGLE_API_KEY;
 		if (!apiKey) {
-			throw new Error("API key not found");
+			throw new Error("Google API key not found");
 		}
 
-		const url = `https://api.api-ninjas.com/v1/holidays?country=${countryCode}&year=${year}&type=`;
+		if (!(countryCode in HOLIDAY_CALENDAR_MAP)) {
+			throw new Error(`Unsupported country code: ${countryCode}`);
+		}
+
+		const calendarId = HOLIDAY_CALENDAR_MAP[countryCode as CountryCode];
+		const encodedCalendarId = encodeURIComponent(calendarId);
+
+		// Ensure we get the full year of holidays
+		const timeMin = `${year}-01-01T00:00:00Z`;
+		const timeMax = `${year}-12-31T23:59:59Z`;
+
+		const url = `https://www.googleapis.com/calendar/v3/calendars/${encodedCalendarId}/events?key=${apiKey}&timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true`;
+
 		const response = await fetch(url, {
 			headers: {
-				"X-Api-Key": apiKey,
 				"Content-Type": "application/json",
 				Accept: "application/json",
 			},
@@ -32,24 +52,31 @@ export async function getPublicHolidays(
 		});
 
 		if (!response.ok) {
-			throw new Error("Failed to fetch holidays");
+			const errorData = await response.json().catch(() => null);
+			throw new Error(
+				`Failed to fetch holidays: ${response.status} ${response.statusText}${
+					errorData ? ` - ${JSON.stringify(errorData)}` : ""
+				}`
+			);
 		}
 
-		const holidays: Holiday[] = await response.json();
+		const data = await response.json();
+		const events: GoogleCalendarEvent[] = data.items || [];
 
-		// Filter holidays to include observances and any type ending with "_holiday"
-		return holidays
-			.filter(
-				(holiday) =>
-					holiday.type.toLowerCase() === "observance" ||
-					holiday.type.toLowerCase().endsWith("_holiday")
-			)
-			.map((holiday) => ({
-				date: holiday.date,
-				name: holiday.name,
-				localName: holiday.name,
-				type: holiday.type,
-			}));
+		// Map the events to the expected format and ensure they're sorted by date
+		return events
+			.filter((event) => event.status === "confirmed" && event.start?.date)
+			.map((event) => ({
+				date: event.start.date, // Already in YYYY-MM-DD format
+				name: event.summary,
+				localName: event.summary,
+				type: event.description?.toLowerCase().includes("public")
+					? "public_holiday"
+					: event.description?.toLowerCase().includes("observance")
+						? "observance"
+						: "holiday",
+			}))
+			.sort((a, b) => a.date.localeCompare(b.date));
 	} catch (error) {
 		console.error("Error fetching holidays:", error);
 		return [];

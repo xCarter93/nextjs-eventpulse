@@ -3,7 +3,6 @@ import { z } from "zod";
 
 export const env = createEnv({
 	server: {
-		API_NINJA_API_KEY: z.string().min(1),
 		CONVEX_DEPLOYMENT: z.string().min(1),
 		CLERK_SECRET_KEY: z.string().min(1),
 		CLERK_WEBHOOK_SECRET: z.string().min(1),
@@ -14,6 +13,7 @@ export const env = createEnv({
 		GOOGLE_OAUTH_CLIENT_ID: z.string().min(1),
 		GOOGLE_OAUTH_CLIENT_SECRET: z.string().min(1),
 		GOOGLE_OAUTH_REDIRECT_URI: z.string().min(1),
+		GOOGLE_API_KEY: z.string().min(1),
 	},
 	client: {
 		NEXT_PUBLIC_CONVEX_URL: z.string().min(1),
