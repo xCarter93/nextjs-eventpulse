@@ -143,7 +143,6 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 						<div ref={toRef} className="z-10 rounded-full bg-background">
 							<AvatarGroup
 								max={3}
-								total={email.recipients.length}
 								size="lg"
 								radius="full"
 								color={getAvatarColor()}
