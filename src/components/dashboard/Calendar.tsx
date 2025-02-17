@@ -450,13 +450,21 @@ export function Calendar() {
 																{email.isAutomated
 																	? "Automated Email"
 																	: "Custom Email"}{" "}
-																to {email.recipient.name}
+																to{" "}
+																{email.recipients.map((recipient, i) => (
+																	<span key={recipient.email}>
+																		{i > 0 && ", "}
+																		{recipient.name}
+																	</span>
+																))}
 															</span>
 														</div>
 														{email.subject && (
-															<span className="text-xs text-muted-foreground pl-4">
-																{email.subject}
-															</span>
+															<div className="flex flex-col gap-1">
+																<span className="text-xs text-muted-foreground pl-4">
+																	{email.subject}
+																</span>
+															</div>
 														)}
 													</div>
 												))}
