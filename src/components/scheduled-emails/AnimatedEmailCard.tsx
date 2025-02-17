@@ -2,7 +2,14 @@
 
 import { useRef } from "react";
 import { AnimatedBeam } from "./AnimatedBeams";
-import { Avatar, AvatarGroup, Badge, Card, CardBody } from "@heroui/react";
+import {
+	Avatar,
+	AvatarGroup,
+	Badge,
+	Card,
+	CardBody,
+	Tooltip,
+} from "@heroui/react";
 import { formatDistanceToNow } from "date-fns";
 import { Trash2, CheckCircle2, XCircle, Mail, UserRound } from "lucide-react";
 import { Button } from "@heroui/react";
@@ -63,6 +70,29 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 		}
 	};
 
+	const renderUserAvatar = () => (
+		<Avatar
+			name={user?.name || ""}
+			src={user?.image}
+			radius="full"
+			showFallback
+			isBordered
+			color={getAvatarColor()}
+			className="w-12 h-12"
+			fallback={
+				<UserRound
+					className="animate-pulse w-6 h-6 text-default-500"
+					size={24}
+				/>
+			}
+			classNames={{
+				base: "w-12 h-12",
+				img: "object-cover opacity-100",
+				fallback: "w-12 h-12",
+			}}
+		/>
+	);
+
 	return (
 		<Card
 			className="w-full hover:shadow-lg transition-shadow duration-200"
@@ -86,57 +116,21 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 							ref={fromRef}
 							className="relative z-10 rounded-full bg-background"
 						>
-							{status === "pending" ? (
-								<Badge
-									isOneChar
-									color="warning"
-									content={<Mail size={12} />}
-									placement="top-right"
-									className="[&>span]:bg-orange-500"
-								>
-									<Avatar
-										name={user?.name || ""}
-										src={user?.image}
-										radius="full"
-										showFallback
-										isBordered
-										color={getAvatarColor()}
-										className="w-12 h-12"
-										fallback={
-											<UserRound
-												className="animate-pulse w-6 h-6 text-default-500"
-												size={24}
-											/>
-										}
-										classNames={{
-											base: "w-12 h-12",
-											img: "object-cover opacity-100",
-											fallback: "w-12 h-12",
-										}}
-									/>
-								</Badge>
-							) : (
-								<Avatar
-									name={user?.name || ""}
-									src={user?.image}
-									radius="full"
-									showFallback
-									isBordered
-									color={getAvatarColor()}
-									className="w-12 h-12"
-									fallback={
-										<UserRound
-											className="animate-pulse w-6 h-6 text-default-500"
-											size={24}
-										/>
-									}
-									classNames={{
-										base: "w-12 h-12",
-										img: "object-cover opacity-100",
-										fallback: "w-12 h-12",
-									}}
-								/>
-							)}
+							<Tooltip content={user?.email} delay={0} closeDelay={0}>
+								{status === "pending" ? (
+									<Badge
+										isOneChar
+										color="warning"
+										content={<Mail size={12} />}
+										placement="top-right"
+										className="[&>span]:bg-orange-500"
+									>
+										{renderUserAvatar()}
+									</Badge>
+								) : (
+									renderUserAvatar()
+								)}
+							</Tooltip>
 						</div>
 
 						{/* To (Recipients) Avatar Group */}
@@ -149,25 +143,31 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 								isBordered
 							>
 								{email.recipients.map((recipient) => (
-									<Avatar
+									<Tooltip
 										key={recipient.email}
-										name={recipient.name}
-										radius="full"
-										showFallback
-										isBordered
-										color={getAvatarColor()}
-										fallback={
-											<UserRound
-												className="animate-pulse w-6 h-6 text-default-500"
-												size={24}
-											/>
-										}
-										classNames={{
-											base: "w-12 h-12",
-											img: "object-cover opacity-100",
-											fallback: "w-12 h-12",
-										}}
-									/>
+										content={recipient.email}
+										delay={0}
+										closeDelay={0}
+									>
+										<Avatar
+											name={recipient.name}
+											radius="full"
+											showFallback
+											isBordered
+											color={getAvatarColor()}
+											fallback={
+												<UserRound
+													className="animate-pulse w-6 h-6 text-default-500"
+													size={24}
+												/>
+											}
+											classNames={{
+												base: "w-12 h-12",
+												img: "object-cover opacity-100",
+												fallback: "w-12 h-12",
+											}}
+										/>
+									</Tooltip>
 								))}
 							</AvatarGroup>
 						</div>
