@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import { AnimatedBeam } from "./AnimatedBeams";
-import { Avatar, Badge, Card, CardBody } from "@heroui/react";
+import { Avatar, AvatarGroup, Badge, Card, CardBody } from "@heroui/react";
 import { formatDistanceToNow } from "date-fns";
 import { Trash2, CheckCircle2, XCircle, Mail, UserRound } from "lucide-react";
 import { Button } from "@heroui/react";
@@ -16,12 +16,11 @@ interface ScheduledEmail {
 	scheduledTime: number;
 	completedTime?: number;
 	status: "pending" | "inProgress" | "success" | "failed" | "canceled";
-	recipient: {
+	recipients: Array<{
 		name: string;
 		email: string;
-	};
-	customMessage?: string;
-	subject?: string;
+	}>;
+	subject: string;
 	isAutomated: boolean;
 	error?: string;
 }
@@ -72,9 +71,7 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 			<CardBody className="relative p-4">
 				{/* Email Metadata (Top) */}
 				<div className="text-center mb-3">
-					<h3 className="text-sm font-medium">
-						{email.subject || "Birthday Greeting"}
-					</h3>
+					<h3 className="text-sm font-medium">{email.subject}</h3>
 					<p className="text-xs text-muted-foreground">
 						Scheduled for:{" "}
 						{formatDistanceToNow(email.scheduledTime, { addSuffix: true })}
@@ -142,27 +139,38 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 							)}
 						</div>
 
-						{/* To (Recipient) Avatar */}
+						{/* To (Recipients) Avatar Group */}
 						<div ref={toRef} className="z-10 rounded-full bg-background">
-							<Avatar
-								name={email.recipient.name}
+							<AvatarGroup
+								max={3}
+								total={email.recipients.length}
+								size="lg"
 								radius="full"
-								showFallback
-								isBordered
 								color={getAvatarColor()}
-								className="w-12 h-12"
-								fallback={
-									<UserRound
-										className="animate-pulse w-6 h-6 text-default-500"
-										size={24}
+								isBordered
+							>
+								{email.recipients.map((recipient) => (
+									<Avatar
+										key={recipient.email}
+										name={recipient.name}
+										radius="full"
+										showFallback
+										isBordered
+										color={getAvatarColor()}
+										fallback={
+											<UserRound
+												className="animate-pulse w-6 h-6 text-default-500"
+												size={24}
+											/>
+										}
+										classNames={{
+											base: "w-12 h-12",
+											img: "object-cover opacity-100",
+											fallback: "w-12 h-12",
+										}}
 									/>
-								}
-								classNames={{
-									base: "w-12 h-12",
-									img: "object-cover opacity-100",
-									fallback: "w-12 h-12",
-								}}
-							/>
+								))}
+							</AvatarGroup>
 						</div>
 					</div>
 
