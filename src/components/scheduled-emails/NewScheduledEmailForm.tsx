@@ -156,7 +156,7 @@ export const NewScheduledEmailForm = forwardRef<
 	}
 
 	return (
-		<div className="grid grid-cols-[40%_60%] gap-8">
+		<div className="grid lg:grid-cols-[40%_60%] grid-cols-1 gap-8">
 			<div className="space-y-8">
 				<Breadcrumbs
 					currentStep={currentStep}
@@ -207,7 +207,7 @@ export const NewScheduledEmailForm = forwardRef<
 					)}
 				</div>
 			</div>
-			<div className="h-[calc(100vh-12rem)] sticky top-8">
+			<div className="lg:h-[calc(100vh-12rem)] lg:sticky lg:top-8">
 				{currentStep === "color-scheme" ? (
 					<EmailBuilder
 						colorScheme={formData.colorScheme}
