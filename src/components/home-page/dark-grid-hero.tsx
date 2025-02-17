@@ -2,10 +2,50 @@ import React, { useEffect, useState } from "react";
 import { AnimationProps, motion } from "framer-motion";
 import { ArrowRightIcon } from "lucide-react";
 import Link from "next/link";
+import { World } from "./globe";
+
+const demoData = [
+	{
+		order: 1,
+		startLat: 40.7128,
+		startLng: -74.006,
+		endLat: 51.5074,
+		endLng: -0.1278,
+		arcAlt: 0.3,
+		color: "#9333ea",
+	},
+	{
+		order: 2,
+		startLat: 35.6762,
+		startLng: 139.6503,
+		endLat: -33.8688,
+		endLng: 151.2093,
+		arcAlt: 0.4,
+		color: "#9333ea",
+	},
+	{
+		order: 3,
+		startLat: 48.8566,
+		startLng: 2.3522,
+		endLat: -1.2921,
+		endLng: 36.8219,
+		arcAlt: 0.3,
+		color: "#9333ea",
+	},
+	{
+		order: 4,
+		startLat: 55.7558,
+		startLng: 37.6173,
+		endLat: 31.2304,
+		endLng: 121.4737,
+		arcAlt: 0.5,
+		color: "#9333ea",
+	},
+];
 
 export const DarkGridHero = () => {
 	return (
-		<section className="relative overflow-hidden bg-background">
+		<section className="relative overflow-hidden bg-background min-h-screen">
 			<Content />
 			<Beams />
 			<GradientGrid />
@@ -14,77 +54,77 @@ export const DarkGridHero = () => {
 };
 
 const Content = () => {
+	const [isGlobeReady, setIsGlobeReady] = useState(false);
+
+	useEffect(() => {
+		// Small delay to ensure proper initialization
+		const timer = setTimeout(() => setIsGlobeReady(true), 100);
+		return () => clearTimeout(timer);
+	}, []);
+
 	return (
-		<div className="relative z-20 mx-auto flex max-w-6xl flex-col items-center justify-center px-4 py-24 md:px-8 md:py-36">
+		<div className="relative z-20 mx-auto max-w-7xl px-4 py-24 md:px-8 md:py-36">
+			<div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+				<div className="flex flex-col items-start">
+					<motion.div
+						initial={{ y: 25, opacity: 0 }}
+						animate={{ y: 0, opacity: 1 }}
+						transition={{ duration: 1.25, ease: "easeInOut" }}
+					>
+						<GlowingChip>✨ Create magical moments</GlowingChip>
+					</motion.div>
+					<motion.h1
+						initial={{ y: 25, opacity: 0 }}
+						animate={{ y: 0, opacity: 1 }}
+						transition={{ duration: 1.25, delay: 0.25, ease: "easeInOut" }}
+						className="mb-3 text-left text-3xl font-bold leading-tight text-foreground sm:text-4xl sm:leading-tight md:text-5xl md:leading-tight lg:text-7xl lg:leading-tight"
+					>
+						Create Magical Celebration Moments
+					</motion.h1>
+					<motion.p
+						initial={{ y: 25, opacity: 0 }}
+						animate={{ y: 0, opacity: 1 }}
+						transition={{ duration: 1.25, delay: 0.5, ease: "easeInOut" }}
+						className="mb-9 max-w-2xl text-left text-base leading-relaxed text-muted-foreground sm:text-lg md:text-lg md:leading-relaxed"
+					>
+						Design and send beautiful animated greetings that will make your
+						loved ones smile.
+					</motion.p>
+				</div>
+				<motion.div
+					initial={{ opacity: 0, scale: 0.95 }}
+					animate={{ opacity: 1, scale: 1 }}
+					transition={{ duration: 1.25, delay: 0.75, ease: "easeInOut" }}
+					className="relative h-[500px] w-full"
+				>
+					{isGlobeReady && (
+						<World
+							data={demoData}
+							globeConfig={{
+								globeColor: "#1d072e",
+								showAtmosphere: true,
+								atmosphereColor: "#ffffff",
+								atmosphereAltitude: 0.15,
+								emissive: "#000000",
+								emissiveIntensity: 0.1,
+								shininess: 0.9,
+								polygonColor: "rgba(255,255,255,0.7)",
+								ambientLight: "#ffffff",
+								directionalLeftLight: "#ffffff",
+								directionalTopLight: "#9333ea",
+								pointLight: "#ffffff",
+								autoRotate: true,
+								autoRotateSpeed: 0.5,
+							}}
+						/>
+					)}
+				</motion.div>
+			</div>
 			<motion.div
-				initial={{
-					y: 25,
-					opacity: 0,
-				}}
-				animate={{
-					y: 0,
-					opacity: 1,
-				}}
-				transition={{
-					duration: 1.25,
-					ease: "easeInOut",
-				}}
-				className="relative"
-			>
-				<GlowingChip>✨ Create magical moments</GlowingChip>
-			</motion.div>
-			<motion.h1
-				initial={{
-					y: 25,
-					opacity: 0,
-				}}
-				animate={{
-					y: 0,
-					opacity: 1,
-				}}
-				transition={{
-					duration: 1.25,
-					delay: 0.25,
-					ease: "easeInOut",
-				}}
-				className="mb-3 text-center text-3xl font-bold leading-tight text-foreground sm:text-4xl sm:leading-tight md:text-5xl md:leading-tight lg:text-7xl lg:leading-tight"
-			>
-				Create Magical Celebration Moments
-			</motion.h1>
-			<motion.p
-				initial={{
-					y: 25,
-					opacity: 0,
-				}}
-				animate={{
-					y: 0,
-					opacity: 1,
-				}}
-				transition={{
-					duration: 1.25,
-					delay: 0.5,
-					ease: "easeInOut",
-				}}
-				className="mb-9 max-w-2xl text-center text-base leading-relaxed text-muted-foreground sm:text-lg md:text-lg md:leading-relaxed"
-			>
-				Design and send beautiful animated greetings that will make your loved
-				ones smile.
-			</motion.p>
-			<motion.div
-				initial={{
-					y: 25,
-					opacity: 0,
-				}}
-				animate={{
-					y: 0,
-					opacity: 1,
-				}}
-				transition={{
-					duration: 1.25,
-					delay: 0.75,
-					ease: "easeInOut",
-				}}
-				className="flex flex-col items-center gap-6 sm:flex-row"
+				initial={{ y: 25, opacity: 0 }}
+				animate={{ y: 0, opacity: 1 }}
+				transition={{ duration: 1.25, delay: 1, ease: "easeInOut" }}
+				className="flex justify-center mt-12"
 			>
 				<Link
 					href="/sign-up"

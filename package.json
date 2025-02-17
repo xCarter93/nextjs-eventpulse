@@ -40,6 +40,8 @@
 		"@radix-ui/react-tooltip": "^1.1.6",
 		"@react-email/components": "^0.0.32",
 		"@react-email/render": "^1.0.4",
+		"@react-three/drei": "^9.121.5",
+		"@react-three/fiber": "^9.0.0-alpha.8",
 		"@t3-oss/env-nextjs": "^0.12.0",
 		"@types/mapbox__mapbox-gl-geocoder": "^5.0.0",
 		"@types/mapbox-gl": "^3.4.1",
@@ -72,6 +74,8 @@
 		"svix": "^1.45.1",
 		"tailwind-merge": "^2.6.0",
 		"tailwindcss-animate": "^1.0.7",
+		"three": "^0.173.0",
+		"three-globe": "^2.41.12",
 		"zod": "^3.24.1"
 	},
 	"devDependencies": {
