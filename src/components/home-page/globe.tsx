@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import type { RefObject } from "react";
-import { Color, Scene, Fog, PerspectiveCamera, Vector3 } from "three";
+import { Color, Scene, Fog, Vector3 } from "three";
 import ThreeGlobe from "three-globe";
 import { useThree, Canvas, extend } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
@@ -18,8 +18,7 @@ declare module "@react-three/fiber" {
 extend({ ThreeGlobe });
 
 const RING_PROPAGATION_SPEED = 3;
-const aspect = 1.2;
-const cameraZ = 300;
+const cameraZ = 200;
 
 type Position = {
 	order: number;
@@ -157,6 +156,7 @@ export function Globe({ globeConfig, data }: WorldProps) {
 	const startAnimation = useCallback(() => {
 		if (!globeRef.current || !globeData) return;
 
+		// Configure arcs first
 		globeRef.current
 			.arcsData(data)
 			.arcStartLat((d) => (d as { startLat: number }).startLat * 1)
@@ -175,15 +175,17 @@ export function Globe({ globeConfig, data }: WorldProps) {
 			.arcDashGap(15)
 			.arcDashAnimateTime(() => defaultProps.arcTime);
 
+		// Configure points to be nearly invisible
 		globeRef.current
-			.pointsData(data)
-			.pointColor((e) => (e as { color: string }).color)
-			.pointsMerge(true)
-			.pointAltitude(0.0)
-			.pointRadius(2);
+			.pointsData([])
+			.pointColor(() => "rgba(255,255,255,0.05)")
+			.pointAltitude(0)
+			.pointRadius(0.1)
+			.pointsMerge(true);
 
+		// Configure rings with animation
 		globeRef.current
-			.ringsData([])
+			.ringsData(globeData)
 			.ringColor(
 				(e: unknown) => (t: number) =>
 					(e as { color: (t: number) => string }).color(t)
@@ -251,12 +253,52 @@ export function WebGLRendererConfig() {
 	return null;
 }
 
+function GlobeCamera() {
+	const { size } = useThree();
+	const aspect = useMemo(
+		() => Math.min(size.width / size.height, 1.2),
+		[size.width, size.height]
+	);
+
+	return (
+		<perspectiveCamera
+			args={[45, aspect, 180, 1800]}
+			position={[0, 0, cameraZ]}
+		/>
+	);
+}
+
 export function World(props: WorldProps) {
 	const { globeConfig } = props;
 	const scene = new Scene();
 	scene.fog = new Fog(0xffffff, 400, 2000);
+
 	return (
-		<Canvas scene={scene} camera={new PerspectiveCamera(50, aspect, 180, 1800)}>
+		<Canvas
+			scene={scene}
+			style={{
+				height: "100%",
+				width: "100%",
+				position: "absolute",
+				top: 0,
+				left: 0,
+				right: 0,
+				bottom: 0,
+				contain: "layout size paint",
+				willChange: "transform",
+				transformStyle: "preserve-3d",
+				isolation: "isolate",
+			}}
+			gl={{
+				antialias: true,
+				alpha: true,
+				preserveDrawingBuffer: true,
+			}}
+			resize={{
+				scroll: false,
+			}}
+		>
+			<GlobeCamera />
 			<WebGLRendererConfig />
 			<ambientLight color={globeConfig.ambientLight} intensity={0.6} />
 			<directionalLight

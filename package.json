@@ -76,6 +76,7 @@
 		"tailwindcss-animate": "^1.0.7",
 		"three": "^0.173.0",
 		"three-globe": "^2.41.12",
+		"three-mesh-bvh": "^0.8.0",
 		"zod": "^3.24.1"
 	},
 	"devDependencies": {

@@ -2,44 +2,91 @@ import React, { useEffect, useState } from "react";
 import { AnimationProps, motion } from "framer-motion";
 import { ArrowRightIcon } from "lucide-react";
 import Link from "next/link";
-import { World } from "./globe";
+import dynamic from "next/dynamic";
+
+const World = dynamic(() => import("./globe").then((m) => m.World), {
+	ssr: false,
+});
+
+const colors = ["#9333ea", "#a855f7", "#7c3aed"];
+
+const globeConfig = {
+	pointSize: 4,
+	globeColor: "#206797",
+	showAtmosphere: true,
+	atmosphereColor: "#FFFFFF",
+	atmosphereAltitude: 0.15,
+	emissive: "#000000",
+	emissiveIntensity: 0.1,
+	shininess: 0.9,
+	polygonColor: "rgba(255,255,255,0.7)",
+	ambientLight: "#ffffff",
+	directionalLeftLight: "#ffffff",
+	directionalTopLight: "#9333ea",
+	pointLight: "#ffffff",
+	arcTime: 1000,
+	arcLength: 0.9,
+	rings: 1,
+	maxRings: 3,
+	initialPosition: { lat: 22.3193, lng: 114.1694 },
+	autoRotate: true,
+	autoRotateSpeed: 0.5,
+};
 
 const demoData = [
 	{
 		order: 1,
-		startLat: 40.7128,
-		startLng: -74.006,
-		endLat: 51.5074,
-		endLng: -0.1278,
-		arcAlt: 0.3,
-		color: "#9333ea",
+		startLat: -19.885592,
+		startLng: -43.951191,
+		endLat: -22.9068,
+		endLng: -43.1729,
+		arcAlt: 0.1,
+		color: colors[Math.floor(Math.random() * colors.length)],
 	},
 	{
 		order: 2,
-		startLat: 35.6762,
-		startLng: 139.6503,
-		endLat: -33.8688,
-		endLng: 151.2093,
-		arcAlt: 0.4,
-		color: "#9333ea",
+		startLat: 28.6139,
+		startLng: 77.209,
+		endLat: 3.139,
+		endLng: 101.6869,
+		arcAlt: 0.2,
+		color: colors[Math.floor(Math.random() * colors.length)],
 	},
 	{
 		order: 3,
-		startLat: 48.8566,
-		startLng: 2.3522,
-		endLat: -1.2921,
-		endLng: 36.8219,
+		startLat: 51.5072,
+		startLng: -0.1276,
+		endLat: 3.139,
+		endLng: 101.6869,
 		arcAlt: 0.3,
-		color: "#9333ea",
+		color: colors[Math.floor(Math.random() * colors.length)],
 	},
 	{
 		order: 4,
-		startLat: 55.7558,
-		startLng: 37.6173,
-		endLat: 31.2304,
-		endLng: 121.4737,
-		arcAlt: 0.5,
-		color: "#9333ea",
+		startLat: -33.8688,
+		startLng: 151.2093,
+		endLat: 22.3193,
+		endLng: 114.1694,
+		arcAlt: 0.3,
+		color: colors[Math.floor(Math.random() * colors.length)],
+	},
+	{
+		order: 5,
+		startLat: 21.3099,
+		startLng: -157.8581,
+		endLat: 40.7128,
+		endLng: -74.006,
+		arcAlt: 0.3,
+		color: colors[Math.floor(Math.random() * colors.length)],
+	},
+	{
+		order: 6,
+		startLat: -6.2088,
+		startLng: 106.8456,
+		endLat: 51.5072,
+		endLng: -0.1276,
+		arcAlt: 0.3,
+		color: colors[Math.floor(Math.random() * colors.length)],
 	},
 ];
 
@@ -54,11 +101,11 @@ export const DarkGridHero = () => {
 };
 
 const Content = () => {
-	const [isGlobeReady, setIsGlobeReady] = useState(false);
+	const [mounted, setMounted] = useState(false);
 
 	useEffect(() => {
-		// Small delay to ensure proper initialization
-		const timer = setTimeout(() => setIsGlobeReady(true), 100);
+		// Wait for component to be mounted and give time for Three.js initialization
+		const timer = setTimeout(() => setMounted(true), 500);
 		return () => clearTimeout(timer);
 	}, []);
 
@@ -95,29 +142,41 @@ const Content = () => {
 					initial={{ opacity: 0, scale: 0.95 }}
 					animate={{ opacity: 1, scale: 1 }}
 					transition={{ duration: 1.25, delay: 0.75, ease: "easeInOut" }}
-					className="relative h-[500px] w-full"
+					className="relative lg:h-[600px] h-[400px] w-full"
+					style={{
+						contain: "layout size paint",
+						position: "relative",
+						isolation: "isolate",
+						perspective: "1000px",
+						perspectiveOrigin: "50% 50%",
+						willChange: "transform",
+						transformStyle: "preserve-3d",
+						height: "min(600px, 70vh)",
+						minHeight: "400px",
+					}}
 				>
-					{isGlobeReady && (
-						<World
-							data={demoData}
-							globeConfig={{
-								globeColor: "#1d072e",
-								showAtmosphere: true,
-								atmosphereColor: "#ffffff",
-								atmosphereAltitude: 0.15,
-								emissive: "#000000",
-								emissiveIntensity: 0.1,
-								shininess: 0.9,
-								polygonColor: "rgba(255,255,255,0.7)",
-								ambientLight: "#ffffff",
-								directionalLeftLight: "#ffffff",
-								directionalTopLight: "#9333ea",
-								pointLight: "#ffffff",
-								autoRotate: true,
-								autoRotateSpeed: 0.5,
-							}}
-						/>
-					)}
+					<div
+						className="absolute inset-0"
+						style={{
+							transform: "translateZ(0)",
+							backfaceVisibility: "hidden",
+							contain: "layout size paint",
+							transformStyle: "preserve-3d",
+						}}
+					>
+						{mounted && (
+							<World
+								data={demoData}
+								globeConfig={{
+									...globeConfig,
+									pointSize:
+										typeof window !== "undefined" && window.innerWidth < 1024
+											? 2
+											: 4,
+								}}
+							/>
+						)}
+					</div>
 				</motion.div>
 			</div>
 			<motion.div
