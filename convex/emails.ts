@@ -28,8 +28,8 @@ function getStorageIdFromUrl(url: string): Id<"_storage"> | null {
 
 export const sendScheduledEmail = internalAction({
 	args: {
-		recipientId: v.id("recipients"),
-		to: v.string(),
+		recipientIds: v.array(v.id("recipients")),
+		to: v.array(v.string()),
 		subject: v.string(),
 		components: v.array(
 			v.union(

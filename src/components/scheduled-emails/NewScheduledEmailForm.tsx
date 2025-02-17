@@ -99,23 +99,19 @@ export const NewScheduledEmailForm = forwardRef<
 			// Validate entire form data
 			const validatedData = scheduledEmailFormSchema.parse(formData);
 
-			// Schedule an email for each recipient
-			await Promise.all(
-				validatedData.recipients.map(async (recipientId) => {
-					await scheduleEmail({
-						recipientId,
-						scheduledDate: new Date(validatedData.scheduledDate).getTime(),
-						subject: validatedData.subject,
-						components: validatedData.components,
-						colorScheme: validatedData.colorScheme,
-					});
-				})
-			);
+			// Schedule one email for all recipients
+			await scheduleEmail({
+				recipientIds: validatedData.recipients,
+				scheduledDate: new Date(validatedData.scheduledDate).getTime(),
+				subject: validatedData.subject,
+				components: validatedData.components,
+				colorScheme: validatedData.colorScheme,
+			});
 
-			toast.success("Emails scheduled successfully");
+			toast.success("Email scheduled successfully");
 			router.push("/scheduled-emails");
 		} catch (error) {
-			console.error("Failed to schedule emails:", error);
+			console.error("Failed to schedule email:", error);
 			if (error instanceof z.ZodError) {
 				// If validation fails, show error and navigate to the appropriate step
 				const firstError = error.errors[0];
@@ -143,7 +139,7 @@ export const NewScheduledEmailForm = forwardRef<
 					toast.error("Please fill in all required fields");
 				}
 			} else {
-				toast.error("Failed to schedule emails");
+				toast.error("Failed to schedule email");
 			}
 		} finally {
 			setIsSubmitting(false);

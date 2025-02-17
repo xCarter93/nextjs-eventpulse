@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { mutation, query, internalMutation } from "./_generated/server";
 import { ConvexError } from "convex/values";
 import { internal } from "./_generated/api";
-import { Doc, Id } from "./_generated/dataModel";
+import { Id } from "./_generated/dataModel";
 import { canScheduleForDate } from "../src/lib/permissions";
 import { api } from "./_generated/api";
 import {
@@ -12,7 +12,7 @@ import {
 
 export const scheduleCustomEmail = mutation({
 	args: {
-		recipientId: v.id("recipients"),
+		recipientIds: v.array(v.id("recipients")),
 		scheduledDate: v.number(),
 		subject: v.string(),
 		components: v.array(
@@ -72,7 +72,7 @@ export const scheduleCustomEmail = mutation({
 			throw new ConvexError("User email is required");
 		}
 
-		// Verify user has access to this recipient
+		// Verify user has access to all recipients
 		const user = await ctx.db
 			.query("users")
 			.withIndex("by_tokenIdentifier", (q) =>
@@ -96,10 +96,18 @@ export const scheduleCustomEmail = mutation({
 			);
 		}
 
-		const recipient = await ctx.db.get(args.recipientId);
-		if (!recipient || (recipient as Doc<"recipients">).userId !== user._id) {
-			throw new ConvexError("Recipient not found or access denied");
-		}
+		// Verify access to all recipients and collect their emails
+		const recipients = await Promise.all(
+			args.recipientIds.map(async (recipientId) => {
+				const recipient = await ctx.db.get(recipientId);
+				if (!recipient || recipient.userId !== user._id) {
+					throw new ConvexError(
+						`Recipient not found or access denied: ${recipientId}`
+					);
+				}
+				return recipient;
+			})
+		);
 
 		// Validate image URLs in components
 		const imageComponents = args.components.filter(
@@ -115,14 +123,14 @@ export const scheduleCustomEmail = mutation({
 			}
 		}
 
-		// Schedule the email
+		// Schedule a single email for all recipients
 		try {
 			await ctx.scheduler.runAt(
 				args.scheduledDate,
 				internal.emails.sendScheduledEmail,
 				{
-					recipientId: args.recipientId,
-					to: recipient.email,
+					recipientIds: args.recipientIds,
+					to: recipients.map((r) => r.email),
 					subject: args.subject,
 					components: args.components,
 					colorScheme: args.colorScheme,
@@ -149,12 +157,11 @@ export const listScheduledEmails = query({
 			)
 			.first();
 
-		// If user doesn't exist yet, return empty array instead of throwing
 		if (!user) {
 			return [];
 		}
 
-		// Get all scheduled emails (both pending and completed)
+		// Get all scheduled emails
 		const scheduledEmails = await ctx.db.system
 			.query("_scheduled_functions")
 			.filter((q) => q.eq(q.field("name"), "emails.js:sendScheduledEmail"))
@@ -164,8 +171,8 @@ export const listScheduledEmails = query({
 		const enrichedEmails = await Promise.all(
 			scheduledEmails.map(async (email) => {
 				const args = email.args[0] as {
-					recipientId: Id<"recipients">;
-					to: string;
+					recipientIds: Id<"recipients">[];
+					to: string[];
 					subject: string;
 					components: EmailComponent[];
 					colorScheme?: {
@@ -176,27 +183,38 @@ export const listScheduledEmails = query({
 					};
 				};
 
-				// Skip if no recipientId
-				if (!args?.recipientId) {
+				// Skip if no recipientIds
+				if (!args?.recipientIds?.length) {
 					return null;
 				}
 
-				const recipient = await ctx.db.get(args.recipientId);
+				// Get all recipients
+				const recipients = await Promise.all(
+					args.recipientIds.map(async (id) => {
+						const recipient = await ctx.db.get(id);
+						return recipient;
+					})
+				);
 
-				// Only include emails for recipients that belong to this user
-				if (!recipient || recipient.userId !== user._id) {
+				// Only include emails where at least one recipient belongs to this user
+				if (!recipients.some((r) => r && r.userId === user._id)) {
 					return null;
 				}
+
+				// Filter to only include recipients that belong to this user
+				const userRecipients = recipients.filter(
+					(r) => r && r.userId === user._id
+				);
 
 				const enrichedEmail = {
 					_id: email._id,
 					scheduledTime: email.scheduledTime,
 					status: email.state.kind,
 					completedTime: email.completedTime,
-					recipient: {
-						name: recipient.name,
-						email: recipient.email,
-					},
+					recipients: userRecipients.map((r) => ({
+						name: r!.name,
+						email: r!.email,
+					})),
 					subject: args.subject,
 					isAutomated: false,
 					error: email.state.kind === "failed" ? email.state.error : undefined,
@@ -245,8 +263,8 @@ export const cancelScheduledEmail = mutation({
 
 		// Verify the recipient belongs to this user
 		const emailArgs = scheduledEmail.args[0] as {
-			recipientId: Id<"recipients">;
-			to: string;
+			recipientIds: Id<"recipients">[];
+			to: string[];
 			subject: string;
 			components: EmailComponent[];
 			colorScheme?: {
@@ -257,13 +275,20 @@ export const cancelScheduledEmail = mutation({
 			};
 		};
 
-		// Skip if no recipientId
-		if (!emailArgs?.recipientId) {
+		// Skip if no recipientIds
+		if (!emailArgs?.recipientIds?.length) {
 			throw new ConvexError("Invalid email format");
 		}
 
-		const recipient = await ctx.db.get(emailArgs.recipientId);
-		if (!recipient || recipient.userId !== user._id) {
+		// Verify user has access to at least one recipient
+		const hasAccess = await Promise.all(
+			emailArgs.recipientIds.map(async (id) => {
+				const recipient = await ctx.db.get(id);
+				return recipient?.userId === user._id;
+			})
+		).then((results) => results.some(Boolean));
+
+		if (!hasAccess) {
 			throw new ConvexError("Access denied");
 		}
 
@@ -287,8 +312,8 @@ export const deleteScheduledEmailsForRecipient = internalMutation({
 		await Promise.all(
 			scheduledEmails.map(async (email) => {
 				const emailArgs = email.args[0] as {
-					recipientId: Id<"recipients">;
-					to: string;
+					recipientIds: Id<"recipients">[];
+					to: string[];
 					subject: string;
 					components: EmailComponent[];
 					colorScheme?: {
@@ -299,7 +324,7 @@ export const deleteScheduledEmailsForRecipient = internalMutation({
 					};
 				};
 
-				if (emailArgs.recipientId === args.recipientId) {
+				if (emailArgs.recipientIds.includes(args.recipientId)) {
 					await ctx.scheduler.cancel(email._id);
 				}
 			})
