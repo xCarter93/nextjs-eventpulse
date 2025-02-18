@@ -5,14 +5,22 @@ import { DarkGridHero } from "@/components/home-page/dark-grid-hero";
 import { BetaBanner } from "@/components/beta-banner";
 import { Features, featuresData } from "@/components/home-page/features";
 import { Footer } from "@/components/layout/footer";
+import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 
 export default function LandingPage() {
+	const { isSignedIn } = useUser();
+	const router = useRouter();
+
 	return (
 		<div className="flex flex-col gap-12">
 			{/* Beta Banner and Hero Section Wrapper */}
 			<div className="flex flex-col">
 				<BetaBanner />
-				<DarkGridHero />
+				<DarkGridHero
+					isSignedIn={isSignedIn}
+					onDashboardClick={() => router.push("/dashboard")}
+				/>
 			</div>
 
 			{/* Features Section */}

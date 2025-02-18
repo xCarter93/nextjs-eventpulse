@@ -138,7 +138,11 @@ export function Navbar() {
 									</UserButton.MenuItems>
 								</UserButton>
 							) : (
-								<SignInButton mode="modal">
+								<SignInButton
+									signUpFallbackRedirectUrl="/dashboard"
+									fallbackRedirectUrl="/dashboard"
+									mode="modal"
+								>
 									<Button
 										color="primary"
 										variant="shadow"

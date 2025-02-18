@@ -29,6 +29,8 @@ export default function RootLayout({
 		<ClerkProvider
 			publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
 			afterSignOutUrl="/"
+			signInFallbackRedirectUrl="/dashboard"
+			signUpFallbackRedirectUrl="/dashboard"
 		>
 			<html lang="en" suppressHydrationWarning>
 				<CSPostHogProvider>

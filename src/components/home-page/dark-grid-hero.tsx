@@ -3,17 +3,30 @@ import { AnimationProps, motion } from "framer-motion";
 import { ArrowRightIcon } from "lucide-react";
 import Link from "next/link";
 
-export const DarkGridHero = () => {
+interface DarkGridHeroProps {
+	isSignedIn?: boolean;
+	onDashboardClick?: () => void;
+}
+
+export const DarkGridHero = ({
+	isSignedIn,
+	onDashboardClick,
+}: DarkGridHeroProps) => {
 	return (
 		<section className="relative overflow-hidden bg-background">
-			<Content />
+			<Content isSignedIn={isSignedIn} onDashboardClick={onDashboardClick} />
 			<Beams />
 			<GradientGrid />
 		</section>
 	);
 };
 
-const Content = () => {
+interface ContentProps {
+	isSignedIn?: boolean;
+	onDashboardClick?: () => void;
+}
+
+const Content = ({ isSignedIn, onDashboardClick }: ContentProps) => {
 	return (
 		<div className="relative z-20 mx-auto flex max-w-6xl flex-col items-center justify-center px-4 py-24 md:px-8 md:py-36">
 			<motion.div
@@ -86,16 +99,29 @@ const Content = () => {
 				}}
 				className="flex flex-col items-center gap-6 sm:flex-row"
 			>
-				<Link
-					href="/sign-up"
-					className="relative inline-flex h-12 overflow-hidden rounded-full p-[2px] focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
-				>
-					<span className="absolute inset-[-1000%] animate-[spin_2s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,theme(colors.primary.DEFAULT/0.1)_0%,theme(colors.primary.DEFAULT/0.8)_50%,theme(colors.primary.DEFAULT/0.1)_100%)]" />
-					<span className="inline-flex h-full w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-background px-8 py-1 text-base font-medium text-foreground backdrop-blur-3xl">
-						Sign Up to get started
-						<ArrowRightIcon className="h-5 w-5" />
-					</span>
-				</Link>
+				{isSignedIn ? (
+					<button
+						onClick={onDashboardClick}
+						className="relative inline-flex h-12 overflow-hidden rounded-full p-[2px] focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
+					>
+						<span className="absolute inset-[-1000%] animate-[spin_2s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,theme(colors.primary.DEFAULT/0.1)_0%,theme(colors.primary.DEFAULT/0.8)_50%,theme(colors.primary.DEFAULT/0.1)_100%)]" />
+						<span className="inline-flex h-full w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-background px-8 py-1 text-base font-medium text-foreground backdrop-blur-3xl">
+							Continue to Dashboard
+							<ArrowRightIcon className="h-5 w-5" />
+						</span>
+					</button>
+				) : (
+					<Link
+						href="/sign-up"
+						className="relative inline-flex h-12 overflow-hidden rounded-full p-[2px] focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
+					>
+						<span className="absolute inset-[-1000%] animate-[spin_2s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,theme(colors.primary.DEFAULT/0.1)_0%,theme(colors.primary.DEFAULT/0.8)_50%,theme(colors.primary.DEFAULT/0.1)_100%)]" />
+						<span className="inline-flex h-full w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-background px-8 py-1 text-base font-medium text-foreground backdrop-blur-3xl">
+							Sign Up to get started
+							<ArrowRightIcon className="h-5 w-5" />
+						</span>
+					</Link>
+				)}
 			</motion.div>
 		</div>
 	);
