@@ -1,11 +1,10 @@
 "use client";
 
 import * as Accordion from "@radix-ui/react-accordion";
-import { motion, useInView } from "framer-motion";
+import { motion } from "framer-motion";
 import type { ReactNode } from "react";
 import React, { forwardRef, useEffect, useRef, useState } from "react";
-import { Users, Sparkles, Mail, LayoutDashboard, Bell } from "lucide-react";
-
+import { Image } from "@heroui/react";
 import { cn } from "@/lib/utils";
 
 type AccordionItemProps = {
@@ -88,286 +87,143 @@ export interface FeaturesProps {
 	data: FeaturesDataProps[];
 }
 
+const NumberIcon = ({ number }: { number: number }) => (
+	<div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+		{number}
+	</div>
+);
+
 export const featuresData: FeaturesDataProps[] = [
 	{
 		id: 1,
-		title: "Recipient Management",
+		title: "Add Your First Recipient",
 		content:
-			"Add and update recipient data to be used throughout the app. Keep track of important dates and preferences for personalized communications.",
-		icon: <Users className="h-6 w-6 text-primary" />,
-		image: "/features/placeholder-recipients.png", // You can replace with actual screenshot later
+			"Start by adding your first recipient in the Recipients section. Enter their name, email, birthday, and any special dates you want to remember. You can also add notes about their preferences to make your greetings more personal.",
+		icon: <NumberIcon number={1} />,
+		image: "/features/placeholder-recipients.png",
 	},
 	{
 		id: 2,
-		title: "Custom Animations",
+		title: "Upload Your First Animation",
 		content:
-			"Upload and manage your own custom animations to give your emails a personal touch. Support for GIFs, images, and more.",
-		icon: <Sparkles className="h-6 w-6 text-primary" />,
+			"Visit the Animations section to upload your first custom animation. We support GIFs, images, and various animation formats. You can preview how they'll look in your emails and organize them into categories for easy access.",
+		icon: <NumberIcon number={2} />,
 		image: "/features/placeholder-animations.png",
 	},
 	{
 		id: 3,
-		title: "Modular Email Builder",
+		title: "Use the Email Builder",
 		content:
-			"Create beautiful, responsive emails using our drag-and-drop builder with pre-designed templates and customizable building blocks.",
-		icon: <Mail className="h-6 w-6 text-primary" />,
+			"Open the Email Builder to create your first greeting. Choose a template, add your custom animations, and personalize the message. You can preview how it will look on different devices and schedule it to be sent at the perfect moment.",
+		icon: <NumberIcon number={3} />,
 		image: "/features/placeholder-builder.png",
 	},
 	{
 		id: 4,
-		title: "Unified Dashboard",
+		title: "View Your Unified Dashboard",
 		content:
-			"View all your scheduled emails, upcoming events, and recipient activities in one centralized dashboard.",
-		icon: <LayoutDashboard className="h-6 w-6 text-primary" />,
+			"Access your personalized dashboard to see all upcoming events, scheduled emails, and recipient birthdays at a glance. The timeline view helps you plan ahead and ensure you never miss an important date.",
+		icon: <NumberIcon number={4} />,
 		image: "/features/placeholder-dashboard.png",
 	},
 	{
 		id: 5,
-		title: "Smart Reminders",
+		title: "Configure Your Settings",
 		content:
-			"Never miss an important event with customizable reminders and notifications based on your preferences.",
-		icon: <Bell className="h-6 w-6 text-primary" />,
+			"Customize your experience in the Settings section. Set up email reminders for upcoming events, configure your preferred notification schedule, and manage your calendar integrations to stay perfectly organized.",
+		icon: <NumberIcon number={5} />,
 		image: "/features/placeholder-reminders.png",
 	},
 ];
 
 export function Features({
 	collapseDelay = 6000,
-	ltr = false,
-	linePosition = "left",
 	data = featuresData,
 }: FeaturesProps) {
-	const [currentIndex, setCurrentIndex] = useState<number>(-1);
-	const carouselRef = useRef<HTMLUListElement>(null);
+	const [currentIndex, setCurrentIndex] = useState<number>(0);
 	const ref = useRef(null);
-	const isInView = useInView(ref, {
-		once: true,
-		amount: 0.5,
-	});
-
-	useEffect(() => {
-		const timer = setTimeout(() => {
-			if (isInView) {
-				setCurrentIndex(0);
-			} else {
-				setCurrentIndex(-1);
-			}
-		}, 100);
-
-		return () => clearTimeout(timer);
-	}, [isInView]);
-
-	const scrollToIndex = (index: number) => {
-		if (carouselRef.current) {
-			const card = carouselRef.current.querySelectorAll(".card")[index];
-			if (card) {
-				const cardRect = card.getBoundingClientRect();
-				const carouselRect = carouselRef.current.getBoundingClientRect();
-				const offset =
-					cardRect.left -
-					carouselRect.left -
-					(carouselRect.width - cardRect.width) / 2;
-
-				carouselRef.current.scrollTo({
-					left: carouselRef.current.scrollLeft + offset,
-					behavior: "smooth",
-				});
-			}
-		}
-	};
 
 	useEffect(() => {
 		const timer = setInterval(() => {
-			setCurrentIndex((prevIndex) =>
-				prevIndex !== undefined ? (prevIndex + 1) % data.length : 0
-			);
+			setCurrentIndex((prev) => (prev + 1) % data.length);
 		}, collapseDelay);
 
 		return () => clearInterval(timer);
-	}, [collapseDelay, currentIndex, data.length]);
-
-	useEffect(() => {
-		const handleAutoScroll = () => {
-			const nextIndex =
-				(currentIndex !== undefined ? currentIndex + 1 : 0) % data.length;
-			scrollToIndex(nextIndex);
-		};
-
-		const autoScrollTimer = setInterval(handleAutoScroll, collapseDelay);
-
-		return () => clearInterval(autoScrollTimer);
-	}, [collapseDelay, currentIndex, data.length]);
-
-	useEffect(() => {
-		const carousel = carouselRef.current;
-		if (carousel) {
-			const handleScroll = () => {
-				const scrollLeft = carousel.scrollLeft;
-				const cardWidth = carousel.querySelector(".card")?.clientWidth || 0;
-				const newIndex = Math.min(
-					Math.floor(scrollLeft / cardWidth),
-					data.length - 1
-				);
-				setCurrentIndex(newIndex);
-			};
-
-			carousel.addEventListener("scroll", handleScroll);
-			return () => carousel.removeEventListener("scroll", handleScroll);
-		}
-	}, [data.length]);
+	}, [collapseDelay, data.length]);
 
 	return (
-		<section ref={ref} id="features">
-			<div className="container">
-				<div className="mx-auto max-w-6xl">
-					<div className="mx-auto my-12 grid h-full items-center gap-10 lg:grid-cols-2">
-						<div
-							className={` order-1 hidden lg:order-none lg:flex ${
-								ltr ? "lg:order-2 lg:justify-end" : "justify-start"
-							}`}
-						>
-							<Accordion.Root
-								className=""
-								type="single"
-								defaultValue={`item-${currentIndex}`}
-								value={`item-${currentIndex}`}
-								onValueChange={(value) =>
-									setCurrentIndex(Number(value.split("-")[1]))
-								}
+		<section ref={ref} id="features" className="w-full">
+			<div className="container mx-auto px-4">
+				<div className="mx-auto max-w-7xl">
+					{/* Feature Steps */}
+					<div className="mb-8 flex items-center justify-center space-x-[2rem] sm:space-x-[2rem]">
+						{data.map((item, index) => (
+							<button
+								key={item.id}
+								onClick={() => setCurrentIndex(index)}
+								className="group relative"
 							>
-								{data.map((item, index) => (
-									<AccordionItem
-										key={item.id}
-										className="relative mb-8 last:mb-0"
-										value={`item-${index}`}
-									>
-										{linePosition === "left" || linePosition === "right" ? (
-											<div
-												className={`absolute inset-y-0 h-full w-0.5 overflow-hidden rounded-lg bg-neutral-300/50 dark:bg-neutral-300/30 ${
-													linePosition === "right"
-														? "left-auto right-0"
-														: "left-0 right-auto"
-												}`}
-											>
-												<div
-													className={`absolute left-0 top-0 w-full ${
-														currentIndex === index ? "h-full" : "h-0"
-													} origin-top bg-primary transition-all ease-linear dark:bg-white`}
-													style={{
-														transitionDuration:
-															currentIndex === index
-																? `${collapseDelay}ms`
-																: "0s",
-													}}
-												></div>
-											</div>
-										) : null}
-
-										{linePosition === "top" || linePosition === "bottom" ? (
-											<div
-												className={`absolute inset-x-0 h-0.5 w-full overflow-hidden rounded-lg bg-neutral-300/50 dark:bg-neutral-300/30 ${
-													linePosition === "bottom" ? "bottom-0" : "top-0"
-												}`}
-											>
-												<div
-													className={`absolute left-0 ${
-														linePosition === "bottom" ? "bottom-0" : "top-0"
-													} h-full ${
-														currentIndex === index ? "w-full" : "w-0"
-													} origin-left bg-primary transition-all ease-linear dark:bg-white`}
-													style={{
-														transitionDuration:
-															currentIndex === index
-																? `${collapseDelay}ms`
-																: "0s",
-													}}
-												></div>
-											</div>
-										) : null}
-
-										<div className="relative flex items-center">
-											<div className="item-box mx-2 flex size-12 shrink-0 items-center justify-center rounded-full bg-primary/10 sm:mx-6">
-												{item.icon}
-											</div>
-
-											<div>
-												<AccordionTrigger className="pl-0 text-xl font-bold">
-													{item.title}
-												</AccordionTrigger>
-
-												<AccordionTrigger className="justify-start pl-0 text-left text-[16px] leading-4">
-													{item.content}
-												</AccordionTrigger>
-											</div>
-										</div>
-									</AccordionItem>
-								))}
-							</Accordion.Root>
-						</div>
-						<div
-							className={`h-[350px] min-h-[200px] w-auto  ${
-								ltr && "lg:order-1"
-							}`}
-						>
-							{data[currentIndex]?.image ? (
-								<motion.img
-									key={currentIndex}
-									src={data[currentIndex].image}
-									alt="feature"
-									className="aspect-auto size-full rounded-xl border border-neutral-300/50 object-cover object-left-top p-1 shadow-lg"
-									initial={{ opacity: 0, scale: 0.98 }}
-									animate={{ opacity: 1, scale: 1 }}
-									exit={{ opacity: 0, scale: 0.98 }}
-									transition={{ duration: 0.25, ease: "easeOut" }}
-								/>
-							) : data[currentIndex]?.video ? (
-								<video
-									preload="auto"
-									src={data[currentIndex].video}
-									className="aspect-auto size-full rounded-lg object-cover shadow-lg"
-									autoPlay
-									loop
-									muted
-								/>
-							) : (
-								<div className="aspect-auto size-full rounded-xl border border-neutral-300/50 bg-gray-200 p-1"></div>
-							)}
-						</div>
-
-						<ul
-							ref={carouselRef}
-							className=" flex h-full snap-x snap-mandatory flex-nowrap overflow-x-auto py-10 [-ms-overflow-style:none] [-webkit-mask-image:linear-gradient(90deg,transparent,black_20%,white_80%,transparent)] [mask-image:linear-gradient(90deg,transparent,black_20%,white_80%,transparent)] [scrollbar-width:none] lg:hidden [&::-webkit-scrollbar]:hidden"
-							style={{
-								padding: "50px calc(50%)",
-							}}
-						>
-							{data.map((item, index) => (
 								<div
-									key={item.id}
-									className="card relative mr-8 grid h-full max-w-60 shrink-0 items-start justify-center py-4 last:mr-0"
-									onClick={() => setCurrentIndex(index)}
-									style={{
-										scrollSnapAlign: "center",
-									}}
+									className={cn(
+										"flex h-8 w-8 sm:h-12 sm:w-12 items-center justify-center rounded-full transition-all duration-300",
+										index === currentIndex
+											? "bg-primary text-primary-foreground"
+											: "bg-primary/10 text-primary hover:bg-primary/20"
+									)}
 								>
-									<div className="absolute inset-y-0 left-0 right-auto h-0.5 w-full overflow-hidden rounded-lg bg-neutral-300/50 dark:bg-neutral-300/30">
-										<div
-											className={`absolute left-0 top-0 h-full ${
-												currentIndex === index ? "w-full" : "w-0"
-											} origin-top bg-primary transition-all ease-linear`}
-											style={{
-												transitionDuration:
-													currentIndex === index ? `${collapseDelay}ms` : "0s",
-											}}
-										></div>
-									</div>
-									<h2 className="text-xl font-bold">{item.title}</h2>
-									<p className="mx-0 max-w-sm text-balance text-sm">
-										{item.content}
-									</p>
+									<span className="text-base sm:text-lg font-bold">
+										{item.id}
+									</span>
 								</div>
-							))}
-						</ul>
+								{index < data.length - 1 && (
+									<div
+										className="absolute left-full top-1/2 h-[2px] w-[2rem] -translate-y-1/2 bg-primary/30"
+										style={{
+											background: `linear-gradient(to right, rgba(var(--primary) / 0.3), rgba(var(--primary) / 0.3))`,
+										}}
+									/>
+								)}
+							</button>
+						))}
+					</div>
+
+					{/* Active Feature Content */}
+					<div className="mb-8 text-center px-4">
+						<h3 className="mb-4 text-xl sm:text-2xl font-bold">
+							{data[currentIndex].title}
+						</h3>
+						<p className="mx-auto max-w-2xl text-sm sm:text-base text-muted-foreground">
+							{data[currentIndex].content}
+						</p>
+					</div>
+
+					{/* Feature Image */}
+					<div className="relative mx-auto h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px] w-full max-w-5xl overflow-hidden rounded-xl">
+						<motion.div
+							key={currentIndex}
+							className="h-full w-full"
+							initial={{ opacity: 0, scale: 0.98 }}
+							animate={{ opacity: 1, scale: 1 }}
+							exit={{ opacity: 0, scale: 0.98 }}
+							transition={{ duration: 0.25, ease: "easeOut" }}
+						>
+							<Image
+								src={data[currentIndex].image}
+								alt={`Feature: ${data[currentIndex].title}`}
+								className="h-full w-full transition-all duration-300"
+								radius="lg"
+								classNames={{
+									wrapper:
+										"h-full w-full shadow-[0_20px_50px_-12px_rgba(var(--primary)_/_0.7)]",
+									img: "object-cover object-center",
+									zoomedWrapper: "h-full w-full",
+								}}
+								fallbackSrc="/placeholder-image.png"
+								style={{
+									objectFit: "cover",
+								}}
+							/>
+						</motion.div>
 					</div>
 				</div>
 			</div>
