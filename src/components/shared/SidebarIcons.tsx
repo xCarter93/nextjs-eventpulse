@@ -1,41 +1,47 @@
 "use client";
 
-import { BarChart3, Calendar, Zap } from "lucide-react";
-import { Tooltip } from "@heroui/react";
+import { BarChart2, Calendar, Bot, Zap } from "lucide-react";
+import { Button } from "@heroui/react";
 
 interface SidebarIconsProps {
-	onIconClick: (content: "stats" | "events" | "actions") => void;
+	onIconClick: (content: "stats" | "events" | "actions" | "chat") => void;
 }
 
 export function SidebarIcons({ onIconClick }: SidebarIconsProps) {
 	return (
 		<>
-			<Tooltip content="User Stats" placement="left">
-				<div
-					className="p-2 rounded-lg hover:bg-default-100 cursor-pointer"
-					onClick={() => onIconClick("stats")}
-				>
-					<BarChart3 className="h-6 w-6" />
-				</div>
-			</Tooltip>
-
-			<Tooltip content="Upcoming Events" placement="left">
-				<div
-					className="p-2 rounded-lg hover:bg-default-100 cursor-pointer"
-					onClick={() => onIconClick("events")}
-				>
-					<Calendar className="h-6 w-6" />
-				</div>
-			</Tooltip>
-
-			<Tooltip content="Quick Actions" placement="left">
-				<div
-					className="p-2 rounded-lg hover:bg-default-100 cursor-pointer"
-					onClick={() => onIconClick("actions")}
-				>
-					<Zap className="h-6 w-6" />
-				</div>
-			</Tooltip>
+			<Button
+				isIconOnly
+				variant="light"
+				onClick={() => onIconClick("stats")}
+				className="text-default-600"
+			>
+				<BarChart2 className="h-5 w-5" />
+			</Button>
+			<Button
+				isIconOnly
+				variant="light"
+				onClick={() => onIconClick("events")}
+				className="text-default-600"
+			>
+				<Calendar className="h-5 w-5" />
+			</Button>
+			<Button
+				isIconOnly
+				variant="light"
+				onClick={() => onIconClick("actions")}
+				className="text-default-600"
+			>
+				<Zap className="h-5 w-5" />
+			</Button>
+			<Button
+				isIconOnly
+				variant="light"
+				onClick={() => onIconClick("chat")}
+				className="text-default-600"
+			>
+				<Bot className="h-5 w-5" />
+			</Button>
 		</>
 	);
 }

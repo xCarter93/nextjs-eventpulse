@@ -8,13 +8,14 @@ import { useState } from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody } from "@heroui/react";
 import { UpcomingEvents } from "@/components/dashboard/UpcomingEvents";
 import { QuickActions } from "@/components/dashboard/QuickActions";
+import ChatInterface from "@/components/chat/ChatInterface";
 
 interface CollapsibleSidebarProps {
 	isOpen: boolean;
 	onToggle: (isOpen: boolean) => void;
 }
 
-type ActiveContent = "stats" | "events" | "actions" | null;
+type ActiveContent = "stats" | "events" | "actions" | "chat" | null;
 
 export function CollapsibleSidebar({
 	isOpen,
@@ -23,19 +24,16 @@ export function CollapsibleSidebar({
 	const [activeContent, setActiveContent] = useState<ActiveContent>(null);
 	const [isModalOpen, setIsModalOpen] = useState(false);
 
-	const handleToggle = () => {
-		onToggle(!isOpen);
-	};
-
 	const handleIconClick = (content: ActiveContent) => {
-		// On desktop, just open the sidebar
+		setActiveContent(content);
+
+		// For desktop, expand the sidebar
 		if (window.innerWidth >= 1024) {
 			onToggle(true);
 			return;
 		}
 
-		// On mobile, open the modal with specific content
-		setActiveContent(content);
+		// On mobile, open the modal
 		setIsModalOpen(true);
 	};
 
@@ -47,6 +45,8 @@ export function CollapsibleSidebar({
 				return "Upcoming Events";
 			case "actions":
 				return "Quick Actions";
+			case "chat":
+				return "Chat Assistant";
 			default:
 				return "";
 		}
@@ -60,9 +60,50 @@ export function CollapsibleSidebar({
 				return <UpcomingEvents />;
 			case "actions":
 				return <QuickActions />;
+			case "chat":
+				return <ChatInterface />;
 			default:
 				return null;
 		}
+	};
+
+	const getSidebarContent = () => {
+		if (!isOpen) {
+			return (
+				<div className="flex flex-col items-center space-y-6 pt-12">
+					<SidebarIcons onIconClick={handleIconClick} />
+				</div>
+			);
+		}
+
+		if (activeContent === "chat") {
+			return (
+				<div className="h-full flex flex-col">
+					<div className="flex justify-between items-center mb-4">
+						<h2 className="text-lg font-semibold">Chat Assistant</h2>
+						<Button
+							isIconOnly
+							variant="light"
+							size="sm"
+							onClick={() => setActiveContent(null)}
+						>
+							×
+						</Button>
+					</div>
+					<div className="flex-1">
+						<ChatInterface />
+					</div>
+				</div>
+			);
+		}
+
+		return (
+			<div className="space-y-6">
+				<UserStats />
+				<UpcomingEvents />
+				<QuickActions />
+			</div>
+		);
 	};
 
 	return (
@@ -81,7 +122,7 @@ export function CollapsibleSidebar({
 					isIconOnly
 					variant="light"
 					className="absolute -left-4 top-4 z-10"
-					onClick={handleToggle}
+					onClick={() => onToggle(!isOpen)}
 				>
 					{isOpen ? (
 						<ChevronRight className="h-4 w-4" />
@@ -90,19 +131,7 @@ export function CollapsibleSidebar({
 					)}
 				</Button>
 
-				<div className="h-full overflow-y-auto p-4">
-					{isOpen ? (
-						<div className="space-y-6">
-							<UserStats />
-							<UpcomingEvents />
-							<QuickActions />
-						</div>
-					) : (
-						<div className="flex flex-col items-center space-y-6 pt-12">
-							<SidebarIcons onIconClick={handleIconClick} />
-						</div>
-					)}
-				</div>
+				<div className="h-full overflow-y-auto p-4">{getSidebarContent()}</div>
 			</div>
 
 			{/* Mobile Footer Bar */}
