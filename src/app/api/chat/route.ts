@@ -1,5 +1,6 @@
 import { openai } from "@ai-sdk/openai";
 import { streamText } from "ai";
+import { type Message } from "ai";
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
@@ -57,13 +58,18 @@ export async function POST(req: Request) {
 
 	const result = await streamText({
 		model: openai("o1-mini"),
-		messages,
-		temperature: 0.3, // Lower temperature for more deterministic responses
+		messages: [
+			{ role: "system", content: SYSTEM_MESSAGE },
+			...messages.map((message: Message) => ({
+				role: message.role,
+				content: message.content,
+			})),
+		],
+		temperature: 0, // Lower temperature for more deterministic responses
 		maxTokens: 1000,
 		topP: 0.2, // More focused responses
 		frequencyPenalty: 1.0, // Discourage repetition
 		presencePenalty: 1.0, // Encourage focusing on provided information
-		system: SYSTEM_MESSAGE,
 	});
 
 	return result.toDataStreamResponse();
