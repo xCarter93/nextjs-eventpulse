@@ -64,6 +64,30 @@ function renderComponent(component: EmailComponent, colorScheme: ColorScheme) {
 			`;
 		case "divider":
 			return `<hr style="border: none; border-top: 1px solid ${colorScheme.accent}; margin: 24px 0;" />`;
+		case "audio":
+			return component.audioUrl
+				? `
+					<div style="border: 1px solid ${colorScheme.accent}; border-radius: 8px; padding: 16px; margin: 0 0 24px;">
+						<div style="display: flex; align-items: center; margin-bottom: 8px;">
+							<span style="font-size: 24px; margin-right: 8px;">🎤</span>
+							<p style="color: ${colorScheme.primary}; margin: 0; font-weight: 500;">${component.title || "Audio Message"}</p>
+						</div>
+						<audio controls style="width: 100%;" src="${component.audioUrl}">
+							Your browser does not support the audio element.
+						</audio>
+					</div>
+				`
+				: `
+					<div style="border: 1px solid ${colorScheme.accent}; border-radius: 8px; padding: 16px; margin: 0 0 24px;">
+						<div style="display: flex; align-items: center;">
+							<span style="font-size: 24px; margin-right: 8px;">🎤</span>
+							<p style="color: ${colorScheme.primary}; margin: 0; font-weight: 500;">${component.title || "Audio Message"}</p>
+						</div>
+						<p style="color: ${colorScheme.secondary}; margin: 8px 0 0; font-size: 14px;">
+							${component.isRecorded ? "Audio recording not available in email" : "Audio file not available in email"}
+						</p>
+					</div>
+				`;
 		default:
 			return "";
 	}

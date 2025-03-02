@@ -66,6 +66,13 @@ export const sendScheduledEmail = internalAction({
 				v.object({
 					id: v.string(),
 					type: v.literal("divider"),
+				}),
+				v.object({
+					id: v.string(),
+					type: v.literal("audio"),
+					audioUrl: v.optional(v.string()),
+					title: v.string(),
+					isRecorded: v.boolean(),
 				})
 			)
 		),
@@ -80,7 +87,7 @@ export const sendScheduledEmail = internalAction({
 	},
 	handler: async (ctx, args) => {
 		try {
-			// Create a new array of components with fresh URLs for Convex storage images
+			// Create a new array of components with fresh URLs for Convex storage images and audio
 			const updatedComponents = await Promise.all(
 				args.components.map(async (component) => {
 					if (component.type === "image" && isConvexStorageUrl(component.url)) {
@@ -94,6 +101,23 @@ export const sendScheduledEmail = internalAction({
 							};
 						}
 					}
+
+					if (
+						component.type === "audio" &&
+						component.audioUrl &&
+						isConvexStorageUrl(component.audioUrl)
+					) {
+						const storageId = getStorageIdFromUrl(component.audioUrl);
+						if (storageId) {
+							// Generate a fresh URL for the audio
+							const freshUrl = await ctx.storage.getUrl(storageId);
+							return {
+								...component,
+								audioUrl: freshUrl,
+							};
+						}
+					}
+
 					return component;
 				})
 			);
