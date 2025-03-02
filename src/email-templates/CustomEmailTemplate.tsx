@@ -68,13 +68,13 @@ function renderComponent(component: EmailComponent, colorScheme: ColorScheme) {
 			return component.audioUrl
 				? `
 					<div style="border: 1px solid ${colorScheme.accent}; border-radius: 8px; padding: 16px; margin: 0 0 24px;">
-						<div style="display: flex; align-items: center; margin-bottom: 8px;">
+						<div style="display: flex; align-items: center;">
 							<span style="font-size: 24px; margin-right: 8px;">🎤</span>
 							<p style="color: ${colorScheme.primary}; margin: 0; font-weight: 500;">${component.title || "Audio Message"}</p>
 						</div>
-						<audio controls style="width: 100%;" src="${component.audioUrl}">
-							Your browser does not support the audio element.
-						</audio>
+						<p style="color: ${colorScheme.secondary}; margin: 8px 0 0; font-size: 14px;">
+							Your audio message is attached to this email. Please check the attachments to listen.
+						</p>
 					</div>
 				`
 				: `
