@@ -116,4 +116,11 @@ export default defineSchema({
 		isRecurring: v.boolean(),
 		source: v.optional(v.union(v.literal("google"), v.literal("manual"))),
 	}).index("by_userId", ["userId"]),
+	audioFiles: defineTable({
+		userId: v.id("users"),
+		storageId: v.id("_storage"),
+		title: v.string(),
+		isRecorded: v.boolean(),
+		createdAt: v.number(),
+	}).index("by_userId", ["userId"]),
 });

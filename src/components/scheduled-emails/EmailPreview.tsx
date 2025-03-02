@@ -10,6 +10,10 @@ import { ComponentControls } from "./ComponentControls";
 import { ComponentConfigDialog } from "./ComponentConfigDialog";
 import { useState } from "react";
 import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { ImageIcon, Mic, Calendar, SeparatorHorizontal } from "lucide-react";
 
 interface EmailPreviewProps {
 	colorScheme?: ColorScheme;
@@ -29,7 +33,15 @@ function DropZone({ isOver, id }: { isOver: boolean; id: string }) {
 	const { setNodeRef, isOver: isOverCurrent } = useDroppable({
 		id,
 		data: {
-			accepts: ["heading", "text", "button", "image", "event", "divider"],
+			accepts: [
+				"heading",
+				"text",
+				"button",
+				"image",
+				"event",
+				"divider",
+				"audio",
+			],
 		},
 	});
 
@@ -87,26 +99,38 @@ function SortableComponent({
 	const handleSave = (updatedComponent: EmailComponent) =>
 		onUpdate?.(updatedComponent);
 
+	const handleInlineUpdate = (updatedComponent: EmailComponent) => {
+		onUpdate?.(updatedComponent);
+	};
+
 	return (
 		<>
 			<div
 				ref={setNodeRef}
 				style={style}
-				className="group relative w-full hover:bg-accent/5 rounded-lg py-2 px-4 -my-2 transition-colors"
+				className="group relative w-full hover:bg-accent/5 rounded-lg py-3 px-6 -my-2 transition-colors"
 			>
 				<div
 					{...attributes}
 					{...listeners}
-					className="absolute left-4 inset-y-0 flex items-center opacity-0 group-hover:opacity-100 cursor-grab transition-opacity"
+					className="absolute left-0 -translate-x-full inset-y-0 flex items-center opacity-0 group-hover:opacity-100 cursor-grab transition-opacity"
 				>
-					<div className="p-2 hover:bg-accent rounded-md">
-						<GripVertical className="h-4 w-4 text-muted-foreground" />
+					<div
+						className="p-2 bg-primary/20 dark:bg-primary/30 hover:bg-primary/30 dark:hover:bg-primary/40 rounded-md flex flex-col items-center shadow-sm border border-primary/20"
+						title="Drag to move component"
+					>
+						<GripVertical className="h-4 w-4 text-primary dark:text-primary" />
+						<span className="text-[10px] font-medium text-primary dark:text-primary mt-1">
+							Move
+						</span>
 					</div>
 				</div>
-				<div className="pl-8 pr-12">
+				<div className="px-2">
 					<EmailComponentRenderer
 						component={component}
 						colorScheme={colorScheme}
+						onUpdate={handleInlineUpdate}
+						onOpenConfigDialog={handleEdit}
 					/>
 				</div>
 				<ComponentControls onEdit={handleEdit} onDelete={handleDelete} />
@@ -124,141 +148,331 @@ function SortableComponent({
 function EmailComponentRenderer({
 	component,
 	colorScheme,
+	onUpdate,
+	onOpenConfigDialog,
 }: {
 	component: EmailComponent;
 	colorScheme?: ColorScheme;
+	onUpdate?: (updatedComponent: EmailComponent) => void;
+	onOpenConfigDialog?: () => void;
 }) {
+	const [isEditing, setIsEditing] = useState(false);
+	const [editValue, setEditValue] = useState("");
+
 	const style = {
 		color: colorScheme?.primary || "#484848",
 	};
 
-	const handleButtonClick = (e: React.MouseEvent) => {
-		e.preventDefault();
+	const startEditing = (initialValue: string) => {
+		setEditValue(initialValue);
+		setIsEditing(true);
+	};
+
+	const saveEdit = () => {
+		if (
+			onUpdate &&
+			(component.type === "heading" ||
+				component.type === "text" ||
+				component.type === "button")
+		) {
+			onUpdate({
+				...component,
+				content: editValue,
+			});
+		}
+		setIsEditing(false);
+	};
+
+	const handleKeyDown = (e: React.KeyboardEvent) => {
+		if (e.key === "Enter" && !e.shiftKey) {
+			e.preventDefault();
+			saveEdit();
+		} else if (e.key === "Escape") {
+			setIsEditing(false);
+		}
+	};
+
+	const openConfigDialog = () => {
+		if (onOpenConfigDialog) {
+			onOpenConfigDialog();
+		}
 	};
 
 	switch (component.type) {
 		case "heading":
-			return (
+			return isEditing ? (
+				<div className="w-full">
+					<Input
+						value={editValue}
+						onChange={(e) => setEditValue(e.target.value)}
+						onBlur={saveEdit}
+						onKeyDown={handleKeyDown}
+						className="text-2xl font-bold text-center w-full"
+						autoFocus
+						placeholder="Enter heading text..."
+					/>
+					<p className="text-xs text-center text-muted-foreground mt-1">
+						Press Enter to save, Esc to cancel
+					</p>
+				</div>
+			) : (
 				<h2
-					className="text-3xl font-bold leading-[1.3] text-center w-full"
+					className="text-3xl font-bold leading-[1.3] text-center w-full cursor-text"
 					style={style}
+					onClick={() => startEditing(component.content)}
 				>
-					{component.content}
+					{component.content || (
+						<span className="text-muted-foreground">Click to add heading</span>
+					)}
 				</h2>
 			);
 		case "text":
-			return (
-				<p className="text-lg leading-[1.6] text-center w-full" style={style}>
-					{component.content}
+			return isEditing ? (
+				<div className="w-full">
+					<Textarea
+						value={editValue}
+						onChange={(e) => setEditValue(e.target.value)}
+						onBlur={saveEdit}
+						onKeyDown={handleKeyDown}
+						className="text-lg text-center w-full min-h-[100px]"
+						autoFocus
+						placeholder="Enter text content..."
+					/>
+					<p className="text-xs text-center text-muted-foreground mt-1">
+						Press Enter to save, Esc to cancel
+					</p>
+				</div>
+			) : (
+				<p
+					className="text-lg leading-[1.6] text-center w-full cursor-text"
+					style={style}
+					onClick={() => startEditing(component.content)}
+				>
+					{component.content || (
+						<span className="text-muted-foreground">Click to add text</span>
+					)}
 				</p>
 			);
 		case "button":
-			return (
+			return isEditing ? (
+				<div className="w-full text-center">
+					<Input
+						value={editValue}
+						onChange={(e) => setEditValue(e.target.value)}
+						onBlur={saveEdit}
+						onKeyDown={handleKeyDown}
+						className="text-center max-w-xs mx-auto"
+						autoFocus
+						placeholder="Enter button text..."
+					/>
+					<p className="text-xs text-center text-muted-foreground mt-1">
+						Press Enter to save, Esc to cancel
+					</p>
+				</div>
+			) : (
 				<div className="text-center">
 					<a
 						href="#"
-						onClick={handleButtonClick}
-						className="inline-block px-6 py-3 rounded-lg font-medium text-white transition-colors pointer-events-none"
+						onClick={(e) => {
+							e.preventDefault();
+							startEditing(component.content);
+						}}
+						className="inline-block px-6 py-3 rounded-lg font-medium text-white transition-colors cursor-text"
 						style={{ backgroundColor: colorScheme?.accent || "#3B82F6" }}
 					>
-						{component.content}
+						{component.content || "Click to edit button"}
 					</a>
 				</div>
 			);
 		case "image":
 			return component.url ? (
-				<div className="relative w-full aspect-[16/9] rounded-lg overflow-hidden">
+				<div
+					className="relative w-full aspect-[16/9] rounded-lg overflow-hidden group/image"
+					onClick={openConfigDialog}
+				>
 					<Image
 						src={component.url}
 						alt={component.alt}
 						fill
 						className="object-cover rounded-lg"
 					/>
+					{onUpdate && (
+						<div className="absolute inset-0 bg-black/40 opacity-0 group-hover/image:opacity-100 flex items-center justify-center transition-opacity">
+							<Button variant="secondary" size="sm" className="font-medium">
+								Change Image
+							</Button>
+						</div>
+					)}
 				</div>
 			) : (
-				<div className="w-full aspect-video bg-muted rounded-lg flex items-center justify-center text-muted-foreground">
-					Add image URL
+				<div
+					className="w-full aspect-video bg-muted rounded-lg flex flex-col items-center justify-center gap-2 p-4 cursor-pointer"
+					onClick={openConfigDialog}
+				>
+					<ImageIcon className="h-10 w-10 text-muted-foreground" />
+					<p className="text-muted-foreground text-center">
+						Click to add an image
+					</p>
+					{onUpdate && (
+						<Button variant="secondary" size="sm" className="mt-2">
+							Upload Image
+						</Button>
+					)}
 				</div>
 			);
 		case "event":
 			return (
-				<table
-					align="center"
-					width="100%"
-					cellPadding="0"
-					cellSpacing="0"
-					role="presentation"
-				>
-					<tbody style={{ width: "100%" }}>
-						<tr style={{ width: "100%" }}>
-							<td
-								data-id="__react-email-column"
-								style={{
-									verticalAlign: "middle",
-									paddingRight: "24px",
-									width: "48px",
-								}}
-							>
-								<div className="w-12 h-12 flex items-center justify-center">
-									<span
+				<div className="relative">
+					<table
+						align="center"
+						width="100%"
+						cellPadding="0"
+						cellSpacing="0"
+						role="presentation"
+					>
+						<tbody style={{ width: "100%" }}>
+							<tr style={{ width: "100%" }}>
+								<td
+									data-id="__react-email-column"
+									style={{
+										verticalAlign: "middle",
+										paddingRight: "24px",
+										width: "48px",
+									}}
+								>
+									<div className="w-12 h-12 flex items-center justify-center">
+										<span
+											style={{
+												fontSize: "48px",
+												lineHeight: 1,
+												display: "block",
+											}}
+										>
+											🗓️
+										</span>
+									</div>
+								</td>
+								<td
+									data-id="__react-email-column"
+									style={{ verticalAlign: "middle" }}
+								>
+									<p
 										style={{
-											fontSize: "48px",
-											lineHeight: 1,
-											display: "block",
+											fontSize: "20px",
+											lineHeight: "28px",
+											margin: "0px",
+											fontWeight: 600,
+											color: colorScheme?.primary || "rgb(17,24,39)",
 										}}
 									>
-										🗓️
-									</span>
-								</div>
-							</td>
-							<td
-								data-id="__react-email-column"
-								style={{ verticalAlign: "middle" }}
+										{component.eventId
+											? component.placeholderTitle
+											: component.placeholderTitle}
+									</p>
+									<p
+										style={{
+											fontSize: "16px",
+											lineHeight: "24px",
+											margin: "0px",
+											marginTop: "8px",
+											color: colorScheme?.secondary || "rgb(107,114,128)",
+										}}
+									>
+										{new Date(
+											component.eventId
+												? component.placeholderDate
+												: component.placeholderDate
+										).toLocaleDateString(undefined, {
+											weekday: "long",
+											year: "numeric",
+											month: "long",
+											day: "numeric",
+										})}
+									</p>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+					{onUpdate && !component.eventId && (
+						<div className="absolute inset-0 bg-black/10 rounded-lg flex items-center justify-center">
+							<Button
+								variant="secondary"
+								size="sm"
+								className="font-medium"
+								onClick={openConfigDialog}
 							>
-								<p
-									style={{
-										fontSize: "20px",
-										lineHeight: "28px",
-										margin: "0px",
-										fontWeight: 600,
-										color: colorScheme?.primary || "rgb(17,24,39)",
-									}}
-								>
-									{component.eventId
-										? component.placeholderTitle
-										: component.placeholderTitle}
-								</p>
-								<p
-									style={{
-										fontSize: "16px",
-										lineHeight: "24px",
-										margin: "0px",
-										marginTop: "8px",
-										color: colorScheme?.secondary || "rgb(107,114,128)",
-									}}
-								>
-									{new Date(
-										component.eventId
-											? component.placeholderDate
-											: component.placeholderDate
-									).toLocaleDateString(undefined, {
-										weekday: "long",
-										year: "numeric",
-										month: "long",
-										day: "numeric",
-									})}
-								</p>
-							</td>
-						</tr>
-					</tbody>
-				</table>
+								<Calendar className="h-4 w-4 mr-2" />
+								Select Event
+							</Button>
+						</div>
+					)}
+				</div>
 			);
 		case "divider":
 			return (
-				<hr
-					className="w-full my-4"
+				<div className="relative">
+					<hr
+						className="w-full my-4"
+						style={{ borderColor: colorScheme?.accent || "#E5E7EB" }}
+					/>
+					{onUpdate && (
+						<div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+							<Button
+								variant="ghost"
+								size="sm"
+								className="font-medium bg-background/80"
+								onClick={openConfigDialog}
+							>
+								<SeparatorHorizontal className="h-4 w-4 mr-2" />
+								Edit Divider
+							</Button>
+						</div>
+					)}
+				</div>
+			);
+		case "audio":
+			return (
+				<div
+					className="w-full p-3 border rounded-lg relative"
 					style={{ borderColor: colorScheme?.accent || "#E5E7EB" }}
-				/>
+				>
+					<div className="flex items-center gap-2">
+						<span className="text-xl" role="img" aria-label="microphone">
+							🎤
+						</span>
+						<p className="font-medium" style={style}>
+							{component.title || "Audio Message"}
+						</p>
+					</div>
+					{component.audioUrl ? (
+						<audio
+							controls
+							className="mt-2 w-full h-10"
+							src={component.audioUrl}
+						>
+							Your browser does not support the audio element.
+						</audio>
+					) : (
+						<div className="mt-1">
+							<p className="text-sm text-muted-foreground">
+								{component.isRecorded
+									? "Recording not saved"
+									: "No audio uploaded"}
+							</p>
+							{onUpdate && (
+								<Button
+									variant="secondary"
+									size="sm"
+									className="mt-2"
+									onClick={openConfigDialog}
+								>
+									<Mic className="h-4 w-4 mr-2" />
+									{component.isRecorded ? "Record Audio" : "Upload Audio"}
+								</Button>
+							)}
+						</div>
+					)}
+				</div>
 			);
 	}
 }

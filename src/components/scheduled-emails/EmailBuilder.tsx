@@ -56,6 +56,13 @@ export function EmailBuilder({
 				};
 			case "divider":
 				return { id, type };
+			case "audio":
+				return {
+					id,
+					type,
+					title: "Audio Message",
+					isRecorded: false,
+				};
 		}
 	};
 
