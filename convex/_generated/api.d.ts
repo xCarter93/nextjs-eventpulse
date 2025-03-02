@@ -9,6 +9,7 @@
  */
 
 import type * as animations from "../animations.js";
+import type * as audioFiles from "../audioFiles.js";
 import type * as clerk from "../clerk.js";
 import type * as crons from "../crons.js";
 import type * as emails from "../emails.js";
@@ -36,6 +37,7 @@ import type {
  */
 declare const fullApi: ApiFromModules<{
   animations: typeof animations;
+  audioFiles: typeof audioFiles;
   clerk: typeof clerk;
   crons: typeof crons;
   emails: typeof emails;

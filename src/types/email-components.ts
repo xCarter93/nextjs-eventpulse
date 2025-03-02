@@ -4,7 +4,8 @@ export type EmailComponentType =
 	| "button"
 	| "image"
 	| "event"
-	| "divider";
+	| "divider"
+	| "audio";
 
 export interface BaseEmailComponent {
 	id: string;
@@ -46,13 +47,21 @@ export interface DividerComponent extends BaseEmailComponent {
 	type: "divider";
 }
 
+export interface AudioComponent extends BaseEmailComponent {
+	type: "audio";
+	audioUrl?: string; // URL to the audio file (either uploaded or recorded)
+	title: string; // Title/description for the audio
+	isRecorded: boolean; // Whether this was recorded or uploaded
+}
+
 export type EmailComponent =
 	| HeadingComponent
 	| TextComponent
 	| ButtonComponent
 	| ImageComponent
 	| EventComponent
-	| DividerComponent;
+	| DividerComponent
+	| AudioComponent;
 
 export interface EmailContent {
 	components: EmailComponent[];
