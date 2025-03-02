@@ -50,6 +50,13 @@ export const scheduleCustomEmail = mutation({
 				v.object({
 					id: v.string(),
 					type: v.literal("divider"),
+				}),
+				v.object({
+					id: v.string(),
+					type: v.literal("audio"),
+					audioUrl: v.optional(v.string()),
+					title: v.string(),
+					isRecorded: v.boolean(),
 				})
 			)
 		),

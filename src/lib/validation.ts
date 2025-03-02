@@ -4,7 +4,15 @@ import { Id } from "../../convex/_generated/dataModel";
 // Email component schemas
 const baseEmailComponent = z.object({
 	id: z.string(),
-	type: z.enum(["heading", "text", "button", "image", "event", "divider"]),
+	type: z.enum([
+		"heading",
+		"text",
+		"button",
+		"image",
+		"event",
+		"divider",
+		"audio",
+	]),
 });
 
 const headingComponent = baseEmailComponent.extend({
@@ -41,6 +49,13 @@ const dividerComponent = baseEmailComponent.extend({
 	type: z.literal("divider"),
 });
 
+const audioComponent = baseEmailComponent.extend({
+	type: z.literal("audio"),
+	audioUrl: z.string().optional(),
+	title: z.string(),
+	isRecorded: z.boolean(),
+});
+
 const emailComponentSchema = z.discriminatedUnion("type", [
 	headingComponent,
 	textComponent,
@@ -48,6 +63,7 @@ const emailComponentSchema = z.discriminatedUnion("type", [
 	imageComponent,
 	eventComponent,
 	dividerComponent,
+	audioComponent,
 ]);
 
 export const recipientsSchema = z.object({
