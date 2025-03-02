@@ -126,27 +126,11 @@ export const sendScheduledEmail = internalAction({
 			const attachments = [];
 			for (const component of updatedComponents) {
 				if (component.type === "audio" && component.audioUrl) {
-					try {
-						// Fetch the audio file
-						const response = await fetch(component.audioUrl);
-						if (!response.ok) {
-							console.error(
-								`Failed to fetch audio file: ${response.statusText}`
-							);
-							continue;
-						}
-
-						// Get the audio file as buffer
-						const audioBuffer = await response.arrayBuffer();
-
-						// Add to attachments
-						attachments.push({
-							filename: `${component.title || "Audio Message"}.mp3`,
-							content: Buffer.from(audioBuffer),
-						});
-					} catch (error) {
-						console.error("Error preparing audio attachment:", error);
-					}
+					// Add to attachments using the path format
+					attachments.push({
+						path: component.audioUrl,
+						filename: `${component.title || "Audio Message"}.mp3`,
+					});
 				}
 			}
 
