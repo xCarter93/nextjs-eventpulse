@@ -6,6 +6,7 @@ import {
 	Image,
 	Calendar,
 	MinusSquare,
+	Mic,
 } from "lucide-react";
 
 interface ToolbarItemProps {
@@ -58,6 +59,11 @@ export function EmailBuilderToolbar() {
 			id: "divider",
 			icon: <MinusSquare className="h-5 w-5" aria-label="Divider component" />,
 			label: "Divider",
+		},
+		{
+			id: "audio",
+			icon: <Mic className="h-5 w-5" aria-label="Audio component" />,
+			label: "Audio",
 		},
 	];
 
