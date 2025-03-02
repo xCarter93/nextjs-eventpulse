@@ -445,13 +445,14 @@ function EmailComponentRenderer({
 						</p>
 					</div>
 					{component.audioUrl ? (
-						<audio
-							controls
-							className="mt-2 w-full h-10"
-							src={component.audioUrl}
-						>
-							Your browser does not support the audio element.
-						</audio>
+						<div className="mt-2">
+							<audio controls className="w-full h-10" src={component.audioUrl}>
+								Your browser does not support the audio element.
+							</audio>
+							<p className="text-xs text-muted-foreground mt-1">
+								This audio will be sent as an attachment in the email.
+							</p>
+						</div>
 					) : (
 						<div className="mt-1">
 							<p className="text-sm text-muted-foreground">

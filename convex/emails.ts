@@ -122,6 +122,34 @@ export const sendScheduledEmail = internalAction({
 				})
 			);
 
+			// Prepare attachments for audio files
+			const attachments = [];
+			for (const component of updatedComponents) {
+				if (component.type === "audio" && component.audioUrl) {
+					try {
+						// Fetch the audio file
+						const response = await fetch(component.audioUrl);
+						if (!response.ok) {
+							console.error(
+								`Failed to fetch audio file: ${response.statusText}`
+							);
+							continue;
+						}
+
+						// Get the audio file as buffer
+						const audioBuffer = await response.arrayBuffer();
+
+						// Add to attachments
+						attachments.push({
+							filename: `${component.title || "Audio Message"}.mp3`,
+							content: Buffer.from(audioBuffer),
+						});
+					} catch (error) {
+						console.error("Error preparing audio attachment:", error);
+					}
+				}
+			}
+
 			const { data, error } = await resend.emails.send({
 				from: "EventPulse <pulse@eventpulse.tech>",
 				to: args.to,
@@ -130,6 +158,7 @@ export const sendScheduledEmail = internalAction({
 					components: updatedComponents as EmailComponent[],
 					colorScheme: args.colorScheme,
 				}),
+				attachments: attachments.length > 0 ? attachments : undefined,
 			});
 
 			if (error) {
