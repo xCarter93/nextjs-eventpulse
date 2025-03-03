@@ -66,6 +66,13 @@ export const sendScheduledEmail = internalAction({
 				v.object({
 					id: v.string(),
 					type: v.literal("divider"),
+				}),
+				v.object({
+					id: v.string(),
+					type: v.literal("audio"),
+					audioUrl: v.optional(v.string()),
+					title: v.string(),
+					isRecorded: v.boolean(),
 				})
 			)
 		),
@@ -80,7 +87,7 @@ export const sendScheduledEmail = internalAction({
 	},
 	handler: async (ctx, args) => {
 		try {
-			// Create a new array of components with fresh URLs for Convex storage images
+			// Create a new array of components with fresh URLs for Convex storage images and audio
 			const updatedComponents = await Promise.all(
 				args.components.map(async (component) => {
 					if (component.type === "image" && isConvexStorageUrl(component.url)) {
@@ -94,9 +101,38 @@ export const sendScheduledEmail = internalAction({
 							};
 						}
 					}
+
+					if (
+						component.type === "audio" &&
+						component.audioUrl &&
+						isConvexStorageUrl(component.audioUrl)
+					) {
+						const storageId = getStorageIdFromUrl(component.audioUrl);
+						if (storageId) {
+							// Generate a fresh URL for the audio
+							const freshUrl = await ctx.storage.getUrl(storageId);
+							return {
+								...component,
+								audioUrl: freshUrl,
+							};
+						}
+					}
+
 					return component;
 				})
 			);
+
+			// Prepare attachments for audio files
+			const attachments = [];
+			for (const component of updatedComponents) {
+				if (component.type === "audio" && component.audioUrl) {
+					// Add to attachments using the path format
+					attachments.push({
+						path: component.audioUrl,
+						filename: `${component.title || "Audio Message"}.mp3`,
+					});
+				}
+			}
 
 			const { data, error } = await resend.emails.send({
 				from: "EventPulse <pulse@eventpulse.tech>",
@@ -106,6 +142,7 @@ export const sendScheduledEmail = internalAction({
 					components: updatedComponents as EmailComponent[],
 					colorScheme: args.colorScheme,
 				}),
+				attachments: attachments.length > 0 ? attachments : undefined,
 			});
 
 			if (error) {
