@@ -3,7 +3,7 @@
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { getSubscriptionLimits } from "@/lib/subscriptions";
-import { Users, Film, Calendar, Bell } from "lucide-react";
+import { Users, Film, Calendar, Bell, BarChart2 } from "lucide-react";
 import { Card, CardHeader, CardBody } from "@heroui/card";
 
 export function UserStats() {
@@ -48,7 +48,10 @@ export function UserStats() {
 	return (
 		<Card className="w-full user-stats" shadow="sm">
 			<CardHeader className="flex justify-between items-center px-4 py-3">
-				<div className="text-sm font-medium">Plan Status</div>
+				<div className="flex items-center gap-2">
+					<BarChart2 className="h-4 w-4 text-primary" />
+					<div className="text-sm font-medium">Plan Status</div>
+				</div>
 				<div
 					className={`px-2 py-0.5 rounded-full text-xs font-medium ${
 						subscriptionLevel === "pro"

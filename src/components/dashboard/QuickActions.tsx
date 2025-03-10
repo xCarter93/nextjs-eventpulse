@@ -7,7 +7,15 @@ import { useState } from "react";
 import { PremiumModal } from "../premium/PremiumModal";
 import { Card, CardHeader, CardBody } from "@heroui/card";
 import { Modal, ModalContent, ModalHeader, ModalBody } from "@heroui/react";
-import { Users, Upload, Settings, Star, LucideIcon, Plus } from "lucide-react";
+import {
+	Users,
+	Upload,
+	Settings,
+	Star,
+	LucideIcon,
+	Plus,
+	Zap,
+} from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { getGoogleCalendarEvents } from "@/app/actions/googleCalendar";
@@ -121,7 +129,10 @@ export function QuickActions() {
 		<>
 			<Card className="w-full quick-actions" shadow="sm">
 				<CardHeader className="flex items-center px-4 py-3">
-					<div className="text-sm font-medium">Quick Actions</div>
+					<div className="flex items-center gap-2">
+						<Zap className="h-4 w-4 text-primary" />
+						<div className="text-sm font-medium">Quick Actions</div>
+					</div>
 				</CardHeader>
 				<CardBody className="px-4 py-3">
 					<div className="grid grid-cols-2 gap-3">

@@ -1,17 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
-import {
-	Sparkles,
-	Image as ImageIcon,
-	Save,
-	RefreshCw,
-	Trash2,
-	Download,
-} from "lucide-react";
+import { Sparkles, Image as ImageIcon, Save, X } from "lucide-react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 
@@ -44,6 +37,41 @@ export function AIImageGenerator({ onSuccess }: AIImageGeneratorProps) {
 	const [isSaving, setIsSaving] = useState(false);
 	const [prompt, setPrompt] = useState("");
 	const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+	const [progress, setProgress] = useState(0);
+
+	// Reset progress when not generating
+	useEffect(() => {
+		if (!isGenerating) {
+			setProgress(0);
+		}
+	}, [isGenerating]);
+
+	// Simulate progress when generating
+	useEffect(() => {
+		let interval: NodeJS.Timeout;
+
+		if (isGenerating) {
+			// Start at 0
+			setProgress(0);
+
+			// Simulate progress over approximately 15 seconds
+			// The progress will go up to 95% and then wait for the actual response
+			interval = setInterval(() => {
+				setProgress((prev) => {
+					if (prev < 95) {
+						// Move faster at the beginning, slower as we approach 95%
+						const increment = Math.max(1, 10 * (1 - prev / 100));
+						return Math.min(95, prev + increment);
+					}
+					return prev;
+				});
+			}, 300);
+		}
+
+		return () => {
+			if (interval) clearInterval(interval);
+		};
+	}, [isGenerating]);
 
 	const handleGenerateImage = async () => {
 		if (!prompt.trim()) {
@@ -52,7 +80,8 @@ export function AIImageGenerator({ onSuccess }: AIImageGeneratorProps) {
 		}
 
 		setIsGenerating(true);
-		setGeneratedImage(null); // Clear any previous image
+		setGeneratedImage(null);
+		setProgress(0);
 
 		try {
 			// Call the API to generate the image
@@ -76,6 +105,8 @@ export function AIImageGenerator({ onSuccess }: AIImageGeneratorProps) {
 				throw new Error("No image data received");
 			}
 
+			// Set progress to 100% when image is received
+			setProgress(100);
 			setGeneratedImage(data.imageData);
 		} catch (error) {
 			console.error("Error generating image:", error);
@@ -160,36 +191,32 @@ export function AIImageGenerator({ onSuccess }: AIImageGeneratorProps) {
 		}
 	};
 
-	const handleDiscard = () => {
+	const handleCancel = () => {
 		setGeneratedImage(null);
 	};
 
-	const handleTryAgain = () => {
-		setGeneratedImage(null);
-		// Keep the prompt for convenience
-	};
-
-	const handleDownload = () => {
-		if (!generatedImage) return;
-
-		// Create a temporary anchor element
-		const link = document.createElement("a");
-		link.href = generatedImage;
-		link.download = `ai-generated-${Date.now()}.png`;
-		document.body.appendChild(link);
-		link.click();
-		document.body.removeChild(link);
-	};
-
-	// Skeleton loader for the image
+	// Skeleton loader for the image with progress bar
 	const ImageSkeleton = () => (
-		<div className="relative w-full h-72 rounded-lg overflow-hidden bg-gray-200 dark:bg-neutral-800 animate-pulse">
+		<div className="relative w-full h-72 rounded-lg overflow-hidden bg-gray-200 dark:bg-neutral-800">
 			<div
 				className="absolute inset-0 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-neutral-800 dark:to-neutral-700 animate-shimmer"
 				style={{ backgroundSize: "1000px 100%" }}
 			></div>
-			<div className="absolute inset-0 flex items-center justify-center">
-				<Sparkles className="w-12 h-12 text-gray-400 dark:text-gray-600 animate-pulse" />
+			<div className="absolute inset-0 flex flex-col items-center justify-center">
+				<Sparkles className="w-12 h-12 text-gray-400 dark:text-gray-600 animate-pulse mb-4" />
+				<div className="w-3/4 max-w-xs">
+					<div className="h-2 w-full bg-gray-300 dark:bg-gray-700 rounded-full overflow-hidden">
+						<div
+							className="h-full bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full transition-all duration-300 ease-out"
+							style={{ width: `${progress}%` }}
+						></div>
+					</div>
+					<div className="mt-2 text-xs text-center text-gray-500 dark:text-gray-400">
+						{progress < 100
+							? `Generating image... ${Math.round(progress)}%`
+							: "Processing complete!"}
+					</div>
+				</div>
 			</div>
 		</div>
 	);
@@ -236,21 +263,21 @@ export function AIImageGenerator({ onSuccess }: AIImageGeneratorProps) {
 								onChange={(e) => setPrompt(e.target.value)}
 								placeholder="Describe the image you want to generate..."
 								className="w-full p-3 border rounded-lg bg-white dark:bg-neutral-800 text-foreground resize-none h-36 mb-4"
-								disabled={isGenerating}
+								disabled={isGenerating || !!generatedImage}
 							/>
 							<button
 								onClick={handleGenerateImage}
-								disabled={isGenerating || !prompt.trim()}
-								className="w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+								disabled={isGenerating || !prompt.trim() || !!generatedImage}
+								className="w-full py-3 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md"
 							>
 								{isGenerating ? (
 									<>
-										<Sparkles className="w-5 h-5 animate-pulse" />
+										<Sparkles className="w-5 h-5 animate-pulse inline-block mr-2" />
 										Generating...
 									</>
 								) : (
 									<>
-										<ImageIcon className="w-5 h-5" />
+										<ImageIcon className="w-5 h-5 inline-block mr-2" />
 										Generate Image
 									</>
 								)}
@@ -309,40 +336,24 @@ export function AIImageGenerator({ onSuccess }: AIImageGeneratorProps) {
 									</div>
 								)}
 
-								{/* Action buttons */}
+								{/* Action buttons - Simplified to just Save and Cancel */}
 								{generatedImage && (
-									<div className="flex flex-wrap gap-2 justify-center mt-4">
+									<div className="flex justify-center gap-4 mt-4">
 										<button
 											onClick={handleSaveImage}
 											disabled={isSaving}
-											className="flex items-center gap-1 py-2 px-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg"
+											className="flex items-center gap-2 py-2 px-6 bg-purple-600 hover:bg-purple-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md"
 										>
 											<Save className="w-4 h-4" />
 											{isSaving ? "Saving..." : "Save to Gallery"}
 										</button>
 
 										<button
-											onClick={handleDownload}
-											className="flex items-center gap-1 py-2 px-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-lg transition-all shadow-md hover:shadow-lg"
+											onClick={handleCancel}
+											className="flex items-center gap-2 py-2 px-6 bg-gray-200 hover:bg-gray-300 dark:bg-neutral-700 dark:hover:bg-neutral-600 text-gray-700 dark:text-gray-200 rounded-lg transition-all shadow-md"
 										>
-											<Download className="w-4 h-4" />
-											Download
-										</button>
-
-										<button
-											onClick={handleTryAgain}
-											className="flex items-center gap-1 py-2 px-4 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white rounded-lg transition-all shadow-md hover:shadow-lg"
-										>
-											<RefreshCw className="w-4 h-4" />
-											Try Again
-										</button>
-
-										<button
-											onClick={handleDiscard}
-											className="flex items-center gap-1 py-2 px-4 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white rounded-lg transition-all shadow-md hover:shadow-lg"
-										>
-											<Trash2 className="w-4 h-4" />
-											Discard
+											<X className="w-4 h-4" />
+											Cancel
 										</button>
 									</div>
 								)}
