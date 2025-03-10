@@ -1,6 +1,6 @@
 "use client";
 
-import SlidePricing from "@/components/pricing/pricing";
+import { DarkGradientPricing } from "@/components/pricing/dark-gradient-pricing";
 import { DarkGridHero } from "@/components/home-page/dark-grid-hero";
 import { BetaBanner } from "@/components/beta-banner";
 import { Features, featuresData } from "@/components/home-page/features";
@@ -34,7 +34,7 @@ export default function LandingPage() {
 			</div>
 
 			{/* Pricing Section */}
-			<SlidePricing />
+			<DarkGradientPricing />
 
 			{/* Footer */}
 			<Footer />
