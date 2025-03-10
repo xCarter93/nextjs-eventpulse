@@ -1,12 +1,12 @@
 import { openai } from "@ai-sdk/openai";
 import { streamText } from "ai";
-import { type Message } from "ai";
+import { type Message as AIMessage } from "ai";
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
 
 // System message to define the assistant's role and capabilities
-const SYSTEM_MESSAGE = `You are EventPulse's AI Assistant. You MUST ONLY provide information about features that are explicitly listed below. DO NOT make assumptions or add features that aren't listed.
+const SYSTEM_PROMPT = `You are EventPulse's AI Assistant. You MUST ONLY provide information about features that are explicitly listed below. DO NOT make assumptions or add features that aren't listed.
 
 EXACT FEATURES OF EVENTPULSE:
 
@@ -56,15 +56,19 @@ Navigation Paths (ONLY these):
 export async function POST(req: Request) {
 	const { messages } = await req.json();
 
+	// Log the incoming messages to debug
+	console.log("Incoming messages:", JSON.stringify(messages));
+
+	// Convert client messages to the format expected by the AI SDK
+	const aiMessages = messages.map((message: AIMessage) => ({
+		role: message.role,
+		content: message.content,
+	}));
+
 	const result = await streamText({
-		model: openai("o1-mini"),
-		messages: [
-			{ role: "system", content: SYSTEM_MESSAGE },
-			...messages.map((message: Message) => ({
-				role: message.role,
-				content: message.content,
-			})),
-		],
+		model: openai("gpt-4"), // Using a more capable model
+		system: SYSTEM_PROMPT, // Use the system parameter directly
+		messages: aiMessages,
 		temperature: 0, // Lower temperature for more deterministic responses
 		maxTokens: 1000,
 		topP: 0.2, // More focused responses

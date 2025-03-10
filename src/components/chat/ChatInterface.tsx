@@ -7,9 +7,19 @@ import ReactMarkdown from "react-markdown";
 import { useEffect, useRef } from "react";
 
 export default function ChatInterface() {
-	const { messages, input, handleInputChange, handleSubmit, status } = useChat(
-		{}
-	);
+	const { messages, input, handleInputChange, handleSubmit, status, error } =
+		useChat({
+			api: "/api/chat",
+			initialMessages: [],
+			id: "eventpulse-assistant",
+			body: {
+				maxTokens: 1000,
+				temperature: 0,
+			},
+			onError: (error) => {
+				console.error("Chat error:", error);
+			},
+		});
 
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const lastMessageContent = messages[messages.length - 1]?.content;
@@ -23,6 +33,13 @@ export default function ChatInterface() {
 		scrollToBottom();
 	}, [messages, lastMessageContent]);
 
+	// Display any errors
+	useEffect(() => {
+		if (error) {
+			console.error("Chat error:", error);
+		}
+	}, [error]);
+
 	return (
 		<div className="flex flex-col h-[600px] bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 rounded-xl border border-divider relative">
 			{/* Gradient Border Effect */}
@@ -35,11 +52,22 @@ export default function ChatInterface() {
 						<Bot className="h-5 w-5 text-primary" />
 					</div>
 					<h3 className="font-semibold text-foreground">AI Assistant</h3>
+					{status === "submitted" && (
+						<span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full ml-2">
+							Thinking...
+						</span>
+					)}
 				</div>
 			</div>
 
 			{/* Messages Container */}
 			<div className="flex-1 overflow-y-auto p-4 space-y-4">
+				{error && (
+					<div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-500 text-sm">
+						Error: {error.message || "Something went wrong. Please try again."}
+					</div>
+				)}
+
 				{messages.length === 0 ? (
 					<div className="flex flex-col items-center justify-center h-full space-y-4 text-muted-foreground">
 						<div className="p-4 rounded-full bg-primary/10">
