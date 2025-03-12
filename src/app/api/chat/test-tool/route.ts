@@ -2,9 +2,6 @@ import { NextResponse } from "next/server";
 import { createRecipientTool } from "@/utils/ai-tools";
 import { auth } from "@clerk/nextjs/server";
 
-// Configure the runtime for Edge compatibility
-export const runtime = "edge";
-
 // Define the valid steps for the tool
 type RecipientStep =
 	| "start"
@@ -49,32 +46,20 @@ export async function GET(req: Request) {
 			birthday,
 		});
 
-		try {
-			// Execute the tool directly
-			// @ts-expect-error - We're bypassing the type checking for testing purposes
-			const result = await createRecipientTool.execute({
-				step,
-				name,
-				email,
-				birthday,
-			});
+		// Execute the tool directly to bypass the tool execution options
+		// @ts-expect-error - We're bypassing the type checking for testing purposes
+		const result = await createRecipientTool.execute({
+			step,
+			name,
+			email,
+			birthday,
+		});
 
-			// Return the result
-			return NextResponse.json({
-				success: true,
-				result,
-			});
-		} catch (toolError) {
-			console.error("Error executing tool:", toolError);
-			return NextResponse.json(
-				{
-					success: false,
-					error:
-						toolError instanceof Error ? toolError.message : String(toolError),
-				},
-				{ status: 500 }
-			);
-		}
+		// Return the result
+		return NextResponse.json({
+			success: true,
+			result,
+		});
 	} catch (error) {
 		console.error("Error testing createRecipientTool:", error);
 		if (error instanceof Error) {
