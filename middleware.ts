@@ -13,9 +13,9 @@ const isPublicRoute = createRouteMatcher([
 // Configure the middleware for Edge compatibility
 export const config = {
 	matcher: ["/((?!.*\\..*|_next).*)", "/", "/(api|trpc)(.*)"],
-	runtime: "edge",
 };
 
+// Create a middleware that handles authentication
 export default clerkMiddleware(async (auth, request) => {
 	const { userId, redirectToSignIn } = await auth();
 	if (!isPublicRoute(request) && !userId) {
