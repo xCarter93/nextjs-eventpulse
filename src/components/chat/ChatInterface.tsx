@@ -4,9 +4,18 @@ import { Button, Input } from "@heroui/react";
 import { Send, Bot } from "lucide-react";
 import { useChat } from "@ai-sdk/react";
 import ReactMarkdown from "react-markdown";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+
+interface ErrorResponse {
+	error?: string;
+	details?: unknown;
+	[key: string]: unknown;
+}
 
 export default function ChatInterface() {
+	const [errorDetails, setErrorDetails] = useState<string | null>(null);
+	const [errorType, setErrorType] = useState<string | null>(null);
+
 	const { messages, input, handleInputChange, handleSubmit, status, error } =
 		useChat({
 			api: "/api/chat",
@@ -18,6 +27,29 @@ export default function ChatInterface() {
 			},
 			onError: (error) => {
 				console.error("Chat error:", error);
+				// Store more detailed error information
+				if (error instanceof Error) {
+					setErrorType(error.name);
+					setErrorDetails(`${error.name}: ${error.message}`);
+				} else if (typeof error === "object" && error !== null) {
+					try {
+						// Try to extract detailed error information from the response
+						const errorObj = error as ErrorResponse;
+						if (errorObj.details) {
+							setErrorDetails(JSON.stringify(errorObj.details, null, 2));
+							setErrorType(errorObj.error?.toString() || "Unknown Error");
+						} else {
+							setErrorDetails(JSON.stringify(error, null, 2));
+							setErrorType("API Error");
+						}
+					} catch {
+						setErrorDetails(String(error));
+						setErrorType("Parse Error");
+					}
+				} else {
+					setErrorDetails(String(error));
+					setErrorType("Unknown Error");
+				}
 			},
 		});
 
@@ -30,6 +62,7 @@ export default function ChatInterface() {
 		"What are the best practices for email reminders?",
 		"Can you help me customize my event notifications?",
 		"How do I manage my recipients list?",
+		"I want to create a new recipient", // Add a prompt for creating a recipient
 	];
 
 	// Function to set input to a suggested prompt
@@ -59,6 +92,13 @@ export default function ChatInterface() {
 		}
 	}, [error]);
 
+	// Reset error details when starting a new chat
+	const handleFormSubmit = (e: React.FormEvent) => {
+		setErrorDetails(null);
+		setErrorType(null);
+		handleSubmit(e);
+	};
+
 	return (
 		<div className="flex flex-col h-[600px] bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 rounded-xl border border-divider relative">
 			{/* Gradient Border Effect */}
@@ -83,16 +123,41 @@ export default function ChatInterface() {
 			<div className="flex-1 overflow-y-auto p-4 space-y-4">
 				{error && (
 					<div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-500 text-sm">
-						Error: {error.message || "Something went wrong. Please try again."}
-						<Button
-							size="sm"
-							color="danger"
-							variant="light"
-							className="mt-2"
-							onClick={() => window.location.reload()}
-						>
-							Reload
-						</Button>
+						<p className="font-medium">
+							{errorType || "Error"}:{" "}
+							{error.message || "Something went wrong. Please try again."}
+						</p>
+						{errorDetails && (
+							<details className="mt-2" open>
+								<summary className="cursor-pointer text-xs font-medium">
+									Error Details
+								</summary>
+								<pre className="mt-2 p-2 bg-red-500/5 rounded text-xs overflow-auto whitespace-pre-wrap">
+									{errorDetails}
+								</pre>
+							</details>
+						)}
+						<div className="mt-3 flex gap-2">
+							<Button
+								size="sm"
+								color="danger"
+								variant="light"
+								onClick={() => window.location.reload()}
+							>
+								Reload Page
+							</Button>
+							<Button
+								size="sm"
+								color="primary"
+								variant="light"
+								onClick={() => {
+									setErrorDetails(null);
+									setErrorType(null);
+								}}
+							>
+								Dismiss Error
+							</Button>
+						</div>
 					</div>
 				)}
 
@@ -163,7 +228,7 @@ export default function ChatInterface() {
 
 			{/* Input Form */}
 			<div className="border-t border-divider bg-background/40 p-4">
-				<form onSubmit={handleSubmit} className="flex gap-2">
+				<form onSubmit={handleFormSubmit} className="flex gap-2">
 					<Input
 						value={input}
 						onChange={handleInputChange}

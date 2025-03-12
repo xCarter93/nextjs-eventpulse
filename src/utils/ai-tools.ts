@@ -1,8 +1,7 @@
 import { z } from "zod";
 import { tool } from "ai";
-// These imports are used in the commented code
-// import { createRecipient } from "./recipient-actions";
-// import { ConvexHttpClient } from "convex/browser";
+import { createRecipient } from "./recipient-actions";
+import { ConvexHttpClient } from "convex/browser";
 
 /**
  * Tool for creating a new recipient
@@ -11,31 +10,44 @@ import { tool } from "ai";
 export const createRecipientTool = tool({
 	description: "Create a new recipient with name, email, and birthday",
 	parameters: z.object({
-		step: z.enum([
-			"start",
-			"collect-name",
-			"collect-email",
-			"collect-birthday",
-			"confirm",
-			"submit",
-		]),
-		name: z.string().optional(),
-		email: z.string().email().optional(),
-		birthday: z.string().optional(), // We'll convert this to a timestamp later
+		step: z
+			.enum([
+				"start",
+				"collect-name",
+				"collect-email",
+				"collect-birthday",
+				"confirm",
+				"submit",
+			])
+			.describe("The current step in the recipient creation process"),
+		name: z
+			.string()
+			.describe("The recipient's name (can be empty for some steps)"),
+		email: z
+			.string()
+			.describe(
+				"The recipient's email address - must be a valid email format (can be empty for some steps)"
+			),
+		birthday: z
+			.string()
+			.describe(
+				"The recipient's birthday in MM/DD/YYYY format (can be empty for some steps)"
+			),
 	}),
 	execute: async ({ step, name, email, birthday }) => {
 		// Log the input parameters for debugging
 		console.log("createRecipientTool called with:", {
 			step,
-			name,
-			email,
-			birthday,
+			name: name || "(empty)",
+			email: email || "(empty)",
+			birthday: birthday || "(empty)",
 		});
 
 		try {
 			// Step-by-step process for creating a recipient
 			switch (step) {
 				case "start":
+					console.log("Starting recipient creation process");
 					return {
 						status: "in_progress",
 						message: "Let's create a new recipient. What's their name?",
@@ -43,7 +55,8 @@ export const createRecipientTool = tool({
 					};
 
 				case "collect-name":
-					if (!name) {
+					if (!name || name.trim() === "") {
+						console.log("Name missing in collect-name step");
 						return {
 							status: "error",
 							message:
@@ -51,6 +64,7 @@ export const createRecipientTool = tool({
 							nextStep: "collect-name",
 						};
 					}
+					console.log(`Name collected: ${name}`);
 					return {
 						status: "in_progress",
 						message: `Great! Now, what's ${name}'s email address?`,
@@ -59,7 +73,8 @@ export const createRecipientTool = tool({
 					};
 
 				case "collect-email":
-					if (!name) {
+					if (!name || name.trim() === "") {
+						console.log("Name missing in collect-email step");
 						return {
 							status: "error",
 							message:
@@ -68,7 +83,8 @@ export const createRecipientTool = tool({
 						};
 					}
 
-					if (!email) {
+					if (!email || email.trim() === "") {
+						console.log("Email missing in collect-email step");
 						return {
 							status: "error",
 							message:
@@ -81,6 +97,7 @@ export const createRecipientTool = tool({
 					// Basic email validation
 					const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 					if (!emailRegex.test(email)) {
+						console.log(`Invalid email format: ${email}`);
 						return {
 							status: "error",
 							message:
@@ -90,6 +107,7 @@ export const createRecipientTool = tool({
 						};
 					}
 
+					console.log(`Email collected: ${email}`);
 					return {
 						status: "in_progress",
 						message: `Now, when is ${name}'s birthday? Please provide it in MM/DD/YYYY format.`,
@@ -99,7 +117,8 @@ export const createRecipientTool = tool({
 					};
 
 				case "collect-birthday":
-					if (!name || !email) {
+					if (!name || name.trim() === "" || !email || email.trim() === "") {
+						console.log("Missing name or email in collect-birthday step");
 						return {
 							status: "error",
 							message:
@@ -108,7 +127,8 @@ export const createRecipientTool = tool({
 						};
 					}
 
-					if (!birthday) {
+					if (!birthday || birthday.trim() === "") {
+						console.log("Birthday missing in collect-birthday step");
 						return {
 							status: "error",
 							message:
@@ -122,15 +142,21 @@ export const createRecipientTool = tool({
 					// Basic date validation and conversion to timestamp
 					let birthdayTimestamp: number;
 					try {
+						console.log(`Parsing birthday: ${birthday}`);
 						const [month, day, year] = birthday.split("/").map(Number);
+						console.log(
+							`Parsed date parts: month=${month}, day=${day}, year=${year}`
+						);
 						const date = new Date(year, month - 1, day);
 
 						// Check if the date is valid
 						if (isNaN(date.getTime())) {
+							console.log("Invalid date detected");
 							throw new Error("Invalid date");
 						}
 
 						birthdayTimestamp = date.getTime();
+						console.log(`Birthday timestamp: ${birthdayTimestamp}`);
 					} catch (error) {
 						console.error("Date validation error:", error);
 						return {
@@ -143,6 +169,7 @@ export const createRecipientTool = tool({
 						};
 					}
 
+					console.log("Birthday collected, moving to confirmation");
 					return {
 						status: "in_progress",
 						message: `Great! Here's a summary of the recipient:\n\nName: ${name}\nEmail: ${email}\nBirthday: ${birthday}\n\nIs this information correct? (yes/no)`,
@@ -153,7 +180,15 @@ export const createRecipientTool = tool({
 					};
 
 				case "confirm":
-					if (!name || !email || !birthday) {
+					if (
+						!name ||
+						name.trim() === "" ||
+						!email ||
+						email.trim() === "" ||
+						!birthday ||
+						birthday.trim() === ""
+					) {
+						console.log("Missing information in confirm step");
 						return {
 							status: "error",
 							message:
@@ -162,6 +197,7 @@ export const createRecipientTool = tool({
 						};
 					}
 
+					console.log("Confirmation received, moving to submit");
 					return {
 						status: "in_progress",
 						message: `I'll now create a recipient for ${name} with email ${email} and birthday ${new Date(parseInt(birthday)).toLocaleDateString()}.`,
@@ -172,7 +208,15 @@ export const createRecipientTool = tool({
 					};
 
 				case "submit":
-					if (!name || !email || !birthday) {
+					if (
+						!name ||
+						name.trim() === "" ||
+						!email ||
+						email.trim() === "" ||
+						!birthday ||
+						birthday.trim() === ""
+					) {
+						console.log("Missing information in submit step");
 						return {
 							status: "error",
 							message:
@@ -182,29 +226,36 @@ export const createRecipientTool = tool({
 					}
 
 					try {
-						// For testing purposes, we're commenting out the actual Convex mutation call
-						// In a real implementation, you would uncomment this code
-						/*
+						console.log("Submitting recipient data");
+
 						// Initialize the Convex client
-						const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL as string);
-						
+						const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+						if (!convexUrl) {
+							throw new Error("Convex URL is not configured");
+						}
+
+						const convex = new ConvexHttpClient(convexUrl);
+
 						// Call the createRecipient function
 						const result = await createRecipient(convex, {
 							name,
 							email,
 							birthday: parseInt(birthday),
 						});
-						
+
 						if (!result.success) {
 							throw new Error(result.error);
 						}
-						*/
 
-						// Simulate a successful creation
+						console.log(
+							"Recipient created successfully with ID:",
+							result.recipientId
+						);
 						return {
 							status: "success",
 							message: `Successfully created a new recipient for ${name}! They've been added to your recipients list.`,
 							recipientDetails: {
+								id: result.recipientId,
 								name,
 								email,
 								birthday: new Date(parseInt(birthday)).toLocaleDateString(),
@@ -230,6 +281,11 @@ export const createRecipientTool = tool({
 			}
 		} catch (error: unknown) {
 			console.error("Unexpected error in createRecipientTool:", error);
+			if (error instanceof Error) {
+				console.error("Error name:", error.name);
+				console.error("Error message:", error.message);
+				console.error("Error stack:", error.stack);
+			}
 			return {
 				status: "error",
 				message:
