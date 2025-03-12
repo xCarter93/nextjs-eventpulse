@@ -3,7 +3,6 @@ import { tool } from "ai";
 import { createRecipient } from "./server-actions";
 import { ConvexHttpClient } from "convex/browser";
 
-
 /**
  * Tool for creating a new recipient
  * This tool guides the user through the process of creating a new recipient
@@ -246,24 +245,52 @@ export const createRecipientTool = tool({
 						console.log("Submitting recipient data");
 
 						// Initialize the Convex client
-
 						const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
 						if (!convexUrl) {
+							console.error("Convex URL is not configured");
 							throw new Error("Convex URL is not configured");
 						}
 
+						console.log("Initializing Convex client with URL:", convexUrl);
 						const convex = new ConvexHttpClient(convexUrl);
 
 						// Call the createRecipient function
-						const result = await createRecipient(convex, {
-
+						console.log("Calling createRecipient with data:", {
 							name,
 							email,
 							birthday: parseInt(birthday),
 						});
 
+						const result = await createRecipient(convex, {
+							name,
+							email,
+							birthday: parseInt(birthday),
+						});
+
+						console.log("createRecipient result:", result);
+
 						if (!result.success) {
-							throw new Error(result.error);
+							console.error("Error from createRecipient:", result.error);
+
+							// Check for authentication-related errors
+							if (
+								result.error &&
+								(result.error.includes("authentication") ||
+									result.error.includes("logged in") ||
+									result.error.includes("auth") ||
+									result.error.includes("Not authenticated"))
+							) {
+								return {
+									status: "error",
+									message:
+										"You need to be logged in to create a recipient. Please log in and try again.",
+									nextStep: "start",
+								};
+							}
+
+							throw new Error(
+								result.error || "Unknown error creating recipient"
+							);
 						}
 
 						console.log(
@@ -282,9 +309,31 @@ export const createRecipientTool = tool({
 						};
 					} catch (error: unknown) {
 						console.error("Error in submit step:", error);
+
+						let errorMessage = "There was an error creating the recipient.";
+
+						if (error instanceof Error) {
+							console.error("Error name:", error.name);
+							console.error("Error message:", error.message);
+							console.error("Error stack:", error.stack);
+
+							errorMessage = error.message;
+
+							// Check for authentication-related errors
+							if (
+								error.message.includes("authentication") ||
+								error.message.includes("logged in") ||
+								error.message.includes("auth") ||
+								error.message.includes("Not authenticated")
+							) {
+								errorMessage =
+									"You need to be logged in to create a recipient. Please log in and try again.";
+							}
+						}
+
 						return {
 							status: "error",
-							message: `There was an error creating the recipient: ${error instanceof Error ? error.message : "Unknown error"}`,
+							message: errorMessage,
 							nextStep: "start",
 						};
 					}
