@@ -2,7 +2,11 @@ import { openai } from "@ai-sdk/openai";
 import { streamText } from "ai";
 import { type Message as AIMessage } from "ai";
 import { createSystemPrompt } from "@/utils/ai-context";
-import { createRecipientTool } from "@/utils/ai-tools";
+import {
+	createRecipientTool,
+	searchRecipientsTool,
+	getUpcomingEventsTool,
+} from "@/utils/ai-tools";
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 
@@ -42,13 +46,23 @@ export async function POST(req: Request) {
 			// The key should match what's referenced in the system prompt
 			const tools = {
 				createRecipient: createRecipientTool,
+				searchRecipients: searchRecipientsTool,
+				getUpcomingEvents: getUpcomingEventsTool,
 			};
 
 			// Log the tools for debugging
 			console.log("Tools configuration:", Object.keys(tools));
 			console.log(
 				"Tool details:",
-				JSON.stringify(tools.createRecipient, null, 2)
+				JSON.stringify(
+					{
+						createRecipient: tools.createRecipient.description,
+						searchRecipients: tools.searchRecipients.description,
+						getUpcomingEvents: tools.getUpcomingEvents.description,
+					},
+					null,
+					2
+				)
 			);
 
 			try {
@@ -63,6 +77,7 @@ export async function POST(req: Request) {
 					presencePenalty: 1.0, // Encourage focusing on provided information
 					tools, // Pass the tools object
 					maxSteps: 5, // Allow multiple steps for tool usage
+					toolCallStreaming: true, // Enable streaming of tool calls for better UI feedback
 				});
 
 				// Add error handling to the data stream response
