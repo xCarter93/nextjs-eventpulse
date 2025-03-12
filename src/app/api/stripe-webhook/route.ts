@@ -1,12 +1,24 @@
-import { env } from "@/env";
-import stripe from "@/lib/stripe";
 import { clerkClient } from "@clerk/nextjs/server";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../convex/_generated/api";
 
-const convex = new ConvexHttpClient(env.NEXT_PUBLIC_CONVEX_URL);
+export const runtime = "edge";
+
+// Initialize Stripe directly with environment variables
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
+	apiVersion: "2024-12-18.acacia", // Use the latest API version
+});
+
+// Initialize Convex client
+const getConvexClient = () => {
+	const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+	if (!convexUrl) {
+		throw new Error("NEXT_PUBLIC_CONVEX_URL is not configured");
+	}
+	return new ConvexHttpClient(convexUrl);
+};
 
 export async function POST(req: NextRequest) {
 	try {
@@ -14,16 +26,24 @@ export async function POST(req: NextRequest) {
 		const signature = req.headers.get("stripe-signature");
 
 		if (!signature) {
-			return new Response("Webhook signature is missing", { status: 400 });
+			return NextResponse.json(
+				{ error: "Webhook signature is missing" },
+				{ status: 400 }
+			);
+		}
+
+		const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+		if (!webhookSecret) {
+			throw new Error("STRIPE_WEBHOOK_SECRET is not configured");
 		}
 
 		const event = stripe.webhooks.constructEvent(
 			payload,
 			signature,
-			env.STRIPE_WEBHOOK_SECRET
+			webhookSecret
 		);
 
-		console.log(`Webhook received: ${event.type}`, event.data.object);
+		console.log(`Webhook received: ${event.type}`);
 
 		switch (event.type) {
 			case "checkout.session.completed":
@@ -41,10 +61,13 @@ export async function POST(req: NextRequest) {
 				break;
 		}
 
-		return new Response("Webhook received", { status: 200 });
+		return NextResponse.json({ received: true }, { status: 200 });
 	} catch (error) {
-		console.error(error);
-		return new Response("Webhook error", { status: 500 });
+		console.error("Webhook error:", error);
+		return NextResponse.json(
+			{ error: error instanceof Error ? error.message : "Unknown error" },
+			{ status: 500 }
+		);
 	}
 }
 
@@ -55,9 +78,8 @@ async function handleSessionCompleted(session: Stripe.Checkout.Session) {
 		throw new Error("User ID is missing in session metadata");
 	}
 
-	await (
-		await clerkClient()
-	).users.updateUserMetadata(userId, {
+	const clerk = await clerkClient();
+	await clerk.users.updateUserMetadata(userId, {
 		privateMetadata: {
 			stripeCustomerId: session.customer as string,
 		},
@@ -68,9 +90,6 @@ async function handleSubscriptionCreatedOrUpdated(subscriptionId: string) {
 	const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
 		expand: ["items.data.price"],
 	});
-
-	console.log("Customer type:", typeof subscription.customer);
-	console.log("Customer value:", subscription.customer);
 
 	if (
 		subscription.status === "active" ||
@@ -83,9 +102,10 @@ async function handleSubscriptionCreatedOrUpdated(subscriptionId: string) {
 
 		const userId = subscription.metadata.userId;
 		const price = subscription.items.data[0].price;
+		const convexClient = getConvexClient();
 
 		// Create or update subscription in Convex
-		await convex.mutation(api.subscriptions.createOrUpdate, {
+		await convexClient.mutation(api.subscriptions.createOrUpdate, {
 			userId,
 			stripeCustomerId: subscription.customer as string,
 			stripeSubscriptionId: subscription.id,
@@ -95,7 +115,8 @@ async function handleSubscriptionCreatedOrUpdated(subscriptionId: string) {
 		});
 	} else {
 		// Delete subscription if status is not active/trialing/past_due
-		await convex.mutation(api.subscriptions.deleteSubscription, {
+		const convexClient = getConvexClient();
+		await convexClient.mutation(api.subscriptions.deleteSubscription, {
 			stripeCustomerId: subscription.customer as string,
 		});
 	}
@@ -103,7 +124,8 @@ async function handleSubscriptionCreatedOrUpdated(subscriptionId: string) {
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 	// Delete subscription from Convex
-	await convex.mutation(api.subscriptions.deleteSubscription, {
+	const convexClient = getConvexClient();
+	await convexClient.mutation(api.subscriptions.deleteSubscription, {
 		stripeCustomerId: subscription.customer as string,
 	});
 }

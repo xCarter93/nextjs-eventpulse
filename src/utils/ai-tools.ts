@@ -3,6 +3,7 @@ import { tool } from "ai";
 import { createRecipient } from "./recipient-actions";
 import { ConvexHttpClient } from "convex/browser";
 
+
 /**
  * Tool for creating a new recipient
  * This tool guides the user through the process of creating a new recipient
@@ -229,6 +230,7 @@ export const createRecipientTool = tool({
 						console.log("Submitting recipient data");
 
 						// Initialize the Convex client
+
 						const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
 						if (!convexUrl) {
 							throw new Error("Convex URL is not configured");
@@ -238,6 +240,7 @@ export const createRecipientTool = tool({
 
 						// Call the createRecipient function
 						const result = await createRecipient(convex, {
+
 							name,
 							email,
 							birthday: parseInt(birthday),
