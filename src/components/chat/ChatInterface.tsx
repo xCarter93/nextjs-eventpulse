@@ -24,6 +24,24 @@ export default function ChatInterface() {
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const lastMessageContent = messages[messages.length - 1]?.content;
 
+	// Suggested prompts for users to try
+	const suggestedPrompts = [
+		"How do I create a new event?",
+		"What are the best practices for email reminders?",
+		"Can you help me customize my event notifications?",
+		"How do I manage my recipients list?",
+	];
+
+	// Function to set input to a suggested prompt
+	const handlePromptClick = (prompt: string) => {
+		// Create a synthetic event that matches the expected structure
+		const syntheticEvent = {
+			target: { value: prompt },
+		} as React.ChangeEvent<HTMLInputElement>;
+
+		handleInputChange(syntheticEvent);
+	};
+
 	const scrollToBottom = () => {
 		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
 	};
@@ -36,7 +54,8 @@ export default function ChatInterface() {
 	// Display any errors
 	useEffect(() => {
 		if (error) {
-			console.error("Chat error:", error);
+			console.error("Chat error in component:", error);
+			// You could add a toast notification here if you want
 		}
 	}, [error]);
 
@@ -65,15 +84,48 @@ export default function ChatInterface() {
 				{error && (
 					<div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-500 text-sm">
 						Error: {error.message || "Something went wrong. Please try again."}
+						<Button
+							size="sm"
+							color="danger"
+							variant="light"
+							className="mt-2"
+							onClick={() => window.location.reload()}
+						>
+							Reload
+						</Button>
 					</div>
 				)}
 
 				{messages.length === 0 ? (
-					<div className="flex flex-col items-center justify-center h-full space-y-4 text-muted-foreground">
+					<div className="flex flex-col items-center justify-center h-full space-y-6 text-muted-foreground">
 						<div className="p-4 rounded-full bg-primary/10">
 							<Bot className="h-8 w-8 text-primary" />
 						</div>
-						<p className="text-sm">Start a conversation with AI Assistant</p>
+						<div className="text-center space-y-2">
+							<p className="text-sm font-medium">
+								Welcome to EventPulse AI Assistant!
+							</p>
+							<p className="text-xs max-w-md">
+								I can help you with event management, recipient lists, email
+								scheduling, and more. Ask me anything about EventPulse!
+							</p>
+						</div>
+
+						{/* Suggested prompts */}
+						<div className="w-full max-w-md space-y-2">
+							<p className="text-xs font-medium text-center">Try asking:</p>
+							<div className="grid grid-cols-1 gap-2">
+								{suggestedPrompts.map((prompt, index) => (
+									<button
+										key={index}
+										onClick={() => handlePromptClick(prompt)}
+										className="text-xs text-left px-3 py-2 rounded-lg bg-muted hover:bg-primary/10 transition-colors"
+									>
+										{prompt}
+									</button>
+								))}
+							</div>
+						</div>
 					</div>
 				) : (
 					<>

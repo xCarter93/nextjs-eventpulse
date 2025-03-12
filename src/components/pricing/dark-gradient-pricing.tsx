@@ -9,11 +9,17 @@ import { toast } from "sonner";
 import { env } from "@/env";
 import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 
 export const DarkGradientPricing = () => {
 	const [isLoading, setIsLoading] = React.useState(false);
 	const [selected, setSelected] = React.useState<"M" | "A">("M");
 	const { isSignedIn } = useUser();
+	const subscriptionLevel = useQuery(
+		api.subscriptions.getUserSubscriptionLevel
+	);
+	const isPro = subscriptionLevel === "pro";
 
 	const handleUpgradeClick = async () => {
 		try {
@@ -148,7 +154,7 @@ export const DarkGradientPricing = () => {
 											? benefit.free
 											: benefit.text
 									}
-									checked={benefit.free === true}
+									checked={benefit.free !== false}
 								/>
 							))}
 						</div>
@@ -162,13 +168,25 @@ export const DarkGradientPricing = () => {
 						subtext={selected === "A" ? "Billed annually ($45/year)" : ""}
 						bestFor="Best for power users"
 						CTA={
-							<GhostButton
-								className="w-full bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
-								onClick={handleUpgradeClick}
-								disabled={isLoading}
-							>
-								{isLoading ? "Loading..." : "14-day free trial"}
-							</GhostButton>
+							!isSignedIn ? (
+								<GhostButton className="w-full bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground">
+									<Link href="/sign-in?redirect=/billing">
+										Sign in to upgrade
+									</Link>
+								</GhostButton>
+							) : isPro ? (
+								<GhostButton className="w-full bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground">
+									<Link href="/dashboard">Go to Dashboard</Link>
+								</GhostButton>
+							) : (
+								<GhostButton
+									className="w-full bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
+									onClick={handleUpgradeClick}
+									disabled={isLoading}
+								>
+									{isLoading ? "Loading..." : "Upgrade Now"}
+								</GhostButton>
+							)
 						}
 					>
 						<div className="space-y-4 py-9">

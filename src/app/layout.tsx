@@ -11,6 +11,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { TourProvider } from "@/components/providers/tour-provider";
 import DatadogInit from "@/components/datadog/datadog-init";
 import { CSPostHogProvider } from "@/components/providers/PostHogProvier";
+import { FloatingChatButtonWrapper } from "@/components/chat/FloatingChatButtonWrapper";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -45,6 +46,7 @@ export default function RootLayout({
 											<main className="main-content flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
 												{children}
 											</main>
+											<FloatingChatButtonWrapper />
 										</div>
 									</TourProvider>
 								</TooltipProvider>

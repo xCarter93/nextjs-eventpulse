@@ -8,14 +8,13 @@ import { useState } from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody } from "@heroui/react";
 import { UpcomingEvents } from "@/components/dashboard/UpcomingEvents";
 import { QuickActions } from "@/components/dashboard/QuickActions";
-import ChatInterface from "@/components/chat/ChatInterface";
 
 interface CollapsibleSidebarProps {
 	isOpen: boolean;
 	onToggle: (isOpen: boolean) => void;
 }
 
-type ActiveContent = "stats" | "events" | "actions" | "chat" | null;
+type ActiveContent = "stats" | "events" | "actions" | null;
 
 export function CollapsibleSidebar({
 	isOpen,
@@ -45,8 +44,6 @@ export function CollapsibleSidebar({
 				return "Upcoming Events";
 			case "actions":
 				return "Quick Actions";
-			case "chat":
-				return "Chat Assistant";
 			default:
 				return "";
 		}
@@ -60,8 +57,6 @@ export function CollapsibleSidebar({
 				return <UpcomingEvents />;
 			case "actions":
 				return <QuickActions />;
-			case "chat":
-				return <ChatInterface />;
 			default:
 				return null;
 		}
@@ -72,27 +67,6 @@ export function CollapsibleSidebar({
 			return (
 				<div className="flex flex-col items-center space-y-6 pt-12">
 					<SidebarIcons onIconClick={handleIconClick} />
-				</div>
-			);
-		}
-
-		if (activeContent === "chat") {
-			return (
-				<div className="h-full flex flex-col">
-					<div className="flex justify-between items-center mb-4">
-						<h2 className="text-lg font-semibold">Chat Assistant</h2>
-						<Button
-							isIconOnly
-							variant="light"
-							size="sm"
-							onClick={() => setActiveContent(null)}
-						>
-							×
-						</Button>
-					</div>
-					<div className="flex-1">
-						<ChatInterface />
-					</div>
 				</div>
 			);
 		}
