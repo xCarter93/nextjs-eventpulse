@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { tool } from "ai";
-import { createRecipient } from "./server-actions";
+import {
+	createRecipient,
+	searchRecipients,
+	getUpcomingEvents,
+} from "./server-actions";
 import { ConvexHttpClient } from "convex/browser";
 
 /**
@@ -523,6 +527,274 @@ export const createRecipientTool = tool({
 				message:
 					"An unexpected error occurred. Let's try again. Would you like to create a new recipient?",
 				nextStep: "start",
+			};
+		}
+	},
+});
+
+/**
+ * Tool for searching recipients by name, email, or birthday
+ * This tool allows users to find contacts based on different search criteria
+ */
+export const searchRecipientsTool = tool({
+	description: "Search for recipients/contacts by name, email, or birthday",
+	parameters: z.object({
+		searchQuery: z
+			.string()
+			.describe(
+				"The search query to find recipients. Can be a name, email, or birthday (MM/DD or MM/DD/YYYY format). " +
+					"Examples: 'John Smith', 'gmail.com', '10/15'"
+			),
+		searchType: z
+			.enum(["name", "email", "birthday", "any"])
+			.describe(
+				"The type of search to perform. Use 'any' if uncertain which field to search."
+			),
+	}),
+	execute: async ({
+		searchQuery,
+		searchType,
+	}: {
+		searchQuery: string;
+		searchType: "name" | "email" | "birthday" | "any";
+	}) => {
+		try {
+			// Initialize the Convex client
+			const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+			if (!convexUrl) {
+				throw new Error("Convex URL is not configured");
+			}
+
+			const convex = new ConvexHttpClient(convexUrl);
+
+			// Map the search type to the appropriate parameters
+			const searchParams: {
+				name?: string;
+				email?: string;
+				birthday?: string;
+			} = {};
+
+			if (searchType === "name" || searchType === "any") {
+				searchParams.name = searchQuery;
+			}
+
+			if (searchType === "email" || searchType === "any") {
+				searchParams.email = searchQuery;
+			}
+
+			if (searchType === "birthday" || searchType === "any") {
+				searchParams.birthday = searchQuery;
+			}
+
+			// Call the searchRecipients function
+			const result = await searchRecipients(convex, searchParams);
+
+			if (!result.success) {
+				throw new Error(result.error || "Unknown error searching recipients");
+			}
+
+			return {
+				status: "success",
+				message: result.message,
+				recipients: result.recipients,
+				count: result.count,
+			};
+		} catch (error: unknown) {
+			console.error("Error in searchRecipientsTool:", error);
+
+			let errorMessage = "There was an error searching for recipients.";
+
+			if (error instanceof Error) {
+				console.error("Error name:", error.name);
+				console.error("Error message:", error.message);
+				console.error("Error stack:", error.stack);
+
+				errorMessage = error.message;
+
+				// Check for authentication-related errors
+				if (
+					error.message.includes("authentication") ||
+					error.message.includes("logged in") ||
+					error.message.includes("auth") ||
+					error.message.includes("Not authenticated")
+				) {
+					errorMessage =
+						"You need to be logged in to search recipients. Please log in and try again.";
+				}
+			}
+
+			return {
+				status: "error",
+				message: errorMessage,
+			};
+		}
+	},
+});
+
+/**
+ * Tool for retrieving upcoming events based on date ranges
+ * This tool allows users to find events within specific time periods
+ */
+export const getUpcomingEventsTool = tool({
+	description: "Get upcoming events within a specified date range",
+	parameters: z.object({
+		dateRange: z
+			.string()
+			.describe(
+				"The date range for the event search (e.g., 'next week', 'next month', 'from June 1 to July 15')"
+			),
+		includeTypes: z
+			.enum(["all", "birthdays", "events"])
+			.describe(
+				"The types of events to include in the results ('all' for both birthdays and events, 'birthdays' for only birthdays, 'events' for only custom events)"
+			),
+	}),
+	execute: async ({
+		dateRange,
+		includeTypes,
+	}: {
+		dateRange: string;
+		includeTypes: "all" | "birthdays" | "events";
+	}) => {
+		try {
+			// Initialize the Convex client
+			const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+			if (!convexUrl) {
+				throw new Error("Convex URL is not configured");
+			}
+
+			const convex = new ConvexHttpClient(convexUrl);
+
+			// Parse the date range
+			let startDate: string | undefined;
+			let endDate: string | undefined;
+
+			// Handle different date range formats
+			if (dateRange.toLowerCase().includes("next")) {
+				// For "next week", "next month", etc.
+				startDate = "today";
+				endDate = dateRange;
+			} else if (
+				dateRange.toLowerCase().includes("from") &&
+				dateRange.toLowerCase().includes("to")
+			) {
+				// For "from X to Y" format
+				const parts = dateRange
+					.split(/from|to/i)
+					.filter((part) => part.trim().length > 0);
+				if (parts.length >= 2) {
+					startDate = parts[0].trim();
+					endDate = parts[1].trim();
+				}
+			} else {
+				// Default to treating the input as the start date with a default end date
+				startDate = dateRange;
+				// End date will be handled by the server function default (30 days)
+			}
+
+			// Set up event type filters
+			const includeBirthdays =
+				includeTypes === "all" || includeTypes === "birthdays";
+			const includeEvents = includeTypes === "all" || includeTypes === "events";
+
+			// Call the getUpcomingEvents function
+			const result = await getUpcomingEvents(convex, {
+				startDate,
+				endDate,
+				includeBirthdays,
+				includeEvents,
+			});
+
+			if (!result.success) {
+				throw new Error(result.error || "Unknown error retrieving events");
+			}
+
+			// Format the response for better readability
+			let responseMessage = result.message + "\n\n";
+
+			if (
+				result.count &&
+				result.count > 0 &&
+				result.events &&
+				result.dateRange
+			) {
+				responseMessage += `Date range: ${result.dateRange.start} to ${result.dateRange.end}\n\n`;
+
+				// Group events by type for better organization
+				const eventsByType: Record<
+					string,
+					Array<{
+						type: string;
+						name: string;
+						date: string;
+						timestamp: number;
+						person?: string;
+					}>
+				> = {
+					event: [],
+					birthday: [],
+				};
+
+				result.events.forEach((event) => {
+					if (eventsByType[event.type]) {
+						eventsByType[event.type].push(event);
+					} else {
+						eventsByType[event.type] = [event];
+					}
+				});
+
+				// Add events by type to the response
+				if (eventsByType.event.length > 0) {
+					responseMessage += "Events:\n";
+					eventsByType.event.forEach((event) => {
+						responseMessage += `- ${event.date}: ${event.name}\n`;
+					});
+					responseMessage += "\n";
+				}
+
+				if (eventsByType.birthday.length > 0) {
+					responseMessage += "Birthdays:\n";
+					eventsByType.birthday.forEach((event) => {
+						responseMessage += `- ${event.date}: ${event.name}\n`;
+					});
+					responseMessage += "\n";
+				}
+			}
+
+			return {
+				status: "success",
+				message: responseMessage.trim(),
+				events: result.events,
+				count: result.count,
+				dateRange: result.dateRange,
+			};
+		} catch (error: unknown) {
+			console.error("Error in getUpcomingEventsTool:", error);
+
+			let errorMessage = "There was an error retrieving upcoming events.";
+
+			if (error instanceof Error) {
+				console.error("Error name:", error.name);
+				console.error("Error message:", error.message);
+				console.error("Error stack:", error.stack);
+
+				errorMessage = error.message;
+
+				// Check for authentication-related errors
+				if (
+					error.message.includes("authentication") ||
+					error.message.includes("logged in") ||
+					error.message.includes("auth") ||
+					error.message.includes("Not authenticated")
+				) {
+					errorMessage =
+						"You need to be logged in to retrieve events. Please log in and try again.";
+				}
+			}
+
+			return {
+				status: "error",
+				message: errorMessage,
 			};
 		}
 	},
