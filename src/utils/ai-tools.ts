@@ -234,6 +234,7 @@ export const createRecipientTool = tool({
 							throw new Error("Convex URL is not configured");
 						}
 
+						// Create the Convex client with explicit options for Edge compatibility
 						const convex = new ConvexHttpClient(convexUrl);
 
 						// Call the createRecipient function

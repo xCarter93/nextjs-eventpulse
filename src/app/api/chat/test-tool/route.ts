@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { createRecipientTool } from "@/utils/ai-tools";
 import { auth } from "@clerk/nextjs/server";
 
+// Configure the runtime for Edge compatibility
+export const runtime = "edge";
+
 // Define the valid steps for the tool
 type RecipientStep =
 	| "start"

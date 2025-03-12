@@ -6,6 +6,9 @@ import { createRecipientTool } from "@/utils/ai-tools";
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 
+// Configure the runtime for Edge compatibility
+export const runtime = "edge";
+
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
 
