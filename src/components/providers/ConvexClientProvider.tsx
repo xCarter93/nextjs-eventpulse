@@ -4,9 +4,14 @@ import { useAuth } from "@clerk/nextjs";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
 import { ConvexReactClient } from "convex/react";
 import { Authenticated, Unauthenticated } from "convex/react";
-import { env } from "@/env";
 
-const convex = new ConvexReactClient(env.NEXT_PUBLIC_CONVEX_URL);
+// Initialize Convex directly with environment variables
+const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL || "";
+if (!convexUrl) {
+	console.warn("NEXT_PUBLIC_CONVEX_URL is not configured");
+}
+
+const convex = new ConvexReactClient(convexUrl);
 
 export function ConvexClientProvider({
 	children,
