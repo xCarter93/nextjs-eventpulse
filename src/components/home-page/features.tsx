@@ -100,7 +100,7 @@ export const featuresData: FeaturesDataProps[] = [
 		content:
 			"Start by adding your first recipient in the Recipients section. Enter their name, email, birthday, and any special dates you want to remember. You can also add notes about their preferences to make your greetings more personal.",
 		icon: <NumberIcon number={1} />,
-		image: "/features/placeholder-recipients.png",
+		image: "/features/recipients.webp",
 	},
 	{
 		id: 2,
@@ -108,7 +108,7 @@ export const featuresData: FeaturesDataProps[] = [
 		content:
 			"Visit the Animations section to upload your first custom animation. We support GIFs, images, and various animation formats. You can preview how they'll look in your emails and organize them into categories for easy access.",
 		icon: <NumberIcon number={2} />,
-		image: "/features/placeholder-animations.png",
+		image: "/features/animations.webp",
 	},
 	{
 		id: 3,
@@ -116,7 +116,7 @@ export const featuresData: FeaturesDataProps[] = [
 		content:
 			"Open the Email Builder to create your first greeting. Choose a template, add your custom animations, and personalize the message. You can preview how it will look on different devices and schedule it to be sent at the perfect moment.",
 		icon: <NumberIcon number={3} />,
-		image: "/features/placeholder-builder.png",
+		image: "/features/email-builder.webp",
 	},
 	{
 		id: 4,
@@ -124,7 +124,7 @@ export const featuresData: FeaturesDataProps[] = [
 		content:
 			"Access your personalized dashboard to see all upcoming events, scheduled emails, and recipient birthdays at a glance. The timeline view helps you plan ahead and ensure you never miss an important date.",
 		icon: <NumberIcon number={4} />,
-		image: "/features/placeholder-dashboard.png",
+		image: "/features/dashboard.webp",
 	},
 	{
 		id: 5,
@@ -132,7 +132,7 @@ export const featuresData: FeaturesDataProps[] = [
 		content:
 			"Customize your experience in the Settings section. Set up email reminders for upcoming events, configure your preferred notification schedule, and manage your calendar integrations to stay perfectly organized.",
 		icon: <NumberIcon number={5} />,
-		image: "/features/placeholder-reminders.png",
+		image: "/features/settings.webp",
 	},
 ];
 
@@ -218,7 +218,7 @@ export function Features({
 									img: "object-cover object-center",
 									zoomedWrapper: "h-full w-full",
 								}}
-								fallbackSrc="/placeholder-image.png"
+								fallbackSrc="/EventPulse Logo-Photoroom.png"
 								style={{
 									objectFit: "cover",
 								}}

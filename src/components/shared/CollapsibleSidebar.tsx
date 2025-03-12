@@ -23,19 +23,16 @@ export function CollapsibleSidebar({
 	const [activeContent, setActiveContent] = useState<ActiveContent>(null);
 	const [isModalOpen, setIsModalOpen] = useState(false);
 
-	const handleToggle = () => {
-		onToggle(!isOpen);
-	};
-
 	const handleIconClick = (content: ActiveContent) => {
-		// On desktop, just open the sidebar
+		setActiveContent(content);
+
+		// For desktop, expand the sidebar
 		if (window.innerWidth >= 1024) {
 			onToggle(true);
 			return;
 		}
 
-		// On mobile, open the modal with specific content
-		setActiveContent(content);
+		// On mobile, open the modal
 		setIsModalOpen(true);
 	};
 
@@ -65,6 +62,24 @@ export function CollapsibleSidebar({
 		}
 	};
 
+	const getSidebarContent = () => {
+		if (!isOpen) {
+			return (
+				<div className="flex flex-col items-center space-y-6 pt-12">
+					<SidebarIcons onIconClick={handleIconClick} />
+				</div>
+			);
+		}
+
+		return (
+			<div className="space-y-6">
+				<UserStats />
+				<UpcomingEvents />
+				<QuickActions />
+			</div>
+		);
+	};
+
 	return (
 		<>
 			{/* Desktop Sidebar */}
@@ -81,7 +96,7 @@ export function CollapsibleSidebar({
 					isIconOnly
 					variant="light"
 					className="absolute -left-4 top-4 z-10"
-					onClick={handleToggle}
+					onClick={() => onToggle(!isOpen)}
 				>
 					{isOpen ? (
 						<ChevronRight className="h-4 w-4" />
@@ -90,19 +105,7 @@ export function CollapsibleSidebar({
 					)}
 				</Button>
 
-				<div className="h-full overflow-y-auto p-4">
-					{isOpen ? (
-						<div className="space-y-6">
-							<UserStats />
-							<UpcomingEvents />
-							<QuickActions />
-						</div>
-					) : (
-						<div className="flex flex-col items-center space-y-6 pt-12">
-							<SidebarIcons onIconClick={handleIconClick} />
-						</div>
-					)}
-				</div>
+				<div className="h-full overflow-y-auto p-4">{getSidebarContent()}</div>
 			</div>
 
 			{/* Mobile Footer Bar */}
