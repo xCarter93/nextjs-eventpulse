@@ -51,6 +51,7 @@ export function useAddRecipient() {
 /**
  * Function to create a new recipient (server-side)
  * This is a wrapper around the Convex mutation for use in AI tools
+ * Compatible with Edge runtime
  * @param client - The Convex client
  * @param name - The recipient's name
  * @param email - The recipient's email
@@ -70,6 +71,7 @@ export async function createRecipient(
 	}
 ) {
 	try {
+		// Use the mutation method of the ConvexHttpClient
 		const result = await client.mutation(api.recipients.addRecipient, {
 			name,
 			email,
