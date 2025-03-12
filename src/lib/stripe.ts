@@ -1,8 +1,6 @@
 import Stripe from "stripe";
+import { env } from "@/env";
 
-// Initialize Stripe directly with environment variables
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-	apiVersion: "2024-12-18.acacia", // Use the latest API version
-});
+const stripe = new Stripe(env.STRIPE_SECRET_KEY);
 
 export default stripe;

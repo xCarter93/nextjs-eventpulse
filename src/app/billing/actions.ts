@@ -1,5 +1,6 @@
 "use server";
 
+import { env } from "@/env";
 import stripe from "@/lib/stripe";
 import { currentUser } from "@clerk/nextjs/server";
 
@@ -18,14 +19,9 @@ export async function createCustomerPortalSession() {
 		throw new Error("Stripe customer ID not found");
 	}
 
-	const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
-	if (!baseUrl) {
-		throw new Error("NEXT_PUBLIC_BASE_URL is not configured");
-	}
-
 	const session = await stripe.billingPortal.sessions.create({
 		customer: stripeCustomerId,
-		return_url: `${baseUrl}/billing`,
+		return_url: `${env.NEXT_PUBLIC_BASE_URL}/billing`,
 	});
 
 	if (!session.url) {
