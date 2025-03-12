@@ -158,6 +158,8 @@
 - Maintains conversation context between sessions
 - Suggests relevant features based on user questions
 - Can create new recipients directly through the chat interface
+- Can search for contacts by name, email, or birthday
+- Can retrieve and display upcoming events based on date ranges
 
 To access the AI Assistant:
 
@@ -180,3 +182,32 @@ You can create new recipients directly through the AI Assistant chat interface:
 5. The AI Assistant will create the recipient and add them to your contacts
 
 This feature provides a convenient way to quickly add new contacts without navigating to the Recipients page.
+
+### Searching for Contacts with AI Assistant
+
+You can search for existing contacts directly through the AI Assistant chat interface:
+
+1. Open the AI Assistant chat
+2. Ask to find contacts using various criteria:
+   - By name (e.g., "Find contacts named John" or "Show me all Smiths")
+   - By email (e.g., "Do I have any contacts with gmail addresses?" or "Find contacts with outlook emails")
+   - By birthday (e.g., "Show contacts with birthdays in December" or "Who has a birthday on 10/15?")
+3. The AI Assistant will search your contacts and display the matching results
+4. If no matches are found, the Assistant can help you create a new contact
+
+This feature makes it easy to quickly find contact information without having to navigate to the Recipients page and use the search filters manually.
+
+### Finding Upcoming Events with AI Assistant
+
+You can check your upcoming events directly through the AI Assistant chat interface:
+
+1. Open the AI Assistant chat
+2. Ask about upcoming events using various time frames:
+   - Specific dates (e.g., "Show me events on June 15th" or "What's happening next Monday?")
+   - Date ranges (e.g., "What events do I have in the next two weeks?" or "Show me all events between March and May")
+   - Relative dates (e.g., "Any events coming up soon?" or "Do I have anything scheduled for next month?")
+   - Event types (e.g., "Show me upcoming birthdays" or "What custom events do I have planned?")
+3. The AI Assistant will retrieve and display your events in an organized format
+4. If no events are found, the Assistant can help you create new events
+
+This feature allows you to quickly check your schedule without having to navigate to the Calendar view, making it perfect for on-the-go planning and reminders.

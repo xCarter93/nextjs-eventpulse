@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, Input } from "@heroui/react";
-import { Send, Bot } from "lucide-react";
+import { Send, Bot, Wrench, Loader2 } from "lucide-react";
 import { useChat } from "@ai-sdk/react";
 import ReactMarkdown from "react-markdown";
 import { useEffect, useRef, useState } from "react";
@@ -12,9 +12,26 @@ interface ErrorResponse {
 	[key: string]: unknown;
 }
 
+interface ToolCallInfo {
+	name: string;
+	parameters?: Record<string, unknown>;
+	status: "running" | "completed" | "error";
+	startTime: number;
+}
+
+// Define a more specific interface for the tool call
+interface ExtendedToolCall {
+	toolName: string;
+	args: Record<string, unknown>;
+	[key: string]: unknown;
+}
+
 export default function ChatInterface() {
 	const [errorDetails, setErrorDetails] = useState<string | null>(null);
 	const [errorType, setErrorType] = useState<string | null>(null);
+	const [currentTool, setCurrentTool] = useState<ToolCallInfo | null>(null);
+	// We're tracking tool history for potential future features but not using it yet
+	// const [toolHistory, setToolHistory] = useState<ToolCallInfo[]>([]);
 
 	const { messages, input, handleInputChange, handleSubmit, status, error } =
 		useChat({
@@ -25,8 +42,46 @@ export default function ChatInterface() {
 				maxTokens: 1000,
 				temperature: 0,
 			},
+			onToolCall: ({ toolCall }) => {
+				// Track the tool call
+				// Use type assertion with a more specific interface
+				const extendedToolCall = toolCall as unknown as ExtendedToolCall;
+
+				const newToolCall: ToolCallInfo = {
+					name: extendedToolCall.toolName || "Unknown Tool",
+					parameters: extendedToolCall.args || {},
+					status: "running",
+					startTime: Date.now(),
+				};
+
+				setCurrentTool(newToolCall);
+				// setToolHistory(prev => [...prev, newToolCall]);
+
+				// Return the tool call result (handled by the server)
+				return undefined;
+			},
+			onResponse: () => {
+				// Mark the current tool as completed when we get a response
+				if (currentTool) {
+					setCurrentTool((prev) =>
+						prev ? { ...prev, status: "completed" } : null
+					);
+
+					// Clear the current tool after a short delay
+					setTimeout(() => {
+						setCurrentTool(null);
+					}, 2000);
+				}
+			},
 			onError: (error) => {
 				console.error("Chat error:", error);
+				// Mark the current tool as error
+				if (currentTool) {
+					setCurrentTool((prev) =>
+						prev ? { ...prev, status: "error" } : null
+					);
+				}
+
 				// Store more detailed error information
 				if (error instanceof Error) {
 					setErrorType(error.name);
@@ -63,6 +118,8 @@ export default function ChatInterface() {
 		"Can you help me customize my event notifications?",
 		"How do I manage my recipients list?",
 		"I want to create a new recipient", // Add a prompt for creating a recipient
+		"Find contacts with gmail addresses", // Add a prompt for searching recipients
+		"What events do I have next month?", // Add a prompt for upcoming events
 	];
 
 	// Function to set input to a suggested prompt
@@ -99,6 +156,26 @@ export default function ChatInterface() {
 		handleSubmit(e);
 	};
 
+	// Format parameter display for the tool call
+	const formatToolParameters = (params?: Record<string, unknown>): string => {
+		if (!params) return "";
+
+		// Filter out empty or undefined values and format for display
+		const filteredParams = Object.entries(params)
+			.filter(([, value]) => value !== undefined && value !== "")
+			.map(([key, value]) => {
+				// Truncate long values
+				const displayValue =
+					typeof value === "string" && value.length > 20
+						? `${value.substring(0, 20)}...`
+						: value;
+				return `${key}: ${displayValue}`;
+			})
+			.join(", ");
+
+		return filteredParams ? `(${filteredParams})` : "";
+	};
+
 	return (
 		<div className="flex flex-col h-[600px] bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 rounded-xl border border-divider relative">
 			{/* Gradient Border Effect */}
@@ -111,8 +188,29 @@ export default function ChatInterface() {
 						<Bot className="h-5 w-5 text-primary" />
 					</div>
 					<h3 className="font-semibold text-foreground">AI Assistant</h3>
-					{status === "submitted" && (
-						<span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full ml-2">
+
+					{/* Tool Call Status */}
+					{currentTool && (
+						<div className="flex items-center gap-1.5 ml-auto">
+							{currentTool.status === "running" ? (
+								<Loader2 className="h-3.5 w-3.5 text-primary animate-spin" />
+							) : currentTool.status === "completed" ? (
+								<div className="h-2 w-2 rounded-full bg-green-500"></div>
+							) : (
+								<div className="h-2 w-2 rounded-full bg-red-500"></div>
+							)}
+							<span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full flex items-center gap-1">
+								<Wrench className="h-3 w-3" />
+								{currentTool.name}
+								{formatToolParameters(currentTool.parameters)}
+							</span>
+						</div>
+					)}
+
+					{/* General Status */}
+					{status === "submitted" && !currentTool && (
+						<span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full ml-auto flex items-center gap-1">
+							<Loader2 className="h-3.5 w-3.5 animate-spin" />
 							Thinking...
 						</span>
 					)}
