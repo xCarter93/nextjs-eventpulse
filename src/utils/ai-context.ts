@@ -1,43 +1,30 @@
+import fs from "fs";
+import path from "path";
+
 /**
- * Returns the EventPulse features documentation
- * Edge-compatible version (no filesystem access)
- * @returns The content of the features as a string
+ * Loads the EventPulse features documentation from the markdown file
+ * @returns The content of the markdown file as a string
  */
 export function loadEventPulseFeatures(): string {
-	// Hardcoded features documentation for Edge compatibility
-	return `
+	try {
+		const filePath = path.join(
+			process.cwd(),
+			"src/data/eventpulse-features.md"
+		);
+		const content = fs.readFileSync(filePath, "utf-8");
+		return content;
+	} catch (error) {
+		console.error("Error loading EventPulse features documentation:", error);
+		// Return a basic fallback if the file can't be loaded
+		return `
 # EventPulse Features
-
-## Dashboard
-- View upcoming events and reminders
-- Track email campaign performance
-- Monitor recipient engagement
-- Access quick actions for common tasks
-
-## Recipients Management
-- Add, edit, and delete recipients
-- Import recipients from CSV files
-- Organize recipients into groups
-- Search and filter recipients by various criteria
-
-## Email Campaigns
-- Create beautiful email templates
-- Schedule emails for special occasions
-- Set up recurring reminders
-- Track open rates and engagement
-
-## Animation Studio
-- Create custom animations for emails
-- Choose from pre-designed templates
-- Customize colors and effects
-- Preview animations before sending
-
-## Settings & Configuration
-- Update account information
-- Manage subscription plans
-- Configure notification preferences
-- Set default email templates
-`;
+- Dashboard with analytics and event tracking
+- Recipients management
+- Email campaign tools
+- Animation studio
+- Settings & configuration
+    `;
+	}
 }
 
 /**

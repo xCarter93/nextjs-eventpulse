@@ -1,14 +1,9 @@
-// Import only what's needed for the server-side function
-// This avoids importing React-dependent code in Edge functions
 import { api } from "../../convex/_generated/api";
-import type { ConvexHttpClient } from "convex/browser";
-
-// Client-side imports (only used in browser)
-// These won't be included in Edge runtime code
 import { useMutation } from "convex/react";
+import { ConvexHttpClient } from "convex/browser";
 
 /**
- * Hook to add a new recipient (CLIENT-SIDE ONLY)
+ * Hook to add a new recipient
  * @returns A function to add a new recipient
  */
 export function useAddRecipient() {
@@ -54,9 +49,8 @@ export function useAddRecipient() {
 }
 
 /**
- * Function to create a new recipient (SERVER-SIDE ONLY)
+ * Function to create a new recipient (server-side)
  * This is a wrapper around the Convex mutation for use in AI tools
- * Compatible with Edge runtime
  * @param client - The Convex client
  * @param name - The recipient's name
  * @param email - The recipient's email
@@ -76,8 +70,6 @@ export async function createRecipient(
 	}
 ) {
 	try {
-		// Use the mutation method of the ConvexHttpClient
-		// This is Edge-compatible and doesn't rely on React context
 		const result = await client.mutation(api.recipients.addRecipient, {
 			name,
 			email,

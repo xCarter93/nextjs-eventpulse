@@ -6,9 +6,6 @@ import { createRecipientTool } from "@/utils/ai-tools";
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 
-// Configure the runtime for Edge compatibility
-export const runtime = "edge";
-
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
 
@@ -49,9 +46,10 @@ export async function POST(req: Request) {
 
 			// Log the tools for debugging
 			console.log("Tools configuration:", Object.keys(tools));
-
-			// Don't log the entire tool to avoid circular reference issues
-			console.log("Tool description:", createRecipientTool.description);
+			console.log(
+				"Tool details:",
+				JSON.stringify(tools.createRecipient, null, 2)
+			);
 
 			try {
 				const result = await streamText({
