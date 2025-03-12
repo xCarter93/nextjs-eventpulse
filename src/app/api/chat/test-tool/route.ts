@@ -49,20 +49,32 @@ export async function GET(req: Request) {
 			birthday,
 		});
 
-		// Execute the tool directly to bypass the tool execution options
-		// @ts-expect-error - We're bypassing the type checking for testing purposes
-		const result = await createRecipientTool.execute({
-			step,
-			name,
-			email,
-			birthday,
-		});
+		try {
+			// Execute the tool directly
+			// @ts-expect-error - We're bypassing the type checking for testing purposes
+			const result = await createRecipientTool.execute({
+				step,
+				name,
+				email,
+				birthday,
+			});
 
-		// Return the result
-		return NextResponse.json({
-			success: true,
-			result,
-		});
+			// Return the result
+			return NextResponse.json({
+				success: true,
+				result,
+			});
+		} catch (toolError) {
+			console.error("Error executing tool:", toolError);
+			return NextResponse.json(
+				{
+					success: false,
+					error:
+						toolError instanceof Error ? toolError.message : String(toolError),
+				},
+				{ status: 500 }
+			);
+		}
 	} catch (error) {
 		console.error("Error testing createRecipientTool:", error);
 		if (error instanceof Error) {

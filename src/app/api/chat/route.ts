@@ -49,10 +49,9 @@ export async function POST(req: Request) {
 
 			// Log the tools for debugging
 			console.log("Tools configuration:", Object.keys(tools));
-			console.log(
-				"Tool details:",
-				JSON.stringify(tools.createRecipient, null, 2)
-			);
+
+			// Don't log the entire tool to avoid circular reference issues
+			console.log("Tool description:", createRecipientTool.description);
 
 			try {
 				const result = await streamText({
