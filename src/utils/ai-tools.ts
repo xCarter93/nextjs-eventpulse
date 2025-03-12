@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { tool } from "ai";
-import { createRecipient } from "./recipient-actions";
-import { createEdgeConvexClient } from "./convex-edge-client";
+import { addRecipientEdge } from "./convex-edge";
 
 /**
  * Tool for creating a new recipient
@@ -228,17 +227,14 @@ export const createRecipientTool = tool({
 					try {
 						console.log("Submitting recipient data");
 
-						// Initialize the Convex client using our Edge-compatible wrapper
+						// Get the Convex URL from environment variables
 						const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
 						if (!convexUrl) {
 							throw new Error("Convex URL is not configured");
 						}
 
-						// Create the Edge-compatible Convex client
-						const convex = createEdgeConvexClient(convexUrl);
-
-						// Call the createRecipient function
-						const result = await createRecipient(convex, {
+						// Use the Edge-compatible function to add the recipient
+						const result = await addRecipientEdge(convexUrl, {
 							name,
 							email,
 							birthday: parseInt(birthday),
