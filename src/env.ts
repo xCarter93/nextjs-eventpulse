@@ -14,6 +14,7 @@ export const env = createEnv({
 		GOOGLE_OAUTH_CLIENT_SECRET: z.string().min(1),
 		GOOGLE_OAUTH_REDIRECT_URI: z.string().min(1),
 		GOOGLE_API_KEY: z.string().min(1),
+		OPENAI_API_KEY: z.string().min(1),
 	},
 	client: {
 		NEXT_PUBLIC_CONVEX_URL: z.string().min(1),

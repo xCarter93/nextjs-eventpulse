@@ -3,7 +3,7 @@ import { Github, Heart } from "lucide-react";
 
 export function Footer() {
 	return (
-		<footer className="border-t bg-background/50 backdrop-blur-xl">
+		<footer className="bg-background/50 backdrop-blur-xl">
 			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 				<div className="py-8">
 					{/* Main Footer Content */}

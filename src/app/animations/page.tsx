@@ -6,8 +6,10 @@ import { TemplateCard } from "@/components/animations/TemplateCard";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Image, Upload, Sparkles, FileImage } from "lucide-react";
-import { Pagination, Card, CardBody } from "@heroui/react";
+import { Pagination, Card, CardBody, Tabs, Tab } from "@heroui/react";
 import { PageWithStats } from "@/components/shared/PageWithStats";
+import { CustomAnimationUploader } from "@/components/animations/CustomAnimationUploader";
+import { AIImageGenerator } from "@/components/animations/AIImageGenerator";
 
 function EmptyState() {
 	return (
@@ -48,6 +50,7 @@ export default function AnimationsPage() {
 	const [selectedTemplate, setSelectedTemplate] =
 		useState<AnimationTemplate | null>(null);
 	const [currentPage, setCurrentPage] = useState(1);
+	const [activeTab, setActiveTab] = useState("gallery");
 	const itemsPerPage = 8;
 
 	const userAnimations = useQuery(api.animations.getUserAnimations);
@@ -70,6 +73,16 @@ export default function AnimationsPage() {
 	const endIndex = startIndex + itemsPerPage;
 	const currentTemplates = templates.slice(startIndex, endIndex);
 
+	const handleTabChange = (key: string | number) => {
+		setActiveTab(key.toString());
+	};
+
+	const handleAnimationAdded = () => {
+		// Reset to gallery tab and first page
+		setActiveTab("gallery");
+		setCurrentPage(1);
+	};
+
 	return (
 		<PageWithStats>
 			<div className="space-y-6">
@@ -84,40 +97,56 @@ export default function AnimationsPage() {
 
 				<Card className="flex-1" radius="lg" shadow="md" isBlurred={true}>
 					<CardBody className="p-6">
-						<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 animations-grid">
-							{currentTemplates.length > 0 ? (
-								currentTemplates.map((template) => (
-									<TemplateCard
-										key={template.id}
-										template={template}
-										isSelected={selectedTemplate?.id === template.id}
-										onSelect={setSelectedTemplate}
-										createdAt={template.createdAt}
-										isCustom={template.isCustom}
-										userTier={user?.subscription.tier as "pro" | "free"}
-									/>
-								))
-							) : (
-								<EmptyState />
-							)}
-						</div>
-						{templates.length > itemsPerPage && (
-							<div className="flex justify-center mt-6">
-								<Pagination
-									total={totalPages}
-									page={currentPage}
-									onChange={setCurrentPage}
-									showControls
-									size="md"
-									radius="md"
-									variant="bordered"
-									classNames={{
-										wrapper: "gap-2",
-										item: "min-w-8 h-8",
-									}}
-								/>
-							</div>
-						)}
+						<Tabs
+							selectedKey={activeTab}
+							onSelectionChange={handleTabChange}
+							className="mb-6"
+							variant="underlined"
+							size="lg"
+						>
+							<Tab key="gallery" title="My Gallery">
+								<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 animations-grid">
+									{currentTemplates.length > 0 ? (
+										currentTemplates.map((template) => (
+											<TemplateCard
+												key={template.id}
+												template={template}
+												isSelected={selectedTemplate?.id === template.id}
+												onSelect={setSelectedTemplate}
+												createdAt={template.createdAt}
+												isCustom={template.isCustom}
+												userTier={user?.subscription.tier as "pro" | "free"}
+											/>
+										))
+									) : (
+										<EmptyState />
+									)}
+								</div>
+								{templates.length > itemsPerPage && (
+									<div className="flex justify-center mt-6">
+										<Pagination
+											total={totalPages}
+											page={currentPage}
+											onChange={setCurrentPage}
+											showControls
+											size="md"
+											radius="md"
+											variant="bordered"
+											classNames={{
+												wrapper: "gap-2",
+												item: "min-w-8 h-8",
+											}}
+										/>
+									</div>
+								)}
+							</Tab>
+							<Tab key="upload" title="Upload Animation">
+								<CustomAnimationUploader onSuccess={handleAnimationAdded} />
+							</Tab>
+							<Tab key="generate" title="AI Generate">
+								<AIImageGenerator onSuccess={handleAnimationAdded} />
+							</Tab>
+						</Tabs>
 					</CardBody>
 				</Card>
 			</div>
