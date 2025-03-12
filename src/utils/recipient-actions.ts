@@ -72,6 +72,7 @@ export async function createRecipient(
 ) {
 	try {
 		// Use the mutation method of the ConvexHttpClient
+		// This is Edge-compatible and doesn't rely on React context
 		const result = await client.mutation(api.recipients.addRecipient, {
 			name,
 			email,
