@@ -213,14 +213,47 @@ export const createRecipientTool = tool({
 						};
 					}
 
+					// Ensure birthday is a valid timestamp
+					let birthdayDate: Date;
+					try {
+						// Try to parse the birthday as a timestamp first
+						const timestampValue = Number(birthday);
+						birthdayDate = new Date(timestampValue);
+
+						// If it's not a valid date, it might be in MM/DD/YYYY format
+						if (isNaN(birthdayDate.getTime())) {
+							console.log(
+								"Birthday is not a valid timestamp, trying to parse as MM/DD/YYYY"
+							);
+							const [month, day, year] = birthday.split("/").map(Number);
+							birthdayDate = new Date(year, month - 1, day);
+
+							if (isNaN(birthdayDate.getTime())) {
+								throw new Error("Invalid date format");
+							}
+						}
+
+						console.log(
+							`Confirmed birthday: ${birthdayDate.toLocaleDateString()}`
+						);
+					} catch (error) {
+						console.error("Error parsing birthday in confirm step:", error);
+						return {
+							status: "error",
+							message:
+								"There was an issue with the birthday format. Let's start over.",
+							nextStep: "collect-name",
+						};
+					}
+
 					console.log("Confirmation received, moving to submit");
 					return {
 						status: "in_progress",
-						message: `I'll now create a recipient for ${name} with email ${email} and birthday ${new Date(parseInt(birthday)).toLocaleDateString()}.`,
+						message: `I'll now create a recipient for ${name} with email ${email} and birthday ${birthdayDate.toLocaleDateString()}.`,
 						nextStep: "submit",
 						name,
 						email,
-						birthday,
+						birthday: birthdayDate.getTime().toString(),
 					};
 
 				case "submit":
@@ -247,47 +280,32 @@ export const createRecipientTool = tool({
 						// Initialize the Convex client
 						const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
 						if (!convexUrl) {
-							console.error("Convex URL is not configured");
 							throw new Error("Convex URL is not configured");
 						}
 
-						console.log("Initializing Convex client with URL:", convexUrl);
 						const convex = new ConvexHttpClient(convexUrl);
 
-						// Call the createRecipient function
+						// Parse the birthday timestamp
+						const birthdayTimestamp = Number(birthday);
+						if (isNaN(birthdayTimestamp)) {
+							console.error("Invalid birthday timestamp:", birthday);
+							throw new Error("Invalid birthday timestamp");
+						}
+
 						console.log("Calling createRecipient with data:", {
 							name,
 							email,
-							birthday: parseInt(birthday),
+							birthday: birthdayTimestamp,
 						});
 
+						// Call the createRecipient function
 						const result = await createRecipient(convex, {
 							name,
 							email,
-							birthday: parseInt(birthday),
+							birthday: birthdayTimestamp,
 						});
 
-						console.log("createRecipient result:", result);
-
 						if (!result.success) {
-							console.error("Error from createRecipient:", result.error);
-
-							// Check for authentication-related errors
-							if (
-								result.error &&
-								(result.error.includes("authentication") ||
-									result.error.includes("logged in") ||
-									result.error.includes("auth") ||
-									result.error.includes("Not authenticated"))
-							) {
-								return {
-									status: "error",
-									message:
-										"You need to be logged in to create a recipient. Please log in and try again.",
-									nextStep: "start",
-								};
-							}
-
 							throw new Error(
 								result.error || "Unknown error creating recipient"
 							);
@@ -304,36 +322,14 @@ export const createRecipientTool = tool({
 								id: result.recipientId,
 								name,
 								email,
-								birthday: new Date(parseInt(birthday)).toLocaleDateString(),
+								birthday: new Date(birthdayTimestamp).toLocaleDateString(),
 							},
 						};
 					} catch (error: unknown) {
 						console.error("Error in submit step:", error);
-
-						let errorMessage = "There was an error creating the recipient.";
-
-						if (error instanceof Error) {
-							console.error("Error name:", error.name);
-							console.error("Error message:", error.message);
-							console.error("Error stack:", error.stack);
-
-							errorMessage = error.message;
-
-							// Check for authentication-related errors
-							if (
-								error.message.includes("authentication") ||
-								error.message.includes("logged in") ||
-								error.message.includes("auth") ||
-								error.message.includes("Not authenticated")
-							) {
-								errorMessage =
-									"You need to be logged in to create a recipient. Please log in and try again.";
-							}
-						}
-
 						return {
 							status: "error",
-							message: errorMessage,
+							message: `There was an error creating the recipient: ${error instanceof Error ? error.message : "Unknown error"}`,
 							nextStep: "start",
 						};
 					}
