@@ -160,6 +160,7 @@
 - Can create new recipients directly through the chat interface
 - Can search for contacts by name, email, or birthday
 - Can retrieve and display upcoming events based on date ranges
+- Can create new events directly through the chat interface
 
 To access the AI Assistant:
 
@@ -182,6 +183,21 @@ You can create new recipients directly through the AI Assistant chat interface:
 5. The AI Assistant will create the recipient and add them to your contacts
 
 This feature provides a convenient way to quickly add new contacts without navigating to the Recipients page.
+
+### Creating Events with AI Assistant
+
+You can create new events directly through the AI Assistant chat interface:
+
+1. Open the AI Assistant chat
+2. Ask to create a new event (e.g., "I want to create a new event" or "Add an event to my calendar")
+3. Follow the step-by-step prompts to provide:
+   - Event name
+   - Event date (in MM/DD/YYYY format)
+   - Whether the event recurs annually
+4. Confirm the information when prompted
+5. The AI Assistant will create the event and add it to your calendar
+
+This feature allows you to quickly schedule events without having to navigate to the Calendar page, making it perfect for on-the-go planning.
 
 ### Searching for Contacts with AI Assistant
 
