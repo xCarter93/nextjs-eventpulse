@@ -9,6 +9,7 @@ import {
 } from "@/utils/ai-tools";
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
+import { parseUserMessage } from "@/utils/structured-data-parser";
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
@@ -64,6 +65,39 @@ export async function POST(req: Request) {
 					2
 				)
 			);
+
+			// Get the last user message
+			const lastUserMessage = aiMessages
+				.filter(
+					(message: { role: string; content: string }) =>
+						message.role === "user"
+				)
+				.pop();
+
+			// If there's a user message, parse it into structured data
+			if (lastUserMessage) {
+				// Parse the user message into structured data
+				const parsedData = await parseUserMessage(lastUserMessage.content);
+
+				console.log(
+					"Parsed user message:",
+					JSON.stringify(parsedData, null, 2)
+				);
+
+				// If a tool was identified, prepare to use it
+				if (parsedData.toolToUse !== "none" && parsedData.structuredData) {
+					// Add a system message with the structured data
+					aiMessages.push({
+						role: "system",
+						content: `The user's message has been analyzed and structured as follows:
+Tool to use: ${parsedData.toolToUse}
+Reason: ${parsedData.reason}
+Structured data: ${JSON.stringify(parsedData.structuredData, null, 2)}
+
+Please use this structured data with the appropriate tool.`,
+					});
+				}
+			}
 
 			try {
 				const result = await streamText({
