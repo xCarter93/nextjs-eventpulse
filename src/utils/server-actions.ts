@@ -429,6 +429,7 @@ export function parseDate(date: Date | number | string): number {
 	}
 
 	if (typeof date === "string") {
+		console.log(`Parsing date string: "${date}"`);
 		// Try to parse relative dates
 		const lowerDate = date.toLowerCase();
 		const now = new Date();
@@ -436,16 +437,19 @@ export function parseDate(date: Date | number | string): number {
 
 		// Handle "today", "tomorrow", "yesterday"
 		if (lowerDate === "today") {
+			console.log(`Parsed "today" as ${now.toISOString()}`);
 			return now.getTime();
 		}
 		if (lowerDate === "tomorrow") {
 			const tomorrow = new Date(now);
 			tomorrow.setDate(tomorrow.getDate() + 1);
+			console.log(`Parsed "tomorrow" as ${tomorrow.toISOString()}`);
 			return tomorrow.getTime();
 		}
 		if (lowerDate === "yesterday") {
 			const yesterday = new Date(now);
 			yesterday.setDate(yesterday.getDate() - 1);
+			console.log(`Parsed "yesterday" as ${yesterday.toISOString()}`);
 			return yesterday.getTime();
 		}
 
@@ -453,17 +457,46 @@ export function parseDate(date: Date | number | string): number {
 		if (lowerDate === "next week") {
 			const nextWeek = new Date(now);
 			nextWeek.setDate(nextWeek.getDate() + 7);
+			console.log(`Parsed "next week" as ${nextWeek.toISOString()}`);
 			return nextWeek.getTime();
 		}
 		if (lowerDate === "next month") {
 			const nextMonth = new Date(now);
 			nextMonth.setMonth(nextMonth.getMonth() + 1);
+			console.log(`Parsed "next month" as ${nextMonth.toISOString()}`);
 			return nextMonth.getTime();
 		}
 		if (lowerDate === "next year") {
 			const nextYear = new Date(now);
 			nextYear.setFullYear(nextYear.getFullYear() + 1);
+			console.log(`Parsed "next year" as ${nextYear.toISOString()}`);
 			return nextYear.getTime();
+		}
+
+		// Handle "X weeks/days/months from today/now"
+		const fromTodayMatch = lowerDate.match(
+			/^(\d+) (day|days|week|weeks|month|months|year|years) from (today|now)$/
+		);
+		if (fromTodayMatch) {
+			console.log(
+				`Matched "X from today/now" pattern: ${JSON.stringify(fromTodayMatch)}`
+			);
+			const amount = parseInt(fromTodayMatch[1], 10);
+			const unit = fromTodayMatch[2];
+			const future = new Date(now);
+
+			if (unit === "day" || unit === "days") {
+				future.setDate(future.getDate() + amount);
+			} else if (unit === "week" || unit === "weeks") {
+				future.setDate(future.getDate() + amount * 7);
+			} else if (unit === "month" || unit === "months") {
+				future.setMonth(future.getMonth() + amount);
+			} else if (unit === "year" || unit === "years") {
+				future.setFullYear(future.getFullYear() + amount);
+			}
+
+			console.log(`Parsed "${lowerDate}" as ${future.toISOString()}`);
+			return future.getTime();
 		}
 
 		// Handle "in X days/weeks/months/years"
@@ -471,6 +504,7 @@ export function parseDate(date: Date | number | string): number {
 			/^in (\d+) (day|days|week|weeks|month|months|year|years)$/
 		);
 		if (inMatch) {
+			console.log(`Matched "in X" pattern: ${JSON.stringify(inMatch)}`);
 			const amount = parseInt(inMatch[1], 10);
 			const unit = inMatch[2];
 			const future = new Date(now);
@@ -485,6 +519,7 @@ export function parseDate(date: Date | number | string): number {
 				future.setFullYear(future.getFullYear() + amount);
 			}
 
+			console.log(`Parsed "${lowerDate}" as ${future.toISOString()}`);
 			return future.getTime();
 		}
 
@@ -500,6 +535,7 @@ export function parseDate(date: Date | number | string): number {
 
 			if (!isNaN(month) && !isNaN(day) && !isNaN(year)) {
 				const parsedDate = new Date(year, month, day);
+				console.log(`Parsed MM/DD/YYYY format as ${parsedDate.toISOString()}`);
 				return parsedDate.getTime();
 			}
 		}
@@ -507,7 +543,74 @@ export function parseDate(date: Date | number | string): number {
 		// Try standard date parsing as fallback
 		const parsedDate = new Date(date);
 		if (!isNaN(parsedDate.getTime())) {
+			console.log(
+				`Parsed with standard Date constructor as ${parsedDate.toISOString()}`
+			);
 			return parsedDate.getTime();
+		}
+
+		// Additional handling for "two weeks from today" and similar formats
+		// This is a more flexible approach that doesn't rely on exact pattern matching
+		if (
+			lowerDate.includes("week") ||
+			lowerDate.includes("day") ||
+			lowerDate.includes("month") ||
+			lowerDate.includes("year")
+		) {
+			console.log(`Trying flexible parsing for: "${lowerDate}"`);
+
+			// Extract number if present
+			let amount = 1; // Default to 1 if no number is specified
+			const numberMatch = lowerDate.match(/(\d+)/);
+			if (numberMatch) {
+				amount = parseInt(numberMatch[1], 10);
+				console.log(`Extracted amount: ${amount}`);
+			} else {
+				// Handle text numbers like "two", "three", etc.
+				const textNumbers: Record<string, number> = {
+					one: 1,
+					two: 2,
+					three: 3,
+					four: 4,
+					five: 5,
+					six: 6,
+					seven: 7,
+					eight: 8,
+					nine: 9,
+					ten: 10,
+					a: 1,
+					an: 1,
+				};
+
+				for (const [word, value] of Object.entries(textNumbers)) {
+					if (lowerDate.includes(word)) {
+						amount = value;
+						console.log(`Extracted text number: ${word} = ${amount}`);
+						break;
+					}
+				}
+			}
+
+			// Determine time unit and calculate future date
+			const future = new Date(now);
+
+			if (lowerDate.includes("week")) {
+				console.log(`Adding ${amount} weeks (${amount * 7} days)`);
+				future.setDate(future.getDate() + amount * 7);
+			} else if (lowerDate.includes("month")) {
+				console.log(`Adding ${amount} months`);
+				future.setMonth(future.getMonth() + amount);
+			} else if (lowerDate.includes("year")) {
+				console.log(`Adding ${amount} years`);
+				future.setFullYear(future.getFullYear() + amount);
+			} else if (lowerDate.includes("day")) {
+				console.log(`Adding ${amount} days`);
+				future.setDate(future.getDate() + amount);
+			}
+
+			console.log(`Current date: ${now.toISOString()}`);
+			console.log(`Calculated future date: ${future.toISOString()}`);
+			return future.getTime();
 		}
 	}
 

@@ -1,10 +1,20 @@
 "use client";
 
 import { Button, Input } from "@heroui/react";
-import { Send, Bot, Wrench, Loader2 } from "lucide-react";
+import {
+	Send,
+	Wrench,
+	Loader2,
+	Sparkles,
+	Calendar,
+	Users,
+	Search,
+	HelpCircle,
+} from "lucide-react";
 import { useChat } from "@ai-sdk/react";
 import ReactMarkdown from "react-markdown";
 import { useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface ErrorResponse {
 	error?: string;
@@ -99,7 +109,7 @@ export default function ChatInterface() {
 						}
 					} catch {
 						setErrorDetails(String(error));
-						setErrorType("Parse Error");
+						setErrorType("Unknown Error");
 					}
 				} else {
 					setErrorDetails(String(error));
@@ -111,26 +121,29 @@ export default function ChatInterface() {
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const lastMessageContent = messages[messages.length - 1]?.content;
 
-	// Suggested prompts for users to try
-	const suggestedPrompts = [
-		"How do I create a new event?",
-		"What are the best practices for email reminders?",
-		"Can you help me customize my event notifications?",
-		"How do I manage my recipients list?",
-		"I want to create a new recipient", // Add a prompt for creating a recipient
-		"Find contacts with gmail addresses", // Add a prompt for searching recipients
-		"What events do I have next month?", // Add a prompt for upcoming events
+	// Capabilities overview instead of specific prompts
+	const capabilities = [
+		{
+			icon: <Calendar className="h-4 w-4" />,
+			title: "Event Management",
+			description: "Create, find, and manage your events and calendar",
+		},
+		{
+			icon: <Users className="h-4 w-4" />,
+			title: "Contact Management",
+			description: "Add and search for contacts in your network",
+		},
+		{
+			icon: <Search className="h-4 w-4" />,
+			title: "Smart Search",
+			description: "Find upcoming events, birthdays, and contacts",
+		},
+		{
+			icon: <HelpCircle className="h-4 w-4" />,
+			title: "Platform Guidance",
+			description: "Learn about EventPulse features and best practices",
+		},
 	];
-
-	// Function to set input to a suggested prompt
-	const handlePromptClick = (prompt: string) => {
-		// Create a synthetic event that matches the expected structure
-		const syntheticEvent = {
-			target: { value: prompt },
-		} as React.ChangeEvent<HTMLInputElement>;
-
-		handleInputChange(syntheticEvent);
-	};
 
 	const scrollToBottom = () => {
 		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -177,50 +190,77 @@ export default function ChatInterface() {
 	};
 
 	return (
-		<div className="flex flex-col h-[600px] bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 rounded-xl border border-divider relative">
+		<div className="flex flex-col h-[600px] bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 rounded-xl border border-divider relative overflow-hidden">
 			{/* Gradient Border Effect */}
 			<div className="absolute inset-0 rounded-xl border border-primary/20 [background:linear-gradient(var(--background),var(--background))_padding-box,linear-gradient(to_bottom,hsl(var(--primary)),transparent)_border-box] pointer-events-none" />
 
-			{/* Header */}
-			<div className="p-4 border-b border-divider bg-background/40">
+			{/* Header with Status Indicators */}
+			<div className="p-2 border-b border-divider bg-background/40 flex items-center justify-between">
 				<div className="flex items-center gap-2">
-					<div className="p-1.5 rounded-lg bg-primary/10">
-						<Bot className="h-5 w-5 text-primary" />
+					<div className="h-6 w-6 rounded-full bg-gradient-to-br from-primary/80 to-primary/30 flex items-center justify-center shadow-sm">
+						<div className="text-[10px] font-bold text-primary-foreground">
+							P
+						</div>
 					</div>
-					<h3 className="font-semibold text-foreground">AI Assistant</h3>
+					<span className="text-xs font-medium text-foreground">Pulsy</span>
+				</div>
 
-					{/* Tool Call Status */}
+				<div className="flex items-center">
 					{currentTool && (
-						<div className="flex items-center gap-1.5 ml-auto">
+						<motion.div
+							className="flex items-center gap-1.5"
+							initial={{ opacity: 0, x: 10 }}
+							animate={{ opacity: 1, x: 0 }}
+							exit={{ opacity: 0, x: 10 }}
+						>
 							{currentTool.status === "running" ? (
 								<Loader2 className="h-3.5 w-3.5 text-primary animate-spin" />
 							) : currentTool.status === "completed" ? (
-								<div className="h-2 w-2 rounded-full bg-green-500"></div>
+								<motion.div
+									className="h-2 w-2 rounded-full bg-green-500"
+									initial={{ scale: 0 }}
+									animate={{ scale: 1 }}
+									transition={{ type: "spring", stiffness: 500, damping: 10 }}
+								></motion.div>
 							) : (
-								<div className="h-2 w-2 rounded-full bg-red-500"></div>
+								<motion.div
+									className="h-2 w-2 rounded-full bg-red-500"
+									initial={{ scale: 0 }}
+									animate={{ scale: 1 }}
+									transition={{ type: "spring", stiffness: 500, damping: 10 }}
+								></motion.div>
 							)}
 							<span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full flex items-center gap-1">
 								<Wrench className="h-3 w-3" />
 								{currentTool.name}
 								{formatToolParameters(currentTool.parameters)}
 							</span>
-						</div>
+						</motion.div>
 					)}
 
-					{/* General Status */}
 					{status === "submitted" && !currentTool && (
-						<span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full ml-auto flex items-center gap-1">
+						<motion.span
+							className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full flex items-center gap-1"
+							initial={{ opacity: 0 }}
+							animate={{ opacity: 1 }}
+							exit={{ opacity: 0 }}
+						>
 							<Loader2 className="h-3.5 w-3.5 animate-spin" />
 							Thinking...
-						</span>
+						</motion.span>
 					)}
 				</div>
 			</div>
 
-			{/* Messages Container */}
-			<div className="flex-1 overflow-y-auto p-4 space-y-4">
+			{/* Messages Container - Adjusted to take full height */}
+			<div className="flex-1 overflow-y-auto p-3 space-y-3">
 				{error && (
-					<div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-500 text-sm">
+					<motion.div
+						className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-500 text-sm"
+						initial={{ opacity: 0, y: 10 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ type: "spring" }}
+					>
 						<p className="font-medium">
 							{errorType || "Error"}:{" "}
 							{error.message || "Something went wrong. Please try again."}
@@ -256,68 +296,173 @@ export default function ChatInterface() {
 								Dismiss Error
 							</Button>
 						</div>
-					</div>
+					</motion.div>
 				)}
 
 				{messages.length === 0 ? (
-					<div className="flex flex-col items-center justify-center h-full space-y-6 text-muted-foreground">
-						<div className="p-4 rounded-full bg-primary/10">
-							<Bot className="h-8 w-8 text-primary" />
-						</div>
-						<div className="text-center space-y-2">
-							<p className="text-sm font-medium">
-								Welcome to EventPulse AI Assistant!
-							</p>
-							<p className="text-xs max-w-md">
-								I can help you with event management, recipient lists, email
-								scheduling, and more. Ask me anything about EventPulse!
-							</p>
-						</div>
-
-						{/* Suggested prompts */}
-						<div className="w-full max-w-md space-y-2">
-							<p className="text-xs font-medium text-center">Try asking:</p>
-							<div className="grid grid-cols-1 gap-2">
-								{suggestedPrompts.map((prompt, index) => (
-									<button
-										key={index}
-										onClick={() => handlePromptClick(prompt)}
-										className="text-xs text-left px-3 py-2 rounded-lg bg-muted hover:bg-primary/10 transition-colors"
-									>
-										{prompt}
-									</button>
-								))}
-							</div>
-						</div>
-					</div>
-				) : (
-					<>
-						{messages.map((message) => (
-							<div
-								key={message.id}
-								className={`flex flex-col ${
-									message.role === "user" ? "items-end" : "items-start"
-								}`}
-							>
-								<div
-									className={`rounded-lg px-4 py-2 max-w-[85%] ${
-										message.role === "user"
-											? "bg-primary text-primary-foreground"
-											: "bg-muted"
-									}`}
-								>
-									{message.role === "user" ? (
-										<p className="whitespace-pre-wrap text-sm">
-											{message.content}
-										</p>
-									) : (
-										<div className="prose prose-sm dark:prose-invert prose-p:leading-relaxed prose-pre:p-0">
-											<ReactMarkdown>{message.content}</ReactMarkdown>
-										</div>
-									)}
+					<motion.div
+						className="flex flex-col items-center justify-center h-full space-y-4 text-muted-foreground px-2"
+						initial={{ opacity: 0 }}
+						animate={{ opacity: 1 }}
+						transition={{ duration: 0.5 }}
+					>
+						{/* Pulsy Avatar */}
+						<motion.div
+							className="relative"
+							initial={{ scale: 0.8, rotate: -10 }}
+							animate={{ scale: 1, rotate: 0 }}
+							transition={{
+								type: "spring",
+								stiffness: 260,
+								damping: 20,
+								delay: 0.2,
+							}}
+						>
+							<div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/80 to-primary/30 flex items-center justify-center shadow-lg">
+								<div className="w-16 h-16 rounded-full bg-background flex items-center justify-center">
+									<div className="text-2xl font-bold text-primary">P</div>
 								</div>
 							</div>
-						))}
+							<motion.div
+								className="absolute -top-2 -right-2"
+								initial={{ scale: 0 }}
+								animate={{ scale: 1 }}
+								transition={{ delay: 0.8 }}
+							>
+								<Sparkles className="h-5 w-5 text-yellow-400" />
+							</motion.div>
+							<motion.div
+								className="absolute -bottom-1 -left-1"
+								initial={{ scale: 0 }}
+								animate={{ scale: 1 }}
+								transition={{ delay: 1.0 }}
+							>
+								<Calendar className="h-4 w-4 text-primary" />
+							</motion.div>
+						</motion.div>
+
+						<motion.div
+							className="text-center space-y-2"
+							initial={{ y: 20, opacity: 0 }}
+							animate={{ y: 0, opacity: 1 }}
+							transition={{ delay: 0.4 }}
+						>
+							<motion.h2
+								className="text-lg font-bold text-foreground"
+								initial={{ y: 10, opacity: 0 }}
+								animate={{ y: 0, opacity: 1 }}
+								transition={{ delay: 0.5 }}
+							>
+								Hi, I&apos;m Pulsy!
+							</motion.h2>
+							<motion.p
+								className="text-xs max-w-sm"
+								initial={{ y: 10, opacity: 0 }}
+								animate={{ y: 0, opacity: 1 }}
+								transition={{ delay: 0.6 }}
+							>
+								Your EventPulse assistant, ready to help you manage your events
+								and contacts with ease. Just ask me anything!
+							</motion.p>
+						</motion.div>
+
+						{/* Capabilities Overview */}
+						<motion.div
+							className="w-full max-w-sm space-y-3 px-2"
+							initial={{ y: 20, opacity: 0 }}
+							animate={{ y: 0, opacity: 1 }}
+							transition={{ delay: 0.7 }}
+						>
+							<p className="text-xs font-medium text-center text-primary">
+								My Capabilities
+							</p>
+							<div className="grid grid-cols-2 gap-2">
+								{capabilities.map((capability, index) => (
+									<motion.div
+										key={index}
+										className="bg-muted/50 rounded-lg p-2 flex flex-col gap-1 border border-primary/10 hover:border-primary/30 transition-colors"
+										initial={{ opacity: 0, y: 10 }}
+										animate={{ opacity: 1, y: 0 }}
+										transition={{ delay: 0.8 + index * 0.1 }}
+										whileHover={{ y: -2 }}
+									>
+										<div className="flex items-center gap-1.5">
+											<div className="p-1 rounded-md bg-primary/10 text-primary">
+												{capability.icon}
+											</div>
+											<h4 className="font-medium text-xs">
+												{capability.title}
+											</h4>
+										</div>
+										<p className="text-[10px] text-muted-foreground leading-tight">
+											{capability.description}
+										</p>
+									</motion.div>
+								))}
+							</div>
+							<motion.p
+								className="text-[10px] text-center text-muted-foreground mt-2"
+								initial={{ opacity: 0 }}
+								animate={{ opacity: 1 }}
+								transition={{ delay: 1.3 }}
+							>
+								Just type your question or request below to get started!
+							</motion.p>
+						</motion.div>
+					</motion.div>
+				) : (
+					<>
+						<AnimatePresence>
+							{messages.map((message) => (
+								<motion.div
+									key={message.id}
+									className={`flex items-start gap-2 ${
+										message.role === "user" ? "flex-row-reverse" : "flex-row"
+									}`}
+									initial={{ opacity: 0, y: 10 }}
+									animate={{ opacity: 1, y: 0 }}
+									transition={{ type: "spring", stiffness: 200, damping: 20 }}
+								>
+									{/* Avatar for messages */}
+									<div
+										className={`flex-shrink-0 ${message.role === "user" ? "ml-1" : "mr-1"}`}
+									>
+										{message.role === "user" ? (
+											<div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center text-[10px] font-medium text-primary-foreground">
+												You
+											</div>
+										) : (
+											<div className="h-6 w-6 rounded-full bg-gradient-to-br from-primary/80 to-primary/30 flex items-center justify-center shadow-sm">
+												<div className="text-[10px] font-bold text-primary-foreground">
+													P
+												</div>
+											</div>
+										)}
+									</div>
+
+									<motion.div
+										className={`rounded-lg px-3 py-2 max-w-[80%] ${
+											message.role === "user"
+												? "bg-primary text-primary-foreground"
+												: "bg-muted"
+										}`}
+										initial={{ scale: 0.95 }}
+										animate={{ scale: 1 }}
+										transition={{ type: "spring", stiffness: 300, damping: 20 }}
+									>
+										{message.role === "user" ? (
+											<p className="whitespace-pre-wrap text-sm">
+												{message.content}
+											</p>
+										) : (
+											<div className="prose prose-sm dark:prose-invert prose-p:leading-relaxed prose-pre:p-0 max-w-full overflow-x-auto">
+												<ReactMarkdown>{message.content}</ReactMarkdown>
+											</div>
+										)}
+									</motion.div>
+								</motion.div>
+							))}
+						</AnimatePresence>
 						{/* Invisible element to scroll to */}
 						<div ref={messagesEndRef} />
 					</>
@@ -325,12 +470,18 @@ export default function ChatInterface() {
 			</div>
 
 			{/* Input Form */}
-			<div className="border-t border-divider bg-background/40 p-4">
-				<form onSubmit={handleFormSubmit} className="flex gap-2">
+			<div className="border-t border-divider bg-background/40 p-3">
+				<motion.form
+					onSubmit={handleFormSubmit}
+					className="flex gap-2"
+					initial={{ y: 20, opacity: 0 }}
+					animate={{ y: 0, opacity: 1 }}
+					transition={{ delay: 0.2 }}
+				>
 					<Input
 						value={input}
 						onChange={handleInputChange}
-						placeholder="Type a message..."
+						placeholder="Ask Pulsy something..."
 						className="flex-1 bg-background/60"
 						size="sm"
 						disabled={status === "submitted"}
@@ -344,11 +495,11 @@ export default function ChatInterface() {
 								isDisabled={!input.trim() || status === "submitted"}
 								className="px-0"
 							>
-								<Send className="h-4 w-4" />
+								<Send className="h-3.5 w-3.5" />
 							</Button>
 						}
 					/>
-				</form>
+				</motion.form>
 			</div>
 		</div>
 	);
