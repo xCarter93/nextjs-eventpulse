@@ -5,6 +5,7 @@ import {
 	searchRecipients,
 	getUpcomingEvents,
 	createEvent,
+	parseDate,
 } from "./server-actions";
 import { ConvexHttpClient } from "convex/browser";
 import { auth } from "@clerk/nextjs/server";
@@ -177,7 +178,35 @@ export const createRecipientTool = tool({
 							}
 						}
 
-						// If we couldn't parse the date, throw an error
+						// Try standard date parsing as fallback for natural language dates
+						if (!dateObj) {
+							const parsedDate = new Date(cleanBirthday);
+							if (!isNaN(parsedDate.getTime())) {
+								dateObj = parsedDate;
+							}
+						}
+
+						// If we still couldn't parse the date, try to interpret it as a relative date
+						if (!dateObj) {
+							// Initialize the Convex URL to check configuration
+							const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+							if (!convexUrl) {
+								throw new Error("Convex URL is not configured");
+							}
+
+							// Use the parseDate function to handle relative dates
+							try {
+								const timestamp = parseDate(cleanBirthday);
+								dateObj = new Date(timestamp);
+							} catch (parseError) {
+								console.error(
+									`DEBUGGING - Failed to parse date with parseDate: ${cleanBirthday}`,
+									parseError
+								);
+							}
+						}
+
+						// If we still couldn't parse the date, throw an error
 						if (!dateObj) {
 							console.error(
 								`DEBUGGING - Failed to parse date: ${cleanBirthday}`
@@ -916,7 +945,7 @@ export const createEventTool = tool({
 					}
 					return {
 						status: "in_progress",
-						message: `Great! When is the "${name}" event? Please provide the date in MM/DD/YYYY format.`,
+						message: `Great! When is the "${name}" event? You can provide the date in any format (e.g., "03/18/2025", "March 18, 2025", "next Tuesday", etc.).`,
 						nextStep: "collect-date",
 						name,
 					};
@@ -935,7 +964,7 @@ export const createEventTool = tool({
 						return {
 							status: "error",
 							message:
-								"I need a date for the event. Please provide a valid date in MM/DD/YYYY format.",
+								'I need a date for the event. Please provide a date for the event in any format (e.g., "03/18/2025", "March 18, 2025", "next Tuesday", etc.).',
 							nextStep: "collect-date",
 							name,
 						};
@@ -974,11 +1003,39 @@ export const createEventTool = tool({
 							}
 						}
 
-						// If we couldn't parse the date, throw an error
+						// Try standard date parsing as fallback for natural language dates
+						if (!dateObj) {
+							const parsedDate = new Date(cleanDate);
+							if (!isNaN(parsedDate.getTime())) {
+								dateObj = parsedDate;
+							}
+						}
+
+						// If we still couldn't parse the date, try to interpret it as a relative date
+						if (!dateObj) {
+							// Initialize the Convex URL to check configuration
+							const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+							if (!convexUrl) {
+								throw new Error("Convex URL is not configured");
+							}
+
+							// Use the parseDate function to handle relative dates
+							try {
+								const timestamp = parseDate(cleanDate);
+								dateObj = new Date(timestamp);
+							} catch (parseError) {
+								console.error(
+									`DEBUGGING - Failed to parse date with parseDate: ${cleanDate}`,
+									parseError
+								);
+							}
+						}
+
+						// If we still couldn't parse the date, throw an error
 						if (!dateObj) {
 							console.error(`DEBUGGING - Failed to parse date: ${cleanDate}`);
 							throw new Error(
-								`I couldn't understand the date format. Please provide the date in MM/DD/YYYY format (e.g., 10/15/2024).`
+								`I couldn't understand the date format. Please provide the date in a clear format like "MM/DD/YYYY" (e.g., 03/18/2025) or a natural description like "March 18, 2025" or "next Tuesday".`
 							);
 						}
 
@@ -1001,7 +1058,7 @@ export const createEventTool = tool({
 							message:
 								error instanceof Error
 									? `${error.message}`
-									: "That doesn't look like a valid date. Please provide the date in MM/DD/YYYY format (e.g., 10/15/2024).",
+									: "I couldn't understand that date format. Please provide the date in a clear format like MM/DD/YYYY (e.g., 03/18/2025) or a natural description like 'March 18, 2025' or 'next Tuesday'.",
 							nextStep: "collect-date",
 							name,
 						};
@@ -1025,25 +1082,102 @@ export const createEventTool = tool({
 						};
 					}
 
-					// Ensure date is a valid timestamp
+					// Process the user's response to determine if the event is recurring
+					// If isRecurring is not a boolean (e.g., if the user typed "yes" or "no"), convert it
+					let isRecurringBool: boolean;
+					if (typeof isRecurring === "boolean") {
+						isRecurringBool = isRecurring;
+					} else {
+						// Convert string responses to boolean
+						const response = String(isRecurring).toLowerCase().trim();
+						isRecurringBool =
+							response === "yes" ||
+							response === "y" ||
+							response === "true" ||
+							response === "1" ||
+							response.includes("yes") ||
+							response.includes("recur") ||
+							response.includes("annual");
+					}
+
+					// Ensure date is a valid timestamp or MM/DD/YYYY format
 					let eventDate: Date;
 					let confirmedDateTimestamp: number;
 					try {
-						// Try to parse the date as a timestamp first
+						// First try to parse the date as a timestamp
 						const timestampValue = Number(date);
 
 						if (!isNaN(timestampValue) && timestampValue > 0) {
+							// It's a valid timestamp
 							eventDate = new Date(timestampValue);
 							confirmedDateTimestamp = timestampValue;
 						} else {
-							throw new Error("Invalid date format.");
+							// It might be in MM/DD/YYYY format, try to parse it
+							// Clean up the input - remove any extra spaces
+							const cleanDate = date.trim();
+
+							// Try to parse as MM/DD/YYYY
+							const parts = cleanDate.split("/");
+
+							if (parts.length === 3) {
+								const month = parseInt(parts[0], 10);
+								const day = parseInt(parts[1], 10);
+								const year = parseInt(parts[2], 10);
+
+								if (!isNaN(month) && !isNaN(day) && !isNaN(year)) {
+									eventDate = new Date(year, month - 1, day);
+
+									// Verify the date is valid
+									if (
+										eventDate.getMonth() !== month - 1 ||
+										eventDate.getDate() !== day ||
+										eventDate.getFullYear() !== year
+									) {
+										throw new Error(
+											`Invalid date: ${month}/${day}/${year} does not exist.`
+										);
+									}
+
+									confirmedDateTimestamp = eventDate.getTime();
+								} else {
+									throw new Error(
+										"Invalid date format. Please use MM/DD/YYYY format."
+									);
+								}
+							} else {
+								// Try using the parseDate function for natural language dates
+								try {
+									confirmedDateTimestamp = parseDate(cleanDate);
+									eventDate = new Date(confirmedDateTimestamp);
+								} catch (parseError) {
+									console.error(
+										`DEBUGGING - Failed to parse date with parseDate: ${cleanDate}`,
+										parseError
+									);
+									throw new Error(
+										"Invalid date format. Please provide a valid date."
+									);
+								}
+							}
+						}
+
+						// Sanity check the year
+						const year = eventDate.getFullYear();
+						const currentYear = new Date().getFullYear();
+						if (year < currentYear || year > currentYear + 10) {
+							console.error(`DEBUGGING RECURRING - Suspicious year: ${year}`);
+							throw new Error(
+								`The year ${year} seems unusual. Are you sure this is the correct date? Please provide a date between ${currentYear} and ${currentYear + 10}.`
+							);
 						}
 					} catch (error) {
 						console.error("DEBUGGING RECURRING - Error parsing date:", error);
 						return {
 							status: "error",
 							message:
-								"There was an issue with the date format. Let's try again with the date.",
+								error instanceof Error
+									? `${error.message}`
+									: 'There was an issue with the date format. Please provide the date in any format (e.g., "03/18/2025", "March 18, 2025", "next Tuesday", etc.).',
 							nextStep: "collect-date",
 							name,
 						};
@@ -1051,11 +1185,11 @@ export const createEventTool = tool({
 
 					return {
 						status: "in_progress",
-						message: `Great! Here's a summary of the event:\n\nName: ${name}\nDate: ${eventDate.toLocaleDateString()}\nRecurring annually: ${isRecurring ? "Yes" : "No"}\n\nIs this information correct? (yes/no)`,
+						message: `Great! Here's a summary of the event:\n\nName: ${name}\nDate: ${eventDate.toLocaleDateString()}\nRecurring annually: ${isRecurringBool ? "Yes" : "No"}\n\nIs this information correct? (yes/no)`,
 						nextStep: "confirm",
 						name,
 						date: confirmedDateTimestamp.toString(),
-						isRecurring,
+						isRecurring: isRecurringBool,
 					};
 
 				case "confirm":
@@ -1074,25 +1208,84 @@ export const createEventTool = tool({
 						};
 					}
 
-					// Ensure date is a valid timestamp
+					// Ensure date is a valid timestamp or MM/DD/YYYY format
 					let confirmedEventDate: Date;
 					let finalDateTimestamp: number;
 					try {
-						// Try to parse the date as a timestamp
+						// First try to parse the date as a timestamp
 						const timestampValue = Number(date);
 
 						if (!isNaN(timestampValue) && timestampValue > 0) {
+							// It's a valid timestamp
 							confirmedEventDate = new Date(timestampValue);
 							finalDateTimestamp = timestampValue;
 						} else {
-							throw new Error("Invalid date format.");
+							// It might be in MM/DD/YYYY format, try to parse it
+							// Clean up the input - remove any extra spaces
+							const cleanDate = date.trim();
+
+							// Try to parse as MM/DD/YYYY
+							const parts = cleanDate.split("/");
+
+							if (parts.length === 3) {
+								const month = parseInt(parts[0], 10);
+								const day = parseInt(parts[1], 10);
+								const year = parseInt(parts[2], 10);
+
+								if (!isNaN(month) && !isNaN(day) && !isNaN(year)) {
+									confirmedEventDate = new Date(year, month - 1, day);
+
+									// Verify the date is valid
+									if (
+										confirmedEventDate.getMonth() !== month - 1 ||
+										confirmedEventDate.getDate() !== day ||
+										confirmedEventDate.getFullYear() !== year
+									) {
+										throw new Error(
+											`Invalid date: ${month}/${day}/${year} does not exist.`
+										);
+									}
+
+									finalDateTimestamp = confirmedEventDate.getTime();
+								} else {
+									throw new Error(
+										"Invalid date format. Please use MM/DD/YYYY format."
+									);
+								}
+							} else {
+								// Try using the parseDate function for natural language dates
+								try {
+									finalDateTimestamp = parseDate(cleanDate);
+									confirmedEventDate = new Date(finalDateTimestamp);
+								} catch (parseError) {
+									console.error(
+										`DEBUGGING - Failed to parse date with parseDate: ${cleanDate}`,
+										parseError
+									);
+									throw new Error(
+										"Invalid date format. Please provide a valid date."
+									);
+								}
+							}
+						}
+
+						// Sanity check the year
+						const year = confirmedEventDate.getFullYear();
+						const currentYear = new Date().getFullYear();
+						if (year < currentYear || year > currentYear + 10) {
+							console.error(`DEBUGGING CONFIRM - Suspicious year: ${year}`);
+							throw new Error(
+								`The year ${year} seems unusual. Please try again with a valid date.`
+							);
 						}
 					} catch (error) {
 						console.error("DEBUGGING CONFIRM - Error parsing date:", error);
 						return {
 							status: "error",
 							message:
-								"There was an issue with the date format. Let's try again with the date.",
+								error instanceof Error
+									? `${error.message}`
+									: 'There was an issue with the date format. Please provide the date in any format (e.g., "03/18/2025", "March 18, 2025", "next Tuesday", etc.).',
 							nextStep: "collect-date",
 							name,
 						};
@@ -1133,17 +1326,29 @@ export const createEventTool = tool({
 
 						const convex = new ConvexHttpClient(convexUrl);
 
-						// Parse the date - handle timestamp format
+						// Parse the date - handle both timestamp and string formats
 						let dateTimestamp: number;
 
-						// Try to parse as a timestamp
+						// First try to parse as a timestamp
 						const timestampValue = Number(date);
 
 						if (!isNaN(timestampValue) && timestampValue > 0) {
 							// It's already a timestamp
 							dateTimestamp = timestampValue;
 						} else {
-							throw new Error("Invalid date format.");
+							// It might be in a string format, try to parse it
+							try {
+								// Use the parseDate function to handle various date formats
+								dateTimestamp = parseDate(date);
+							} catch (parseError) {
+								console.error(
+									"DEBUGGING SUBMIT - Error parsing date:",
+									parseError
+								);
+								throw new Error(
+									"Invalid date format. Please provide a valid date."
+								);
+							}
 						}
 
 						// Sanity check - convert to date and check if it's reasonable
@@ -1233,7 +1438,7 @@ export const createEventTool = tool({
 								return {
 									status: "error",
 									message:
-										"There was an issue with the date format. Let's try again with the date.",
+										"There was an issue with the date format. Please provide the date in a clear format like MM/DD/YYYY (e.g., 03/18/2025) or a natural description like 'March 18, 2025' or 'next Tuesday'.",
 									nextStep: "collect-date",
 									name,
 								};

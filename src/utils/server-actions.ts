@@ -419,7 +419,7 @@ export async function getUpcomingEvents(
  * @param date - The date to parse (Date object, timestamp, or string)
  * @returns The timestamp in milliseconds
  */
-function parseDate(date: Date | number | string): number {
+export function parseDate(date: Date | number | string): number {
 	if (date instanceof Date) {
 		return date.getTime();
 	}
