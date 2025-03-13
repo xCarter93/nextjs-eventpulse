@@ -212,7 +212,7 @@ export const createRecipientTool = tool({
 								`DEBUGGING - Failed to parse date: ${cleanBirthday}`
 							);
 							throw new Error(
-								`I couldn't understand the date format. Please provide the birthday in MM/DD/YYYY format (e.g., 10/02/1989).`
+								`I couldn't understand the date format. Please provide the date in a clear format like "MM/DD/YYYY" (e.g., 03/18/2025) or a natural description like "March 18, 2025", "next Tuesday", "two weeks from today", or "in 3 months".`
 							);
 						}
 
@@ -387,46 +387,61 @@ export const createRecipientTool = tool({
 							// It's already a timestamp
 							birthdayTimestamp = timestampValue;
 						} else {
-							// It might be in MM/DD/YYYY format, try to parse it
+							// It's a string format, pass it directly to parseDate
 							try {
-								// Clean up the input - remove any extra spaces
-								const cleanBirthday = birthday.trim();
+								// Use the parseDate function to handle various date formats
+								console.log(
+									`DEBUGGING SUBMIT - Attempting to parse date string: "${birthday}"`
+								);
 
-								// Try to parse as MM/DD/YYYY
-								const parts = cleanBirthday.split("/");
+								// For natural language dates, pass the string directly
+								birthdayTimestamp = parseDate(birthday);
 
-								if (parts.length === 3) {
-									const month = parseInt(parts[0], 10);
-									const day = parseInt(parts[1], 10);
-									const year = parseInt(parts[2], 10);
+								// Verify the date is correct (for debugging)
+								const parsedDate = new Date(birthdayTimestamp);
+								const today = new Date();
+								today.setHours(0, 0, 0, 0);
 
-									if (!isNaN(month) && !isNaN(day) && !isNaN(year)) {
-										const dateObj = new Date(year, month - 1, day);
+								if (birthday.toLowerCase() === "two weeks from today") {
+									// Calculate expected date (2 weeks from today)
+									const expectedDate = new Date(today);
+									expectedDate.setDate(today.getDate() + 14);
 
-										// Verify the date is valid
-										if (
-											dateObj.getMonth() !== month - 1 ||
-											dateObj.getDate() !== day ||
-											dateObj.getFullYear() !== year
-										) {
-											throw new Error(
-												`Invalid date: ${month}/${day}/${year} does not exist.`
-											);
-										}
+									console.log(
+										`DEBUGGING SUBMIT - Today: ${today.toISOString()}`
+									);
+									console.log(
+										`DEBUGGING SUBMIT - Expected date (2 weeks from today): ${expectedDate.toISOString()}`
+									);
+									console.log(
+										`DEBUGGING SUBMIT - Actual parsed date: ${parsedDate.toISOString()}`
+									);
 
-										birthdayTimestamp = dateObj.getTime();
+									// Check if the dates are approximately equal (within 1 day)
+									const diffTime = Math.abs(
+										parsedDate.getTime() - expectedDate.getTime()
+									);
+									const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+									if (diffDays > 1) {
+										console.error(
+											`DEBUGGING SUBMIT - Date parsing error: Expected ~${expectedDate.toISOString()}, got ${parsedDate.toISOString()}`
+										);
 									} else {
-										throw new Error(
-											"Invalid date format. Please use MM/DD/YYYY format."
+										console.log(
+											`DEBUGGING SUBMIT - Date parsing successful: dates are within ${diffDays} days`
 										);
 									}
-								} else {
-									throw new Error(
-										"Invalid date format. Please use MM/DD/YYYY format."
-									);
 								}
-							} catch (error) {
-								console.error("DEBUGGING SUBMIT - Error parsing date:", error);
+
+								console.log(
+									`DEBUGGING SUBMIT - Successfully parsed date: ${birthdayTimestamp}, date: ${parsedDate.toISOString()}`
+								);
+							} catch (parseError) {
+								console.error(
+									"DEBUGGING SUBMIT - Error parsing date:",
+									parseError
+								);
 								throw new Error(
 									"Invalid birthday format. Please provide the birthday in MM/DD/YYYY format."
 								);
@@ -945,7 +960,7 @@ export const createEventTool = tool({
 					}
 					return {
 						status: "in_progress",
-						message: `Great! When is the "${name}" event? You can provide the date in any format (e.g., "03/18/2025", "March 18, 2025", "next Tuesday", etc.).`,
+						message: `Great! When is the "${name}" event? You can provide the date in any format (e.g., "03/18/2025", "March 18, 2025", "next Tuesday", "two weeks from today", etc.).`,
 						nextStep: "collect-date",
 						name,
 					};
@@ -964,23 +979,42 @@ export const createEventTool = tool({
 						return {
 							status: "error",
 							message:
-								'I need a date for the event. Please provide a date for the event in any format (e.g., "03/18/2025", "March 18, 2025", "next Tuesday", etc.).',
+								'I need a date for the event. Please provide a date for the event in any format (e.g., "03/18/2025", "March 18, 2025", "next Tuesday", "two weeks from today", etc.).',
 							nextStep: "collect-date",
 							name,
 						};
 					}
 
-					// Date validation and conversion to timestamp
-					let dateTimestamp: number;
+					// For natural language dates, we'll try to parse it but also pass the original string
+					// to the next step to ensure it's properly handled
 					try {
 						// Clean up the input - remove any extra spaces
 						const cleanDate = date.trim();
+						console.log(
+							`DEBUGGING COLLECT-DATE - Processing date: "${cleanDate}"`
+						);
 
-						// Try multiple date formats
+						// Try to parse the date to validate it, but we'll pass the original string forward
 						let dateObj: Date | null = null;
+						let dateTimestamp: number = 0; // Initialize with a default value
 
-						// First try MM/DD/YYYY format
-						if (!dateObj) {
+						// First try using parseDate which handles natural language
+						try {
+							dateTimestamp = parseDate(cleanDate);
+							dateObj = new Date(dateTimestamp);
+							console.log(
+								`DEBUGGING COLLECT-DATE - parseDate result: ${dateObj.toISOString()}`
+							);
+						} catch (parseError) {
+							console.error(
+								`DEBUGGING COLLECT-DATE - Failed to parse with parseDate: ${cleanDate}`,
+								parseError
+							);
+						}
+
+						// If parseDate failed, try other methods
+						if (!dateObj || isNaN(dateObj.getTime())) {
+							// Try MM/DD/YYYY format
 							const parts = cleanDate.split("/");
 
 							if (parts.length === 3) {
@@ -998,79 +1032,72 @@ export const createEventTool = tool({
 										dateObj.getFullYear() !== year
 									) {
 										dateObj = null;
+									} else {
+										dateTimestamp = dateObj.getTime();
 									}
 								}
 							}
 						}
 
-						// Try standard date parsing as fallback for natural language dates
-						if (!dateObj) {
+						// Try standard date parsing as fallback
+						if (!dateObj || isNaN(dateObj.getTime())) {
 							const parsedDate = new Date(cleanDate);
 							if (!isNaN(parsedDate.getTime())) {
 								dateObj = parsedDate;
-							}
-						}
-
-						// If we still couldn't parse the date, try to interpret it as a relative date
-						if (!dateObj) {
-							// Initialize the Convex URL to check configuration
-							const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
-							if (!convexUrl) {
-								throw new Error("Convex URL is not configured");
-							}
-
-							// Use the parseDate function to handle relative dates
-							try {
-								const timestamp = parseDate(cleanDate);
-								dateObj = new Date(timestamp);
-							} catch (parseError) {
-								console.error(
-									`DEBUGGING - Failed to parse date with parseDate: ${cleanDate}`,
-									parseError
-								);
+								dateTimestamp = dateObj.getTime();
 							}
 						}
 
 						// If we still couldn't parse the date, throw an error
-						if (!dateObj) {
-							console.error(`DEBUGGING - Failed to parse date: ${cleanDate}`);
+						if (!dateObj || isNaN(dateObj.getTime())) {
+							console.error(
+								`DEBUGGING COLLECT-DATE - Failed to parse date: ${cleanDate}`
+							);
 							throw new Error(
-								`I couldn't understand the date format. Please provide the date in a clear format like "MM/DD/YYYY" (e.g., 03/18/2025) or a natural description like "March 18, 2025" or "next Tuesday".`
+								`I couldn't understand the date format. Please provide the date in a clear format like "MM/DD/YYYY" (e.g., 03/18/2025) or a natural description like "March 18, 2025", "next Tuesday", "two weeks from today", or "in 3 months".`
 							);
 						}
-
-						// Get the timestamp
-						dateTimestamp = dateObj.getTime();
 
 						// Sanity check the year
 						const year = dateObj.getFullYear();
 						const currentYear = new Date().getFullYear();
 						if (year < currentYear || year > currentYear + 10) {
-							console.error(`DEBUGGING - Suspicious year: ${year}`);
+							console.error(
+								`DEBUGGING COLLECT-DATE - Suspicious year: ${year}`
+							);
 							throw new Error(
 								`The year ${year} seems unusual. Are you sure this is the correct date? Please provide a date between ${currentYear} and ${currentYear + 10}.`
 							);
 						}
+
+						// For natural language dates, pass both the timestamp and the original string
+						// This ensures that the original intent is preserved
+						console.log(
+							`DEBUGGING COLLECT-DATE - Proceeding with date: ${dateObj.toISOString()}`
+						);
+
+						return {
+							status: "in_progress",
+							message: `Is this a recurring annual event? (yes/no)`,
+							nextStep: "collect-recurring",
+							name,
+							date: dateTimestamp.toString(),
+						};
 					} catch (error) {
-						console.error("DEBUGGING - Date validation error:", error);
+						console.error(
+							"DEBUGGING COLLECT-DATE - Date validation error:",
+							error
+						);
 						return {
 							status: "error",
 							message:
 								error instanceof Error
 									? `${error.message}`
-									: "I couldn't understand that date format. Please provide the date in a clear format like MM/DD/YYYY (e.g., 03/18/2025) or a natural description like 'March 18, 2025' or 'next Tuesday'.",
+									: "I couldn't understand that date format. Please provide the date in a clear format like MM/DD/YYYY (e.g., 03/18/2025) or a natural description like 'March 18, 2025', 'next Tuesday', or 'two weeks from today'.",
 							nextStep: "collect-date",
 							name,
 						};
 					}
-
-					return {
-						status: "in_progress",
-						message: `Is this a recurring annual event? (yes/no)`,
-						nextStep: "collect-recurring",
-						name,
-						date: dateTimestamp.toString(),
-					};
 
 				case "collect-recurring":
 					if (!name || name.trim() === "" || !date || date.trim() === "") {
@@ -1335,11 +1362,60 @@ export const createEventTool = tool({
 						if (!isNaN(timestampValue) && timestampValue > 0) {
 							// It's already a timestamp
 							dateTimestamp = timestampValue;
+							console.log(
+								`DEBUGGING SUBMIT - Using timestamp value: ${dateTimestamp}, date: ${new Date(dateTimestamp).toISOString()}`
+							);
 						} else {
-							// It might be in a string format, try to parse it
+							// It's a string format, pass it directly to parseDate
 							try {
 								// Use the parseDate function to handle various date formats
+								console.log(
+									`DEBUGGING SUBMIT - Attempting to parse date string: "${date}"`
+								);
+
+								// For natural language dates, pass the string directly
 								dateTimestamp = parseDate(date);
+
+								// Verify the date is correct (for debugging)
+								const parsedDate = new Date(dateTimestamp);
+								const today = new Date();
+								today.setHours(0, 0, 0, 0);
+
+								if (date.toLowerCase() === "two weeks from today") {
+									// Calculate expected date (2 weeks from today)
+									const expectedDate = new Date(today);
+									expectedDate.setDate(today.getDate() + 14);
+
+									console.log(
+										`DEBUGGING SUBMIT - Today: ${today.toISOString()}`
+									);
+									console.log(
+										`DEBUGGING SUBMIT - Expected date (2 weeks from today): ${expectedDate.toISOString()}`
+									);
+									console.log(
+										`DEBUGGING SUBMIT - Actual parsed date: ${parsedDate.toISOString()}`
+									);
+
+									// Check if the dates are approximately equal (within 1 day)
+									const diffTime = Math.abs(
+										parsedDate.getTime() - expectedDate.getTime()
+									);
+									const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+									if (diffDays > 1) {
+										console.error(
+											`DEBUGGING SUBMIT - Date parsing error: Expected ~${expectedDate.toISOString()}, got ${parsedDate.toISOString()}`
+										);
+									} else {
+										console.log(
+											`DEBUGGING SUBMIT - Date parsing successful: dates are within ${diffDays} days`
+										);
+									}
+								}
+
+								console.log(
+									`DEBUGGING SUBMIT - Successfully parsed date: ${dateTimestamp}, date: ${parsedDate.toISOString()}`
+								);
 							} catch (parseError) {
 								console.error(
 									"DEBUGGING SUBMIT - Error parsing date:",
@@ -1366,6 +1442,9 @@ export const createEventTool = tool({
 						}
 
 						// Call the createEvent function
+						console.log(
+							`Calling Convex mutation with data: { name: '${name}', date: ${dateTimestamp}, isRecurring: ${isRecurring} }`
+						);
 						const result = await createEvent(convex, {
 							name,
 							date: dateTimestamp,

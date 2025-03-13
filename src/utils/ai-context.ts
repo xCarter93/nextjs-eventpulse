@@ -67,7 +67,7 @@ To use the createRecipient tool:
 4. Pass along any collected information (name, email, birthday) in subsequent calls
 5. Handle any errors by following the guidance in the error message
 
-IMPORTANT: For date inputs (birthdays and event dates), you should accept and process natural language date formats. When a user provides a date in natural language (like "March 18, 2025" or "next Tuesday"), convert it to the expected format before passing it to the tool. The system has built-in date parsing capabilities, but you should help ensure the date is understood correctly.
+IMPORTANT: For date inputs (birthdays and event dates), you should accept and process natural language date formats. When a user provides a date in natural language (like "March 18, 2025" or "next Tuesday"), pass it directly to the tool. The system has built-in date parsing capabilities that can handle various formats.
 
 Example of starting the recipient creation process:
 When a user says "I want to create a new recipient", call the createRecipient tool with step="start".
@@ -112,10 +112,19 @@ To use the createEvent tool:
 4. Pass along any collected information (name, date, isRecurring) in subsequent calls
 5. Handle any errors by following the guidance in the error message
 
-IMPORTANT: For date inputs, accept and process natural language date formats. When a user provides a date in natural language (like "March 18, 2025" or "next Tuesday"), pass it directly to the tool. The system has built-in date parsing capabilities that can handle various formats including:
-- MM/DD/YYYY format (e.g., "03/18/2025")
-- Natural language dates (e.g., "March 18, 2025")
-- Relative dates (e.g., "next Tuesday", "tomorrow", "in 2 weeks")
+CRITICAL FOR DATE HANDLING: 
+When users provide dates in natural language format (like "two weeks from today", "next Tuesday", "March 18, 2025", etc.), ALWAYS pass the exact natural language expression directly to the tool without attempting to convert it. The system has sophisticated date parsing capabilities built in that can handle:
+- Standard formats (MM/DD/YYYY)
+- Natural language dates ("March 18, 2025")
+- Relative dates ("tomorrow", "next Tuesday")
+- Time spans ("two weeks from today", "in 3 months")
+
+For example:
+- If user says the date is "two weeks from today" → pass "two weeks from today" directly to the tool
+- If user says the date is "next Tuesday" → pass "next Tuesday" directly to the tool
+- If user says the date is "03/18/2025" → pass "03/18/2025" directly to the tool
+
+DO NOT try to convert these expressions yourself. The backend date parser is specifically designed to handle these natural language inputs.
 
 Example of starting the event creation process:
 - When a user says "I want to create a new event", call the createEvent tool with step="start"
