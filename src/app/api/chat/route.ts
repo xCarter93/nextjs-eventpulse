@@ -6,6 +6,7 @@ import {
 	createRecipientTool,
 	searchRecipientsTool,
 	getUpcomingEventsTool,
+	createEventTool,
 } from "@/utils/ai-tools";
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
@@ -49,6 +50,7 @@ export async function POST(req: Request) {
 				createRecipient: createRecipientTool,
 				searchRecipients: searchRecipientsTool,
 				getUpcomingEvents: getUpcomingEventsTool,
+				createEvent: createEventTool,
 			};
 
 			// Log the tools for debugging
@@ -60,6 +62,7 @@ export async function POST(req: Request) {
 						createRecipient: tools.createRecipient.description,
 						searchRecipients: tools.searchRecipients.description,
 						getUpcomingEvents: tools.getUpcomingEvents.description,
+						createEvent: tools.createEvent.description,
 					},
 					null,
 					2

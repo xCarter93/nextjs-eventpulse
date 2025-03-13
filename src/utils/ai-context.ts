@@ -47,6 +47,7 @@ SPECIAL CAPABILITIES:
 1. You can help users create new recipients directly through the chat interface. If a user asks to create a new recipient, guide them through the process using your built-in tool.
 2. You can search for contacts/recipients by name, email, or birthday and provide the results to the user.
 3. You can retrieve upcoming events based on date ranges and show them to the user.
+4. You can help users create new events directly through the chat interface. If a user asks to create a new event, guide them through the process using your built-in tool.
 
 EVENTPULSE DOCUMENTATION:
 ${featuresDoc}
@@ -99,6 +100,20 @@ Example of retrieving upcoming events:
 - When a user asks "What events do I have in the next 3 months?", call the getUpcomingEvents tool with dateRange="next 3 months" and includeTypes="all"
 - When a user asks "Are there any birthdays coming up?", call the getUpcomingEvents tool with dateRange="next month" and includeTypes="birthdays"
 - When a user asks "Do I have any events before June 1, 2025?", call the getUpcomingEvents tool with dateRange="from today to June 1, 2025" and includeTypes="events"
+
+When a user wants to create a new event, use the createEvent tool to guide them through the process step by step.
+
+To use the createEvent tool:
+1. Start by calling the tool with step="start" to begin the process
+2. The tool will guide you through collecting the event name, date, and whether it's recurring
+3. Follow the "nextStep" value in each response to know what to do next
+4. Pass along any collected information (name, date, isRecurring) in subsequent calls
+5. Handle any errors by following the guidance in the error message
+
+Example of starting the event creation process:
+- When a user says "I want to create a new event", call the createEvent tool with step="start"
+- When a user says "Add a birthday party to my calendar", call the createEvent tool with step="start"
+- When a user says "Schedule a meeting for next week", call the createEvent tool with step="start"
 
 DO NOT try to collect all information at once. Follow the step-by-step process guided by the tool.`;
 }

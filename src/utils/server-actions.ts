@@ -515,3 +515,86 @@ function parseDate(date: Date | number | string): number {
 	console.error(`Failed to parse date: ${date}, using current date instead`);
 	return new Date().getTime();
 }
+
+/**
+ * Function to create a new event (server-side)
+ * This is a wrapper around the Convex mutation for use in AI tools
+ * @param client - The Convex client
+ * @param name - The event name
+ * @param date - The event date as a timestamp
+ * @param isRecurring - Whether the event is recurring annually
+ * @returns The result of the mutation
+ */
+export async function createEvent(
+	client: ConvexHttpClient,
+	{
+		name,
+		date,
+		isRecurring,
+	}: {
+		name: string;
+		date: number;
+		isRecurring: boolean;
+	}
+) {
+	try {
+		// Get the authentication token from Clerk
+		const session = await auth();
+		const token = await session.getToken({ template: "convex" });
+
+		if (!token) {
+			console.error("Failed to get authentication token from Clerk");
+			return {
+				success: false,
+				error: "Authentication failed. Please make sure you're logged in.",
+			};
+		}
+
+		console.log("Got authentication token from Clerk");
+
+		// Set the authentication token on the Convex client
+		client.setAuth(token);
+
+		console.log("Calling Convex mutation with data:", {
+			name,
+			date,
+			isRecurring,
+		});
+		const result = await client.mutation(api.events.createEvent, {
+			name,
+			date,
+			isRecurring,
+		});
+
+		console.log("Mutation result:", result);
+		return {
+			success: true,
+			eventId: result,
+		};
+	} catch (error) {
+		console.error("Error creating event:", error);
+		let errorMessage = "Unknown error";
+
+		if (error instanceof Error) {
+			errorMessage = error.message;
+			console.error("Error name:", error.name);
+			console.error("Error message:", error.message);
+			console.error("Error stack:", error.stack);
+
+			// Check for authentication errors
+			if (
+				error.message.includes("Not authenticated") ||
+				error.message.includes("authentication") ||
+				error.message.includes("auth")
+			) {
+				errorMessage =
+					"Authentication failed. Please make sure you're logged in and have the necessary permissions.";
+			}
+		}
+
+		return {
+			success: false,
+			error: errorMessage,
+		};
+	}
+}

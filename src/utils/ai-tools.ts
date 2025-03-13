@@ -4,6 +4,7 @@ import {
 	createRecipient,
 	searchRecipients,
 	getUpcomingEvents,
+	createEvent,
 } from "./server-actions";
 import { ConvexHttpClient } from "convex/browser";
 import { auth } from "@clerk/nextjs/server";
@@ -844,6 +845,429 @@ export const getUpcomingEventsTool = tool({
 					error instanceof Error
 						? error.message
 						: "An unknown error occurred while retrieving events",
+			};
+		}
+	},
+});
+
+/**
+ * Tool for creating a new event
+ * This tool guides the user through the process of creating a new event
+ */
+export const createEventTool = tool({
+	description: "Create a new event with name, date, and recurring option",
+	parameters: z.object({
+		step: z
+			.enum([
+				"start",
+				"collect-name",
+				"collect-date",
+				"collect-recurring",
+				"confirm",
+				"submit",
+			])
+			.describe("The current step in the event creation process"),
+		name: z.string().describe("The event name (can be empty for some steps)"),
+		date: z
+			.string()
+			.describe(
+				"The event date in MM/DD/YYYY format (can be empty for some steps)"
+			),
+		isRecurring: z
+			.boolean()
+			.describe(
+				"Whether the event recurs annually (can be undefined for some steps)"
+			),
+	}),
+	execute: async ({
+		step,
+		name,
+		date,
+		isRecurring,
+	}: {
+		step:
+			| "start"
+			| "collect-name"
+			| "collect-date"
+			| "collect-recurring"
+			| "confirm"
+			| "submit";
+		name: string;
+		date: string;
+		isRecurring: boolean;
+	}) => {
+		try {
+			// Step-by-step process for creating an event
+			switch (step) {
+				case "start":
+					return {
+						status: "in_progress",
+						message: "Let's create a new event. What's the name of the event?",
+						nextStep: "collect-name",
+					};
+
+				case "collect-name":
+					if (!name || name.trim() === "") {
+						return {
+							status: "error",
+							message: "I need a name for the event. Please provide a name.",
+							nextStep: "collect-name",
+						};
+					}
+					return {
+						status: "in_progress",
+						message: `Great! When is the "${name}" event? Please provide the date in MM/DD/YYYY format.`,
+						nextStep: "collect-date",
+						name,
+					};
+
+				case "collect-date":
+					if (!name || name.trim() === "") {
+						return {
+							status: "error",
+							message:
+								"I need the event name first. Let's start over. What's the name of the event?",
+							nextStep: "collect-name",
+						};
+					}
+
+					if (!date || date.trim() === "") {
+						return {
+							status: "error",
+							message:
+								"I need a date for the event. Please provide a valid date in MM/DD/YYYY format.",
+							nextStep: "collect-date",
+							name,
+						};
+					}
+
+					// Date validation and conversion to timestamp
+					let dateTimestamp: number;
+					try {
+						// Clean up the input - remove any extra spaces
+						const cleanDate = date.trim();
+
+						// Try multiple date formats
+						let dateObj: Date | null = null;
+
+						// First try MM/DD/YYYY format
+						if (!dateObj) {
+							const parts = cleanDate.split("/");
+
+							if (parts.length === 3) {
+								const month = parseInt(parts[0], 10);
+								const day = parseInt(parts[1], 10);
+								const year = parseInt(parts[2], 10);
+
+								if (!isNaN(month) && !isNaN(day) && !isNaN(year)) {
+									dateObj = new Date(year, month - 1, day);
+
+									// Verify the date is valid
+									if (
+										dateObj.getMonth() !== month - 1 ||
+										dateObj.getDate() !== day ||
+										dateObj.getFullYear() !== year
+									) {
+										dateObj = null;
+									}
+								}
+							}
+						}
+
+						// If we couldn't parse the date, throw an error
+						if (!dateObj) {
+							console.error(`DEBUGGING - Failed to parse date: ${cleanDate}`);
+							throw new Error(
+								`I couldn't understand the date format. Please provide the date in MM/DD/YYYY format (e.g., 10/15/2024).`
+							);
+						}
+
+						// Get the timestamp
+						dateTimestamp = dateObj.getTime();
+
+						// Sanity check the year
+						const year = dateObj.getFullYear();
+						const currentYear = new Date().getFullYear();
+						if (year < currentYear || year > currentYear + 10) {
+							console.error(`DEBUGGING - Suspicious year: ${year}`);
+							throw new Error(
+								`The year ${year} seems unusual. Are you sure this is the correct date? Please provide a date between ${currentYear} and ${currentYear + 10}.`
+							);
+						}
+					} catch (error) {
+						console.error("DEBUGGING - Date validation error:", error);
+						return {
+							status: "error",
+							message:
+								error instanceof Error
+									? `${error.message}`
+									: "That doesn't look like a valid date. Please provide the date in MM/DD/YYYY format (e.g., 10/15/2024).",
+							nextStep: "collect-date",
+							name,
+						};
+					}
+
+					return {
+						status: "in_progress",
+						message: `Is this a recurring annual event? (yes/no)`,
+						nextStep: "collect-recurring",
+						name,
+						date: dateTimestamp.toString(),
+					};
+
+				case "collect-recurring":
+					if (!name || name.trim() === "" || !date || date.trim() === "") {
+						return {
+							status: "error",
+							message:
+								"I'm missing some information. Let's start over. What's the name of the event?",
+							nextStep: "collect-name",
+						};
+					}
+
+					// Ensure date is a valid timestamp
+					let eventDate: Date;
+					let confirmedDateTimestamp: number;
+					try {
+						// Try to parse the date as a timestamp first
+						const timestampValue = Number(date);
+
+						if (!isNaN(timestampValue) && timestampValue > 0) {
+							eventDate = new Date(timestampValue);
+							confirmedDateTimestamp = timestampValue;
+						} else {
+							throw new Error("Invalid date format.");
+						}
+					} catch (error) {
+						console.error("DEBUGGING RECURRING - Error parsing date:", error);
+						return {
+							status: "error",
+							message:
+								"There was an issue with the date format. Let's try again with the date.",
+							nextStep: "collect-date",
+							name,
+						};
+					}
+
+					return {
+						status: "in_progress",
+						message: `Great! Here's a summary of the event:\n\nName: ${name}\nDate: ${eventDate.toLocaleDateString()}\nRecurring annually: ${isRecurring ? "Yes" : "No"}\n\nIs this information correct? (yes/no)`,
+						nextStep: "confirm",
+						name,
+						date: confirmedDateTimestamp.toString(),
+						isRecurring,
+					};
+
+				case "confirm":
+					if (
+						!name ||
+						name.trim() === "" ||
+						!date ||
+						date.trim() === "" ||
+						isRecurring === undefined
+					) {
+						return {
+							status: "error",
+							message:
+								"I'm missing some information. Let's start over. What's the name of the event?",
+							nextStep: "collect-name",
+						};
+					}
+
+					// Ensure date is a valid timestamp
+					let confirmedEventDate: Date;
+					let finalDateTimestamp: number;
+					try {
+						// Try to parse the date as a timestamp
+						const timestampValue = Number(date);
+
+						if (!isNaN(timestampValue) && timestampValue > 0) {
+							confirmedEventDate = new Date(timestampValue);
+							finalDateTimestamp = timestampValue;
+						} else {
+							throw new Error("Invalid date format.");
+						}
+					} catch (error) {
+						console.error("DEBUGGING CONFIRM - Error parsing date:", error);
+						return {
+							status: "error",
+							message:
+								"There was an issue with the date format. Let's try again with the date.",
+							nextStep: "collect-date",
+							name,
+						};
+					}
+
+					return {
+						status: "in_progress",
+						message: `I'll now create an event "${name}" on ${confirmedEventDate.toLocaleDateString()} ${isRecurring ? "that recurs annually" : "as a one-time event"}.`,
+						nextStep: "submit",
+						name,
+						date: finalDateTimestamp.toString(),
+						isRecurring,
+					};
+
+				case "submit":
+					if (
+						!name ||
+						name.trim() === "" ||
+						!date ||
+						date.trim() === "" ||
+						isRecurring === undefined
+					) {
+						return {
+							status: "error",
+							message:
+								"I'm missing some information. Let's start over. What's the name of the event?",
+							nextStep: "collect-name",
+						};
+					}
+
+					try {
+						// Initialize the Convex client
+						const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+						if (!convexUrl) {
+							console.error("DEBUGGING SUBMIT - Convex URL is not configured");
+							throw new Error("Convex URL is not configured");
+						}
+
+						const convex = new ConvexHttpClient(convexUrl);
+
+						// Parse the date - handle timestamp format
+						let dateTimestamp: number;
+
+						// Try to parse as a timestamp
+						const timestampValue = Number(date);
+
+						if (!isNaN(timestampValue) && timestampValue > 0) {
+							// It's already a timestamp
+							dateTimestamp = timestampValue;
+						} else {
+							throw new Error("Invalid date format.");
+						}
+
+						// Sanity check - convert to date and check if it's reasonable
+						const eventDate = new Date(dateTimestamp);
+						const currentYear = new Date().getFullYear();
+						const year = eventDate.getFullYear();
+
+						if (year < currentYear || year > currentYear + 10) {
+							console.error(
+								`DEBUGGING SUBMIT - Suspicious year in timestamp: ${year}`
+							);
+							throw new Error(
+								`The year ${year} seems unusual. Please try again with a valid date.`
+							);
+						}
+
+						// Call the createEvent function
+						const result = await createEvent(convex, {
+							name,
+							date: dateTimestamp,
+							isRecurring,
+						});
+
+						if (!result.success) {
+							console.error(
+								"DEBUGGING SUBMIT - Error from createEvent:",
+								result.error
+							);
+
+							// Check for authentication-related errors
+							if (
+								result.error &&
+								(result.error.includes("authentication") ||
+									result.error.includes("logged in") ||
+									result.error.includes("auth") ||
+									result.error.includes("Not authenticated"))
+							) {
+								return {
+									status: "error",
+									message:
+										"You need to be logged in to create an event. Please log in and try again.",
+									nextStep: "start",
+								};
+							}
+
+							throw new Error(result.error || "Unknown error creating event");
+						}
+
+						return {
+							status: "success",
+							message: `Successfully created a new event "${name}" on ${eventDate.toLocaleDateString()}${isRecurring ? " that will recur annually" : ""}! It's been added to your calendar.`,
+							eventDetails: {
+								id: result.eventId,
+								name,
+								date: eventDate.toLocaleDateString(),
+								isRecurring,
+							},
+						};
+					} catch (error: unknown) {
+						console.error("DEBUGGING SUBMIT - Error in submit step:", error);
+
+						let errorMessage = "There was an error creating the event.";
+
+						if (error instanceof Error) {
+							console.error("DEBUGGING SUBMIT - Error name:", error.name);
+							console.error("DEBUGGING SUBMIT - Error message:", error.message);
+							console.error("DEBUGGING SUBMIT - Error stack:", error.stack);
+
+							errorMessage = error.message;
+
+							// Check for authentication-related errors
+							if (
+								error.message.includes("authentication") ||
+								error.message.includes("logged in") ||
+								error.message.includes("auth") ||
+								error.message.includes("Not authenticated")
+							) {
+								errorMessage =
+									"You need to be logged in to create an event. Please log in and try again.";
+							}
+
+							// Check for date-related errors
+							if (
+								error.message.includes("date") ||
+								error.message.includes("timestamp")
+							) {
+								return {
+									status: "error",
+									message:
+										"There was an issue with the date format. Let's try again with the date.",
+									nextStep: "collect-date",
+									name,
+								};
+							}
+						}
+
+						return {
+							status: "error",
+							message: errorMessage,
+							nextStep: "start",
+						};
+					}
+
+				default:
+					console.error("Invalid step:", step);
+					return {
+						status: "error",
+						message:
+							"I'm not sure what to do next. Let's start over. Would you like to create a new event?",
+						nextStep: "start",
+					};
+			}
+		} catch (error: unknown) {
+			console.error("Unexpected error in createEventTool:", error);
+			if (error instanceof Error) {
+				console.error("Error name:", error.name);
+				console.error("Error message:", error.message);
+				console.error("Error stack:", error.stack);
+			}
+			return {
+				status: "error",
+				message:
+					"An unexpected error occurred. Let's try again. Would you like to create a new event?",
+				nextStep: "start",
 			};
 		}
 	},
