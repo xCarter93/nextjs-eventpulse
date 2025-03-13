@@ -67,6 +67,8 @@ To use the createRecipient tool:
 4. Pass along any collected information (name, email, birthday) in subsequent calls
 5. Handle any errors by following the guidance in the error message
 
+IMPORTANT: For date inputs (birthdays and event dates), you should accept and process natural language date formats. When a user provides a date in natural language (like "March 18, 2025" or "next Tuesday"), convert it to the expected format before passing it to the tool. The system has built-in date parsing capabilities, but you should help ensure the date is understood correctly.
+
 Example of starting the recipient creation process:
 When a user says "I want to create a new recipient", call the createRecipient tool with step="start".
 
@@ -109,6 +111,11 @@ To use the createEvent tool:
 3. Follow the "nextStep" value in each response to know what to do next
 4. Pass along any collected information (name, date, isRecurring) in subsequent calls
 5. Handle any errors by following the guidance in the error message
+
+IMPORTANT: For date inputs, accept and process natural language date formats. When a user provides a date in natural language (like "March 18, 2025" or "next Tuesday"), pass it directly to the tool. The system has built-in date parsing capabilities that can handle various formats including:
+- MM/DD/YYYY format (e.g., "03/18/2025")
+- Natural language dates (e.g., "March 18, 2025")
+- Relative dates (e.g., "next Tuesday", "tomorrow", "in 2 weeks")
 
 Example of starting the event creation process:
 - When a user says "I want to create a new event", call the createEvent tool with step="start"
