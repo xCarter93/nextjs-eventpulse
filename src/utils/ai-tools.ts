@@ -6,6 +6,7 @@ import {
 	getUpcomingEvents,
 } from "./server-actions";
 import { ConvexHttpClient } from "convex/browser";
+import { auth } from "@clerk/nextjs/server";
 
 /**
  * Tool for creating a new recipient
@@ -639,10 +640,34 @@ export const getUpcomingEventsTool = tool({
 	description: "Get upcoming events within a specified date range",
 	parameters: z.object({
 		dateRange: z
-			.string()
-			.describe(
-				"The date range for the event search (e.g., 'next week', 'next month', 'from June 1 to July 15')"
-			),
+			.union([
+				// Support both the old string format for backward compatibility
+				z
+					.string()
+					.describe(
+						"The date range for the event search (e.g., 'next week', 'next month', 'from June 1 to July 15')"
+					),
+				// And the new structured format
+				z
+					.object({
+						description: z
+							.string()
+							.describe(
+								"The original date range description from the user's message"
+							),
+						startDate: z
+							.string()
+							.describe("The start date in ISO format (YYYY-MM-DD)"),
+						endDate: z
+							.string()
+							.describe("The end date in ISO format (YYYY-MM-DD)"),
+						relativeDescription: z
+							.string()
+							.describe("A human-readable description of the date range"),
+					})
+					.describe("A structured representation of the date range"),
+			])
+			.describe("The date range for the event search"),
 		includeTypes: z
 			.enum(["all", "birthdays", "events"])
 			.describe(
@@ -653,7 +678,14 @@ export const getUpcomingEventsTool = tool({
 		dateRange,
 		includeTypes,
 	}: {
-		dateRange: string;
+		dateRange:
+			| string
+			| {
+					description: string;
+					startDate: string;
+					endDate: string;
+					relativeDescription: string;
+			  };
 		includeTypes: "all" | "birthdays" | "events";
 	}) => {
 		try {
@@ -668,36 +700,81 @@ export const getUpcomingEventsTool = tool({
 			// Parse the date range
 			let startDate: string | undefined;
 			let endDate: string | undefined;
+			let dateRangeDescription: string;
 
-			// Handle different date range formats
-			if (dateRange.toLowerCase().includes("next")) {
-				// For "next week", "next month", etc.
-				startDate = "today";
-				endDate = dateRange;
-			} else if (
-				dateRange.toLowerCase().includes("from") &&
-				dateRange.toLowerCase().includes("to")
+			// Check if dateRange is already in structured format
+			if (
+				typeof dateRange === "object" &&
+				dateRange.startDate &&
+				dateRange.endDate
 			) {
-				// For "from X to Y" format
-				const parts = dateRange
-					.split(/from|to/i)
-					.filter((part) => part.trim().length > 0);
-				if (parts.length >= 2) {
-					startDate = parts[0].trim();
-					endDate = parts[1].trim();
-				}
+				startDate = dateRange.startDate;
+				endDate = dateRange.endDate;
+				dateRangeDescription =
+					dateRange.relativeDescription || dateRange.description;
+				console.log("Using structured date range:", {
+					startDate,
+					endDate,
+					dateRangeDescription,
+				});
 			} else {
-				// Default to treating the input as the start date with a default end date
-				startDate = dateRange;
-				// End date will be handled by the server function default (30 days)
+				// Handle the string format (for backward compatibility)
+				const dateRangeStr =
+					typeof dateRange === "string" ? dateRange : "unknown date range";
+				dateRangeDescription = dateRangeStr;
+
+				// Handle different date range formats
+				if (dateRangeStr.toLowerCase().includes("next")) {
+					// For "next week", "next month", etc.
+					startDate = "today";
+					endDate = dateRangeStr;
+				} else if (
+					dateRangeStr.toLowerCase().includes("from") &&
+					dateRangeStr.toLowerCase().includes("to")
+				) {
+					// For "from X to Y" format
+					const parts = dateRangeStr
+						.split(/from|to/i)
+						.filter((part) => part.trim().length > 0);
+					if (parts.length >= 2) {
+						startDate = parts[0].trim();
+						endDate = parts[1].trim();
+					}
+				} else {
+					// Default to treating the input as the start date with a default end date
+					startDate = dateRangeStr;
+					// End date will be handled by the server function default (30 days)
+				}
 			}
 
-			// Set up event type filters
+			// Get the authentication token from Clerk
+			const session = await auth();
+			const token = await session.getToken({ template: "convex" });
+
+			if (!token) {
+				console.error("Failed to get authentication token from Clerk");
+				return {
+					success: false,
+					error: "Authentication failed. Please make sure you're logged in.",
+				};
+			}
+
+			// Set the authentication token on the Convex client
+			convex.setAuth(token);
+
+			// Convert includeTypes to the format expected by the server action
 			const includeBirthdays =
 				includeTypes === "all" || includeTypes === "birthdays";
 			const includeEvents = includeTypes === "all" || includeTypes === "events";
 
-			// Call the getUpcomingEvents function
+			// Call the Convex function to get upcoming events
+			console.log("Calling getUpcomingEvents with:", {
+				startDate,
+				endDate,
+				includeBirthdays,
+				includeEvents,
+			});
+
 			const result = await getUpcomingEvents(convex, {
 				startDate,
 				endDate,
@@ -706,95 +783,67 @@ export const getUpcomingEventsTool = tool({
 			});
 
 			if (!result.success) {
-				throw new Error(result.error || "Unknown error retrieving events");
-			}
-
-			// Format the response for better readability
-			let responseMessage = result.message + "\n\n";
-
-			if (
-				result.count &&
-				result.count > 0 &&
-				result.events &&
-				result.dateRange
-			) {
-				responseMessage += `Date range: ${result.dateRange.start} to ${result.dateRange.end}\n\n`;
-
-				// Group events by type for better organization
-				const eventsByType: Record<
-					string,
-					Array<{
-						type: string;
-						name: string;
-						date: string;
-						timestamp: number;
-						person?: string;
-					}>
-				> = {
-					event: [],
-					birthday: [],
+				return {
+					success: false,
+					error: result.error || "Failed to retrieve upcoming events",
 				};
+			}
 
-				result.events.forEach((event) => {
-					if (eventsByType[event.type]) {
-						eventsByType[event.type].push(event);
-					} else {
-						eventsByType[event.type] = [event];
+			// Format the results for display
+			const events = result.events || [];
+			const formattedEvents = events.map((event) => {
+				const date = new Date(event.timestamp);
+				return {
+					...event,
+					formattedDate: date.toLocaleDateString("en-US", {
+						weekday: "long",
+						year: "numeric",
+						month: "long",
+						day: "numeric",
+					}),
+				};
+			});
+
+			// Sort events by date
+			formattedEvents.sort((a, b) => a.timestamp - b.timestamp);
+
+			// Create a human-readable response
+			let response = "";
+
+			if (formattedEvents.length === 0) {
+				response = `No events found ${
+					dateRangeDescription ? `for ${dateRangeDescription}` : ""
+				}.`;
+			} else {
+				response = `Here are the upcoming events ${
+					dateRangeDescription ? `for ${dateRangeDescription}` : ""
+				}:\n\n`;
+
+				formattedEvents.forEach((event) => {
+					response += `📅 ${event.formattedDate}: ${event.name}`;
+					if (event.type === "birthday") {
+						response += ` (Birthday)`;
 					}
+					if (event.person) {
+						response += `\n   Person: ${event.person}`;
+					}
+					response += "\n\n";
 				});
-
-				// Add events by type to the response
-				if (eventsByType.event.length > 0) {
-					responseMessage += "Events:\n";
-					eventsByType.event.forEach((event) => {
-						responseMessage += `- ${event.date}: ${event.name}\n`;
-					});
-					responseMessage += "\n";
-				}
-
-				if (eventsByType.birthday.length > 0) {
-					responseMessage += "Birthdays:\n";
-					eventsByType.birthday.forEach((event) => {
-						responseMessage += `- ${event.date}: ${event.name}\n`;
-					});
-					responseMessage += "\n";
-				}
 			}
 
 			return {
-				status: "success",
-				message: responseMessage.trim(),
-				events: result.events,
-				count: result.count,
-				dateRange: result.dateRange,
+				success: true,
+				events: formattedEvents,
+				response,
 			};
-		} catch (error: unknown) {
-			console.error("Error in getUpcomingEventsTool:", error);
-
-			let errorMessage = "There was an error retrieving upcoming events.";
-
-			if (error instanceof Error) {
-				console.error("Error name:", error.name);
-				console.error("Error message:", error.message);
-				console.error("Error stack:", error.stack);
-
-				errorMessage = error.message;
-
-				// Check for authentication-related errors
-				if (
-					error.message.includes("authentication") ||
-					error.message.includes("logged in") ||
-					error.message.includes("auth") ||
-					error.message.includes("Not authenticated")
-				) {
-					errorMessage =
-						"You need to be logged in to retrieve events. Please log in and try again.";
-				}
-			}
-
+		} catch (error) {
+			console.error("Error in getUpcomingEvents tool:", error);
 			return {
-				status: "error",
-				message: errorMessage,
+				success: false,
+				error:
+					error instanceof Error
+						? error.message
+						: "An unknown error occurred while retrieving events",
 			};
 		}
 	},
