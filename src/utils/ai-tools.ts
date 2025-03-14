@@ -9,6 +9,7 @@ import {
 } from "./server-actions";
 import { ConvexHttpClient } from "convex/browser";
 import { auth } from "@clerk/nextjs/server";
+import { logAI, logError, logToolCall, LogLevel, LogCategory } from "./logging";
 
 /**
  * Tool for creating a new recipient
@@ -199,17 +200,25 @@ export const createRecipientTool = tool({
 								const timestamp = parseDate(cleanBirthday);
 								dateObj = new Date(timestamp);
 							} catch (parseError) {
-								console.error(
-									`DEBUGGING - Failed to parse date with parseDate: ${cleanBirthday}`,
-									parseError
+								logAI(
+									LogLevel.DEBUG,
+									LogCategory.DATE_PARSING,
+									"parse_date_failed",
+									{ input: cleanBirthday, error: String(parseError) }
+								);
+								throw new Error(
+									`I couldn't understand the date format. Please provide the date in a clear format like "MM/DD/YYYY" (e.g., 03/18/2025) or a natural description like "March 18, 2025", "next Tuesday", "two weeks from today", or "in 3 months".`
 								);
 							}
 						}
 
 						// If we still couldn't parse the date, throw an error
 						if (!dateObj) {
-							console.error(
-								`DEBUGGING - Failed to parse date: ${cleanBirthday}`
+							logAI(
+								LogLevel.ERROR,
+								LogCategory.DATE_PARSING,
+								"failed_to_parse_date",
+								{ input: cleanBirthday }
 							);
 							throw new Error(
 								`I couldn't understand the date format. Please provide the date in a clear format like "MM/DD/YYYY" (e.g., 03/18/2025) or a natural description like "March 18, 2025", "next Tuesday", "two weeks from today", or "in 3 months".`
@@ -222,13 +231,20 @@ export const createRecipientTool = tool({
 						// Sanity check the year
 						const year = dateObj.getFullYear();
 						if (year < 1900 || year > new Date().getFullYear()) {
-							console.error(`DEBUGGING - Invalid year: ${year}`);
+							logAI(LogLevel.ERROR, LogCategory.DATE_PARSING, "invalid_year", {
+								year,
+							});
 							throw new Error(
 								`The year ${year} doesn't seem right. Please provide a year between 1900 and ${new Date().getFullYear()}.`
 							);
 						}
 					} catch (error) {
-						console.error("DEBUGGING - Date validation error:", error);
+						logAI(
+							LogLevel.ERROR,
+							LogCategory.DATE_PARSING,
+							"date_validation_error",
+							{ error: error instanceof Error ? error.message : String(error) }
+						);
 						return {
 							status: "error",
 							message:
@@ -281,8 +297,11 @@ export const createRecipientTool = tool({
 							// Sanity check - if the date is before 1900 or after current year, it's probably wrong
 							const year = birthdayDate.getFullYear();
 							if (year < 1900 || year > new Date().getFullYear()) {
-								console.error(
-									`DEBUGGING CONFIRM - Suspicious year in timestamp: ${year}`
+								logAI(
+									LogLevel.ERROR,
+									LogCategory.DATE_PARSING,
+									"suspicious_year_in_timestamp",
+									{ year, timestamp: confirmedBirthdayTimestamp }
 								);
 								throw new Error(
 									`The year ${year} doesn't seem right. Please provide a year between 1900 and ${new Date().getFullYear()}.`
@@ -328,7 +347,12 @@ export const createRecipientTool = tool({
 							}
 						}
 					} catch (error) {
-						console.error("DEBUGGING CONFIRM - Error parsing birthday:", error);
+						logAI(
+							LogLevel.ERROR,
+							LogCategory.DATE_PARSING,
+							"confirm_parse_birthday_error",
+							{ error: error instanceof Error ? error.message : String(error) }
+						);
 						return {
 							status: "error",
 							message:
@@ -371,7 +395,12 @@ export const createRecipientTool = tool({
 						// Initialize the Convex client
 						const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
 						if (!convexUrl) {
-							console.error("DEBUGGING SUBMIT - Convex URL is not configured");
+							logAI(
+								LogLevel.ERROR,
+								LogCategory.TOOL_CALL,
+								"convex_url_not_configured",
+								{}
+							);
 							throw new Error("Convex URL is not configured");
 						}
 
@@ -390,8 +419,11 @@ export const createRecipientTool = tool({
 							// It's a string format, pass it directly to parseDate
 							try {
 								// Use the parseDate function to handle various date formats
-								console.log(
-									`DEBUGGING SUBMIT - Attempting to parse date string: "${birthday}"`
+								logAI(
+									LogLevel.DEBUG,
+									LogCategory.DATE_PARSING,
+									"parsing_date_string",
+									{ input: birthday }
 								);
 
 								// For natural language dates, pass the string directly
@@ -407,14 +439,15 @@ export const createRecipientTool = tool({
 									const expectedDate = new Date(today);
 									expectedDate.setDate(today.getDate() + 14);
 
-									console.log(
-										`DEBUGGING SUBMIT - Today: ${today.toISOString()}`
-									);
-									console.log(
-										`DEBUGGING SUBMIT - Expected date (2 weeks from today): ${expectedDate.toISOString()}`
-									);
-									console.log(
-										`DEBUGGING SUBMIT - Actual parsed date: ${parsedDate.toISOString()}`
+									logAI(
+										LogLevel.DEBUG,
+										LogCategory.DATE_PARSING,
+										"date_parsing_debug",
+										{
+											today: today.toISOString(),
+											expectedDate: expectedDate.toISOString(),
+											actualParsedDate: parsedDate.toISOString(),
+										}
 									);
 
 									// Check if the dates are approximately equal (within 1 day)
@@ -424,23 +457,45 @@ export const createRecipientTool = tool({
 									const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
 									if (diffDays > 1) {
-										console.error(
-											`DEBUGGING SUBMIT - Date parsing error: Expected ~${expectedDate.toISOString()}, got ${parsedDate.toISOString()}`
+										logAI(
+											LogLevel.ERROR,
+											LogCategory.DATE_PARSING,
+											"date_parsing_mismatch",
+											{
+												expected: expectedDate.toISOString(),
+												actual: parsedDate.toISOString(),
+											}
 										);
 									} else {
-										console.log(
-											`DEBUGGING SUBMIT - Date parsing successful: dates are within ${diffDays} days`
+										logAI(
+											LogLevel.DEBUG,
+											LogCategory.DATE_PARSING,
+											"date_parsing_success",
+											{ diffDays }
 										);
 									}
 								}
 
-								console.log(
-									`DEBUGGING SUBMIT - Successfully parsed date: ${birthdayTimestamp}, date: ${parsedDate.toISOString()}`
+								logAI(
+									LogLevel.DEBUG,
+									LogCategory.DATE_PARSING,
+									"date_parsing_success",
+									{
+										timestamp: birthdayTimestamp,
+										date: parsedDate.toISOString(),
+									}
 								);
 							} catch (parseError) {
-								console.error(
-									"DEBUGGING SUBMIT - Error parsing date:",
-									parseError
+								logAI(
+									LogLevel.ERROR,
+									LogCategory.DATE_PARSING,
+									"parse_date_error",
+									{
+										error:
+											parseError instanceof Error
+												? parseError.message
+												: String(parseError),
+									}
 								);
 								throw new Error(
 									"Invalid birthday format. Please provide the birthday in MM/DD/YYYY format."
@@ -453,8 +508,11 @@ export const createRecipientTool = tool({
 
 						const year = birthdayDate.getFullYear();
 						if (year < 1900 || year > new Date().getFullYear()) {
-							console.error(
-								`DEBUGGING SUBMIT - Suspicious year in timestamp: ${year}`
+							logAI(
+								LogLevel.ERROR,
+								LogCategory.DATE_PARSING,
+								"suspicious_year",
+								{ year }
 							);
 							throw new Error(
 								`The year ${year} doesn't seem right. Please try again with a valid date.`
@@ -469,9 +527,11 @@ export const createRecipientTool = tool({
 						});
 
 						if (!result.success) {
-							console.error(
-								"DEBUGGING SUBMIT - Error from createRecipient:",
-								result.error
+							logAI(
+								LogLevel.ERROR,
+								LogCategory.TOOL_CALL,
+								"create_recipient_error",
+								{ error: result.error }
 							);
 
 							// Check for authentication-related errors
@@ -506,14 +566,23 @@ export const createRecipientTool = tool({
 							},
 						};
 					} catch (error: unknown) {
-						console.error("DEBUGGING SUBMIT - Error in submit step:", error);
+						logError(
+							LogCategory.TOOL_CALL,
+							"create_recipient_submit_error",
+							error
+						);
 
 						let errorMessage = "There was an error creating the recipient.";
 
 						if (error instanceof Error) {
-							console.error("DEBUGGING SUBMIT - Error name:", error.name);
-							console.error("DEBUGGING SUBMIT - Error message:", error.message);
-							console.error("DEBUGGING SUBMIT - Error stack:", error.stack);
+							logAI(
+								LogLevel.ERROR,
+								LogCategory.TOOL_CALL,
+								"create_recipient_submit_error_details",
+								{
+									error: error instanceof Error ? error.message : String(error),
+								}
+							);
 
 							errorMessage = error.message;
 
@@ -553,7 +622,9 @@ export const createRecipientTool = tool({
 					}
 
 				default:
-					console.error("Invalid step:", step);
+					logAI(LogLevel.ERROR, LogCategory.TOOL_CALL, "invalid_step", {
+						step,
+					});
 					return {
 						status: "error",
 						message:
@@ -562,12 +633,7 @@ export const createRecipientTool = tool({
 					};
 			}
 		} catch (error: unknown) {
-			console.error("Unexpected error in createRecipientTool:", error);
-			if (error instanceof Error) {
-				console.error("Error name:", error.name);
-				console.error("Error message:", error.message);
-				console.error("Error stack:", error.stack);
-			}
+			logError(LogCategory.TOOL_CALL, "create_recipient_tool_error", error);
 			return {
 				status: "error",
 				message:
@@ -605,9 +671,21 @@ export const searchRecipientsTool = tool({
 		searchType: "name" | "email" | "birthday" | "any";
 	}) => {
 		try {
+			// Log the tool call
+			logToolCall("searchRecipientsTool", "execute", {
+				searchQuery,
+				searchType,
+			});
+
 			// Initialize the Convex client
 			const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
 			if (!convexUrl) {
+				logAI(
+					LogLevel.ERROR,
+					LogCategory.TOOL_CALL,
+					"convex_url_not_configured",
+					{}
+				);
 				throw new Error("Convex URL is not configured");
 			}
 
@@ -636,6 +714,12 @@ export const searchRecipientsTool = tool({
 			const result = await searchRecipients(convex, searchParams);
 
 			if (!result.success) {
+				logAI(
+					LogLevel.ERROR,
+					LogCategory.TOOL_CALL,
+					"search_recipients_error",
+					{ error: result.error }
+				);
 				throw new Error(result.error || "Unknown error searching recipients");
 			}
 
@@ -646,15 +730,11 @@ export const searchRecipientsTool = tool({
 				count: result.count,
 			};
 		} catch (error: unknown) {
-			console.error("Error in searchRecipientsTool:", error);
+			logError(LogCategory.TOOL_CALL, "search_recipients_tool_error", error);
 
 			let errorMessage = "There was an error searching for recipients.";
 
 			if (error instanceof Error) {
-				console.error("Error name:", error.name);
-				console.error("Error message:", error.message);
-				console.error("Error stack:", error.stack);
-
 				errorMessage = error.message;
 
 				// Check for authentication-related errors
@@ -734,9 +814,22 @@ export const getUpcomingEventsTool = tool({
 		includeTypes: "all" | "birthdays" | "events";
 	}) => {
 		try {
+			// Log the tool call
+			logToolCall("getUpcomingEventsTool", "execute", {
+				dateRange:
+					typeof dateRange === "string" ? dateRange : dateRange.description,
+				includeTypes,
+			});
+
 			// Initialize the Convex client
 			const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
 			if (!convexUrl) {
+				logAI(
+					LogLevel.ERROR,
+					LogCategory.TOOL_CALL,
+					"convex_url_not_configured",
+					{}
+				);
 				throw new Error("Convex URL is not configured");
 			}
 
@@ -757,11 +850,16 @@ export const getUpcomingEventsTool = tool({
 				endDate = dateRange.endDate;
 				dateRangeDescription =
 					dateRange.relativeDescription || dateRange.description;
-				console.log("Using structured date range:", {
-					startDate,
-					endDate,
-					dateRangeDescription,
-				});
+				logAI(
+					LogLevel.INFO,
+					LogCategory.DATE_PARSING,
+					"using_structured_date_range",
+					{
+						startDate,
+						endDate,
+						dateRangeDescription,
+					}
+				);
 			} else {
 				// Handle the string format (for backward compatibility)
 				const dateRangeStr =
@@ -797,7 +895,7 @@ export const getUpcomingEventsTool = tool({
 			const token = await session.getToken({ template: "convex" });
 
 			if (!token) {
-				console.error("Failed to get authentication token from Clerk");
+				logAI(LogLevel.ERROR, LogCategory.AUTH, "failed_to_get_auth_token", {});
 				return {
 					success: false,
 					error: "Authentication failed. Please make sure you're logged in.",
@@ -813,7 +911,7 @@ export const getUpcomingEventsTool = tool({
 			const includeEvents = includeTypes === "all" || includeTypes === "events";
 
 			// Call the Convex function to get upcoming events
-			console.log("Calling getUpcomingEvents with:", {
+			logAI(LogLevel.INFO, LogCategory.EVENT, "calling_get_upcoming_events", {
 				startDate,
 				endDate,
 				includeBirthdays,
@@ -828,6 +926,9 @@ export const getUpcomingEventsTool = tool({
 			});
 
 			if (!result.success) {
+				logAI(LogLevel.ERROR, LogCategory.EVENT, "get_upcoming_events_error", {
+					error: result.error,
+				});
 				return {
 					success: false,
 					error: result.error || "Failed to retrieve upcoming events",
@@ -882,7 +983,7 @@ export const getUpcomingEventsTool = tool({
 				response,
 			};
 		} catch (error) {
-			console.error("Error in getUpcomingEvents tool:", error);
+			logError(LogCategory.TOOL_CALL, "get_upcoming_events_tool_error", error);
 			return {
 				success: false,
 				error:
@@ -941,6 +1042,14 @@ export const createEventTool = tool({
 		isRecurring: boolean;
 	}) => {
 		try {
+			// Log the tool call
+			logToolCall("createEventTool", "execute", {
+				step,
+				name,
+				date,
+				isRecurring,
+			});
+
 			// Step-by-step process for creating an event
 			switch (step) {
 				case "start":
@@ -990,9 +1099,9 @@ export const createEventTool = tool({
 					try {
 						// Clean up the input - remove any extra spaces
 						const cleanDate = date.trim();
-						console.log(
-							`DEBUGGING COLLECT-DATE - Processing date: "${cleanDate}"`
-						);
+						logAI(LogLevel.DEBUG, LogCategory.DATE_PARSING, "processing_date", {
+							input: cleanDate,
+						});
 
 						// Try to parse the date to validate it, but we'll pass the original string forward
 						let dateObj: Date | null = null;
@@ -1002,13 +1111,18 @@ export const createEventTool = tool({
 						try {
 							dateTimestamp = parseDate(cleanDate);
 							dateObj = new Date(dateTimestamp);
-							console.log(
-								`DEBUGGING COLLECT-DATE - parseDate result: ${dateObj.toISOString()}`
+							logAI(
+								LogLevel.DEBUG,
+								LogCategory.DATE_PARSING,
+								"parse_date_result",
+								{ result: dateObj.toISOString() }
 							);
 						} catch (parseError) {
-							console.error(
-								`DEBUGGING COLLECT-DATE - Failed to parse with parseDate: ${cleanDate}`,
-								parseError
+							logAI(
+								LogLevel.ERROR,
+								LogCategory.DATE_PARSING,
+								"parse_date_failed",
+								{ input: cleanDate, error: String(parseError) }
 							);
 						}
 
@@ -1044,14 +1158,16 @@ export const createEventTool = tool({
 							const parsedDate = new Date(cleanDate);
 							if (!isNaN(parsedDate.getTime())) {
 								dateObj = parsedDate;
-								dateTimestamp = dateObj.getTime();
 							}
 						}
 
 						// If we still couldn't parse the date, throw an error
 						if (!dateObj || isNaN(dateObj.getTime())) {
-							console.error(
-								`DEBUGGING COLLECT-DATE - Failed to parse date: ${cleanDate}`
+							logAI(
+								LogLevel.ERROR,
+								LogCategory.DATE_PARSING,
+								"failed_to_parse_date",
+								{ input: cleanDate }
 							);
 							throw new Error(
 								`I couldn't understand the date format. Please provide the date in a clear format like "MM/DD/YYYY" (e.g., 03/18/2025) or a natural description like "March 18, 2025", "next Tuesday", "two weeks from today", or "in 3 months".`
@@ -1062,8 +1178,11 @@ export const createEventTool = tool({
 						const year = dateObj.getFullYear();
 						const currentYear = new Date().getFullYear();
 						if (year < currentYear || year > currentYear + 10) {
-							console.error(
-								`DEBUGGING COLLECT-DATE - Suspicious year: ${year}`
+							logAI(
+								LogLevel.ERROR,
+								LogCategory.DATE_PARSING,
+								"suspicious_year",
+								{ year, currentYear }
 							);
 							throw new Error(
 								`The year ${year} seems unusual. Are you sure this is the correct date? Please provide a date between ${currentYear} and ${currentYear + 10}.`
@@ -1072,8 +1191,11 @@ export const createEventTool = tool({
 
 						// For natural language dates, pass both the timestamp and the original string
 						// This ensures that the original intent is preserved
-						console.log(
-							`DEBUGGING COLLECT-DATE - Proceeding with date: ${dateObj.toISOString()}`
+						logAI(
+							LogLevel.DEBUG,
+							LogCategory.DATE_PARSING,
+							"proceeding_with_date",
+							{ date: dateObj.toISOString() }
 						);
 
 						return {
@@ -1084,9 +1206,11 @@ export const createEventTool = tool({
 							date: dateTimestamp.toString(),
 						};
 					} catch (error) {
-						console.error(
-							"DEBUGGING COLLECT-DATE - Date validation error:",
-							error
+						logAI(
+							LogLevel.ERROR,
+							LogCategory.DATE_PARSING,
+							"date_validation_error",
+							{ error: error instanceof Error ? error.message : String(error) }
 						);
 						return {
 							status: "error",
@@ -1177,9 +1301,16 @@ export const createEventTool = tool({
 									confirmedDateTimestamp = parseDate(cleanDate);
 									eventDate = new Date(confirmedDateTimestamp);
 								} catch (parseError) {
-									console.error(
-										`DEBUGGING - Failed to parse date with parseDate: ${cleanDate}`,
-										parseError
+									logAI(
+										LogLevel.ERROR,
+										LogCategory.DATE_PARSING,
+										"recurring_parse_date_error",
+										{
+											error:
+												parseError instanceof Error
+													? parseError.message
+													: String(parseError),
+										}
 									);
 									throw new Error(
 										"Invalid date format. Please provide a valid date."
@@ -1192,13 +1323,23 @@ export const createEventTool = tool({
 						const year = eventDate.getFullYear();
 						const currentYear = new Date().getFullYear();
 						if (year < currentYear || year > currentYear + 10) {
-							console.error(`DEBUGGING RECURRING - Suspicious year: ${year}`);
+							logAI(
+								LogLevel.ERROR,
+								LogCategory.DATE_PARSING,
+								"recurring_suspicious_year",
+								{ year, currentYear }
+							);
 							throw new Error(
 								`The year ${year} seems unusual. Are you sure this is the correct date? Please provide a date between ${currentYear} and ${currentYear + 10}.`
 							);
 						}
 					} catch (error) {
-						console.error("DEBUGGING RECURRING - Error parsing date:", error);
+						logAI(
+							LogLevel.ERROR,
+							LogCategory.DATE_PARSING,
+							"recurring_parse_date_error",
+							{ error: error instanceof Error ? error.message : String(error) }
+						);
 						return {
 							status: "error",
 							message:
@@ -1285,9 +1426,16 @@ export const createEventTool = tool({
 									finalDateTimestamp = parseDate(cleanDate);
 									confirmedEventDate = new Date(finalDateTimestamp);
 								} catch (parseError) {
-									console.error(
-										`DEBUGGING - Failed to parse date with parseDate: ${cleanDate}`,
-										parseError
+									logAI(
+										LogLevel.ERROR,
+										LogCategory.DATE_PARSING,
+										"confirm_parse_date_error",
+										{
+											error:
+												parseError instanceof Error
+													? parseError.message
+													: String(parseError),
+										}
 									);
 									throw new Error(
 										"Invalid date format. Please provide a valid date."
@@ -1300,13 +1448,23 @@ export const createEventTool = tool({
 						const year = confirmedEventDate.getFullYear();
 						const currentYear = new Date().getFullYear();
 						if (year < currentYear || year > currentYear + 10) {
-							console.error(`DEBUGGING CONFIRM - Suspicious year: ${year}`);
+							logAI(
+								LogLevel.ERROR,
+								LogCategory.DATE_PARSING,
+								"confirm_suspicious_year",
+								{ year, currentYear }
+							);
 							throw new Error(
 								`The year ${year} seems unusual. Please try again with a valid date.`
 							);
 						}
 					} catch (error) {
-						console.error("DEBUGGING CONFIRM - Error parsing date:", error);
+						logAI(
+							LogLevel.ERROR,
+							LogCategory.DATE_PARSING,
+							"confirm_parse_date_error",
+							{ error: error instanceof Error ? error.message : String(error) }
+						);
 						return {
 							status: "error",
 							message:
@@ -1347,7 +1505,12 @@ export const createEventTool = tool({
 						// Initialize the Convex client
 						const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
 						if (!convexUrl) {
-							console.error("DEBUGGING SUBMIT - Convex URL is not configured");
+							logAI(
+								LogLevel.ERROR,
+								LogCategory.TOOL_CALL,
+								"convex_url_not_configured",
+								{}
+							);
 							throw new Error("Convex URL is not configured");
 						}
 
@@ -1362,15 +1525,24 @@ export const createEventTool = tool({
 						if (!isNaN(timestampValue) && timestampValue > 0) {
 							// It's already a timestamp
 							dateTimestamp = timestampValue;
-							console.log(
-								`DEBUGGING SUBMIT - Using timestamp value: ${dateTimestamp}, date: ${new Date(dateTimestamp).toISOString()}`
+							logAI(
+								LogLevel.DEBUG,
+								LogCategory.DATE_PARSING,
+								"using_timestamp_value",
+								{
+									timestamp: dateTimestamp,
+									date: new Date(dateTimestamp).toISOString(),
+								}
 							);
 						} else {
 							// It's a string format, pass it directly to parseDate
 							try {
 								// Use the parseDate function to handle various date formats
-								console.log(
-									`DEBUGGING SUBMIT - Attempting to parse date string: "${date}"`
+								logAI(
+									LogLevel.DEBUG,
+									LogCategory.DATE_PARSING,
+									"parsing_date_string",
+									{ input: date }
 								);
 
 								// For natural language dates, pass the string directly
@@ -1386,14 +1558,15 @@ export const createEventTool = tool({
 									const expectedDate = new Date(today);
 									expectedDate.setDate(today.getDate() + 14);
 
-									console.log(
-										`DEBUGGING SUBMIT - Today: ${today.toISOString()}`
-									);
-									console.log(
-										`DEBUGGING SUBMIT - Expected date (2 weeks from today): ${expectedDate.toISOString()}`
-									);
-									console.log(
-										`DEBUGGING SUBMIT - Actual parsed date: ${parsedDate.toISOString()}`
+									logAI(
+										LogLevel.DEBUG,
+										LogCategory.DATE_PARSING,
+										"date_parsing_debug",
+										{
+											today: today.toISOString(),
+											expectedDate: expectedDate.toISOString(),
+											actualParsedDate: parsedDate.toISOString(),
+										}
 									);
 
 									// Check if the dates are approximately equal (within 1 day)
@@ -1403,23 +1576,45 @@ export const createEventTool = tool({
 									const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
 									if (diffDays > 1) {
-										console.error(
-											`DEBUGGING SUBMIT - Date parsing error: Expected ~${expectedDate.toISOString()}, got ${parsedDate.toISOString()}`
+										logAI(
+											LogLevel.ERROR,
+											LogCategory.DATE_PARSING,
+											"date_parsing_mismatch",
+											{
+												expected: expectedDate.toISOString(),
+												actual: parsedDate.toISOString(),
+											}
 										);
 									} else {
-										console.log(
-											`DEBUGGING SUBMIT - Date parsing successful: dates are within ${diffDays} days`
+										logAI(
+											LogLevel.DEBUG,
+											LogCategory.DATE_PARSING,
+											"date_parsing_success",
+											{ diffDays }
 										);
 									}
 								}
 
-								console.log(
-									`DEBUGGING SUBMIT - Successfully parsed date: ${dateTimestamp}, date: ${parsedDate.toISOString()}`
+								logAI(
+									LogLevel.DEBUG,
+									LogCategory.DATE_PARSING,
+									"date_parsing_success",
+									{
+										timestamp: dateTimestamp,
+										date: parsedDate.toISOString(),
+									}
 								);
 							} catch (parseError) {
-								console.error(
-									"DEBUGGING SUBMIT - Error parsing date:",
-									parseError
+								logAI(
+									LogLevel.ERROR,
+									LogCategory.DATE_PARSING,
+									"parse_date_error",
+									{
+										error:
+											parseError instanceof Error
+												? parseError.message
+												: String(parseError),
+									}
 								);
 								throw new Error(
 									"Invalid date format. Please provide a valid date."
@@ -1433,8 +1628,11 @@ export const createEventTool = tool({
 						const year = eventDate.getFullYear();
 
 						if (year < currentYear || year > currentYear + 10) {
-							console.error(
-								`DEBUGGING SUBMIT - Suspicious year in timestamp: ${year}`
+							logAI(
+								LogLevel.ERROR,
+								LogCategory.DATE_PARSING,
+								"suspicious_year_in_timestamp",
+								{ year, currentYear }
 							);
 							throw new Error(
 								`The year ${year} seems unusual. Please try again with a valid date.`
@@ -1442,9 +1640,11 @@ export const createEventTool = tool({
 						}
 
 						// Call the createEvent function
-						console.log(
-							`Calling Convex mutation with data: { name: '${name}', date: ${dateTimestamp}, isRecurring: ${isRecurring} }`
-						);
+						logAI(LogLevel.INFO, LogCategory.EVENT, "calling_create_event", {
+							name,
+							date: dateTimestamp,
+							isRecurring,
+						});
 						const result = await createEvent(convex, {
 							name,
 							date: dateTimestamp,
@@ -1452,10 +1652,9 @@ export const createEventTool = tool({
 						});
 
 						if (!result.success) {
-							console.error(
-								"DEBUGGING SUBMIT - Error from createEvent:",
-								result.error
-							);
+							logAI(LogLevel.ERROR, LogCategory.EVENT, "create_event_error", {
+								error: result.error,
+							});
 
 							// Check for authentication-related errors
 							if (
@@ -1487,14 +1686,19 @@ export const createEventTool = tool({
 							},
 						};
 					} catch (error: unknown) {
-						console.error("DEBUGGING SUBMIT - Error in submit step:", error);
+						logError(LogCategory.TOOL_CALL, "create_event_submit_error", error);
 
 						let errorMessage = "There was an error creating the event.";
 
 						if (error instanceof Error) {
-							console.error("DEBUGGING SUBMIT - Error name:", error.name);
-							console.error("DEBUGGING SUBMIT - Error message:", error.message);
-							console.error("DEBUGGING SUBMIT - Error stack:", error.stack);
+							logAI(
+								LogLevel.ERROR,
+								LogCategory.TOOL_CALL,
+								"create_event_submit_error_details",
+								{
+									error: error instanceof Error ? error.message : String(error),
+								}
+							);
 
 							errorMessage = error.message;
 
@@ -1532,7 +1736,9 @@ export const createEventTool = tool({
 					}
 
 				default:
-					console.error("Invalid step:", step);
+					logAI(LogLevel.ERROR, LogCategory.TOOL_CALL, "invalid_step", {
+						step,
+					});
 					return {
 						status: "error",
 						message:
@@ -1541,12 +1747,7 @@ export const createEventTool = tool({
 					};
 			}
 		} catch (error: unknown) {
-			console.error("Unexpected error in createEventTool:", error);
-			if (error instanceof Error) {
-				console.error("Error name:", error.name);
-				console.error("Error message:", error.message);
-				console.error("Error stack:", error.stack);
-			}
+			logError(LogCategory.TOOL_CALL, "create_event_tool_error", error);
 			return {
 				status: "error",
 				message:
@@ -1556,7 +1757,6 @@ export const createEventTool = tool({
 		}
 	},
 });
-
 /**
  * Function to create a new recipient using the Convex mutation
  * This is commented out for now as we're not actually calling the mutation in the tool

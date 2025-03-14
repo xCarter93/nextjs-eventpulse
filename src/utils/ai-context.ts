@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { logAI, LogCategory, LogLevel } from "./logging";
 
 /**
  * Loads the EventPulse features documentation from the markdown file
@@ -12,8 +13,14 @@ export function loadEventPulseFeatures(): string {
 			"src/data/eventpulse-features.md"
 		);
 		const content = fs.readFileSync(filePath, "utf-8");
+		logAI(LogLevel.DEBUG, LogCategory.AI_CHAT, "features_loaded", {
+			featuresLength: content.length,
+		});
 		return content;
 	} catch (error) {
+		logAI(LogLevel.ERROR, LogCategory.AI_CHAT, "features_load_error", {
+			error: error instanceof Error ? error.message : String(error),
+		});
 		console.error("Error loading EventPulse features documentation:", error);
 		// Return a basic fallback if the file can't be loaded
 		return `
@@ -33,6 +40,10 @@ export function loadEventPulseFeatures(): string {
  */
 export function createSystemPrompt(): string {
 	const featuresDoc = loadEventPulseFeatures();
+
+	logAI(LogLevel.INFO, LogCategory.AI_CHAT, "system_prompt_created", {
+		promptLength: featuresDoc.length,
+	});
 
 	return `You are EventPulse's AI Assistant. You help users understand and use the EventPulse platform effectively.
   
