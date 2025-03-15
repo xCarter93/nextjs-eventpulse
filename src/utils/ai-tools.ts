@@ -1016,7 +1016,7 @@ export const createEventTool = tool({
 		date: z
 			.string()
 			.describe(
-				"The event date in MM/DD/YYYY format (can be empty for some steps)"
+				"The event date in MM/DD/YYYY format or natural language (can be empty for some steps)"
 			),
 		isRecurring: z
 			.boolean()
@@ -1042,12 +1042,13 @@ export const createEventTool = tool({
 		isRecurring: boolean;
 	}) => {
 		try {
-			// Log the tool call
+			// Log the tool call with more detailed information
 			logToolCall("createEventTool", "execute", {
 				step,
 				name,
 				date,
 				isRecurring,
+				flowState: "active", // Add this to track flow state
 			});
 
 			// Step-by-step process for creating an event

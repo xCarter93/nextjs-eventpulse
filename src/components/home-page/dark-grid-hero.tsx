@@ -44,7 +44,7 @@ const Content = ({ isSignedIn, onDashboardClick }: ContentProps) => {
 				}}
 				className="relative"
 			>
-				<GlowingChip>✨ Create magical moments</GlowingChip>
+				<GlowingChip>✨ Event Management Reimagined</GlowingChip>
 			</motion.div>
 			<motion.h1
 				initial={{
@@ -62,7 +62,7 @@ const Content = ({ isSignedIn, onDashboardClick }: ContentProps) => {
 				}}
 				className="mb-3 text-center text-3xl font-bold leading-tight text-foreground sm:text-4xl sm:leading-tight md:text-5xl md:leading-tight lg:text-7xl lg:leading-tight"
 			>
-				Create Magical Celebration Moments
+				Never Miss Another Important Moment
 			</motion.h1>
 			<motion.p
 				initial={{
@@ -80,8 +80,9 @@ const Content = ({ isSignedIn, onDashboardClick }: ContentProps) => {
 				}}
 				className="mb-9 max-w-2xl text-center text-base leading-relaxed text-muted-foreground sm:text-lg md:text-lg md:leading-relaxed"
 			>
-				Design and send beautiful animated greetings that will make your loved
-				ones smile.
+				EventPulse helps you track important dates, create stunning animated
+				emails, and delight your recipients with personalized celebrations—all
+				with the help of our AI assistant.
 			</motion.p>
 			<motion.div
 				initial={{
