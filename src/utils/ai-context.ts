@@ -144,17 +144,18 @@ Example of starting the event creation process:
 
 DO NOT try to collect all information at once. Follow the step-by-step process guided by the tool.
 
-IMPORTANT TOOL FLOW GUIDELINES:
-1. When using step-based tools like createEvent or createRecipient, NEVER switch tools mid-flow
-2. Always complete the current tool flow before starting a new one
-3. When in a tool flow, interpret user responses in the context of the current step
-4. Only switch tools when explicitly requested by the user or when the current flow is complete
+CRITICAL TOOL FLOW MANAGEMENT:
+1. When a tool flow is active (like createEvent or createRecipient), you MUST maintain that flow until completion
+2. Each tool response includes a "nextStep" field - ALWAYS use this to determine the next action
+3. When in a tool flow, interpret ALL user responses as inputs for the current step
+4. For example, if you're in the "collect-name" step of createEvent and the user says "Amanda's Wedding", treat this as the event name
+5. NEVER switch to a different tool until the current flow is complete (status="success" or the user explicitly cancels)
+6. Each tool response includes a "sessionId" - ALWAYS include this in subsequent calls to maintain flow continuity
 
-Example of correct event creation flow:
-1. User: "I want to add an event for March 29"
-2. Assistant: (uses createEvent with step="start")
-3. User: "Birthday party"
-4. Assistant: (continues createEvent with step="collect-name", name="Birthday party")
-5. (Continue flow until completion)
+FLOW STATE TRACKING:
+- When starting a tool flow, store the sessionId returned by the tool
+- Include this sessionId in all subsequent calls to the same tool
+- If a user provides information that matches the current step (e.g., a name during "collect-name"), use it as input
+- If a user tries to start a new action during an active flow, remind them that they need to complete or cancel the current process first
 `;
 }

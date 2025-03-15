@@ -8,6 +8,7 @@ import {
 	getUpcomingEventsTool,
 	createEventTool,
 } from "@/utils/ai-tools";
+import { activeToolFlows } from "@/utils/ai-tools/state";
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { parseUserMessage } from "@/utils/structured-data-parser";
@@ -77,28 +78,79 @@ export async function POST(req: Request) {
 				)
 				.pop();
 
+			// Check for active tool flows
+			let activeFlow = null;
+			let activeSessionId = null;
+
+			// Look for the most recent tool invocation to get the session ID
+			for (let i = messages.length - 1; i >= 0; i--) {
+				const message = messages[i];
+				if (
+					message.role === "assistant" &&
+					message.toolInvocations &&
+					message.toolInvocations.length > 0
+				) {
+					const lastToolInvocation =
+						message.toolInvocations[message.toolInvocations.length - 1];
+					if (
+						lastToolInvocation.result &&
+						lastToolInvocation.result.sessionId
+					) {
+						activeSessionId = lastToolInvocation.result.sessionId;
+						console.log("Found active session ID:", activeSessionId);
+
+						// Check if this session is in the activeToolFlows map
+						if (activeToolFlows.has(activeSessionId)) {
+							activeFlow = activeToolFlows.get(activeSessionId);
+							console.log(
+								"Found active tool flow:",
+								JSON.stringify(activeFlow)
+							);
+							break;
+						}
+					}
+				}
+			}
+
 			// If there's a user message, parse it into structured data
 			if (lastUserMessage) {
-				// Parse the user message into structured data
-				const parsedData = await parseUserMessage(lastUserMessage.content);
+				// If we have an active flow, add a system message to continue the flow
+				if (activeFlow) {
+					console.log(
+						"Continuing active tool flow:",
+						JSON.stringify(activeFlow)
+					);
 
-				console.log(
-					"Parsed user message:",
-					JSON.stringify(parsedData, null, 2)
-				);
-
-				// If a tool was identified, prepare to use it
-				if (parsedData.toolToUse !== "none" && parsedData.structuredData) {
-					// Add a system message with the structured data
+					// Add a system message to guide the AI to continue the flow
 					aiMessages.push({
 						role: "system",
-						content: `The user's message has been analyzed and structured as follows:
+						content: `The user is in the middle of a ${activeFlow.toolName} flow, currently at step "${activeFlow.currentStep}".
+Current data: ${JSON.stringify(activeFlow.data)}
+The user's response "${lastUserMessage.content}" is for the current step.
+Please continue this flow by calling the appropriate tool with the session ID "${activeSessionId}".`,
+					});
+				} else {
+					// No active flow, parse the message normally
+					const parsedData = await parseUserMessage(lastUserMessage.content);
+
+					console.log(
+						"Parsed user message:",
+						JSON.stringify(parsedData, null, 2)
+					);
+
+					// If a tool was identified, prepare to use it
+					if (parsedData.toolToUse !== "none" && parsedData.structuredData) {
+						// Add a system message with the structured data
+						aiMessages.push({
+							role: "system",
+							content: `The user's message has been analyzed and structured as follows:
 Tool to use: ${parsedData.toolToUse}
 Reason: ${parsedData.reason}
 Structured data: ${JSON.stringify(parsedData.structuredData, null, 2)}
 
 Please use this structured data with the appropriate tool.`,
-					});
+						});
+					}
 				}
 			}
 
@@ -108,7 +160,7 @@ Please use this structured data with the appropriate tool.`,
 					system: SYSTEM_PROMPT, // Use the system parameter directly
 					messages: aiMessages,
 					temperature: 0, // Lower temperature for more deterministic responses
-					maxTokens: 1000,
+					maxTokens: 2000,
 					topP: 0.2, // More focused responses
 					frequencyPenalty: 1.0, // Discourage repetition
 					presencePenalty: 1.0, // Encourage focusing on provided information
