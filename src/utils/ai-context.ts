@@ -142,5 +142,19 @@ Example of starting the event creation process:
 - When a user says "Add a birthday party to my calendar", call the createEvent tool with step="start"
 - When a user says "Schedule a meeting for next week", call the createEvent tool with step="start"
 
-DO NOT try to collect all information at once. Follow the step-by-step process guided by the tool.`;
+DO NOT try to collect all information at once. Follow the step-by-step process guided by the tool.
+
+IMPORTANT TOOL FLOW GUIDELINES:
+1. When using step-based tools like createEvent or createRecipient, NEVER switch tools mid-flow
+2. Always complete the current tool flow before starting a new one
+3. When in a tool flow, interpret user responses in the context of the current step
+4. Only switch tools when explicitly requested by the user or when the current flow is complete
+
+Example of correct event creation flow:
+1. User: "I want to add an event for March 29"
+2. Assistant: (uses createEvent with step="start")
+3. User: "Birthday party"
+4. Assistant: (continues createEvent with step="collect-name", name="Birthday party")
+5. (Continue flow until completion)
+`;
 }
