@@ -123,21 +123,25 @@ export const getUpcomingEventsTool = tool({
 				dateRangeDescription =
 					dateRange.relativeDescription || dateRange.description;
 
-				// FIX: If relativeDescription is "upcoming", expand the date range
-				if (dateRange.relativeDescription === "upcoming") {
-					// Keep startDate as today, but set endDate to 6 months from now
-					const sixMonthsFromNow = new Date(startDate);
-					sixMonthsFromNow.setMonth(sixMonthsFromNow.getMonth() + 6);
-					endDate = sixMonthsFromNow.toISOString().split("T")[0];
+				// If we have a specific search term or relativeDescription is "upcoming", expand the date range
+				if (
+					dateRange.relativeDescription === "upcoming" ||
+					(searchTerm && searchTerm.trim() !== "")
+				) {
+					// Keep startDate as today, but set endDate to 1 year from now for better event discovery
+					const oneYearFromNow = new Date(startDate);
+					oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+					endDate = oneYearFromNow.toISOString().split("T")[0];
 
 					logAI(
 						LogLevel.INFO,
 						LogCategory.DATE_PARSING,
-						"expanded_upcoming_date_range",
+						"expanded_date_range_for_search",
 						{
 							startDate,
 							endDate,
 							originalEndDate: dateRange.endDate,
+							searchTerm: searchTerm || "none",
 						}
 					);
 				}
@@ -274,24 +278,38 @@ export const getUpcomingEventsTool = tool({
 			// Log the number of events retrieved
 			logAI(LogLevel.INFO, LogCategory.EVENT, "events_retrieved", {
 				count: events.length,
+				eventNames: events.map((event) => event.name),
 			});
 
 			// Always apply client-side filtering if searchTerm is provided and not empty
 			const filterStartTime = Date.now();
 			let filteredEvents = events;
 			if (searchTerm && searchTerm.trim() !== "") {
-				const searchTermLower = searchTerm.toLowerCase();
-				filteredEvents = events.filter(
-					(event) =>
-						event.name.toLowerCase().includes(searchTermLower) ||
-						(event.person &&
-							event.person.toLowerCase().includes(searchTermLower))
-				);
+				// Split the search term into individual words for more flexible matching
+				const searchTermWords = searchTerm
+					.toLowerCase()
+					.split(/\s+/)
+					.filter((word) => word.length > 0);
+
+				filteredEvents = events.filter((event) => {
+					// Check if any of the search words appear in the event name or person
+					const eventNameLower = event.name.toLowerCase();
+					const personNameLower = event.person
+						? event.person.toLowerCase()
+						: "";
+
+					// Return true if any search word is found in either the event name or person name
+					return searchTermWords.some(
+						(word) =>
+							eventNameLower.includes(word) || personNameLower.includes(word)
+					);
+				});
 
 				logAI(LogLevel.INFO, LogCategory.EVENT, "client_side_filtering", {
 					originalCount: events.length,
 					filteredCount: filteredEvents.length,
 					searchTerm,
+					searchWords: searchTermWords,
 					filterTimeMs: Date.now() - filterStartTime,
 				});
 			}
