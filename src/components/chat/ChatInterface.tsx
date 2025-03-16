@@ -48,129 +48,170 @@ export default function ChatInterface() {
 	// Add a flag to track if we've shown the tool history for the current response
 	const [hasShownToolHistory, setHasShownToolHistory] =
 		useState<boolean>(false);
+	// Add a flag to track the current conversation ID to prevent duplicate tool calls
+	const [currentConversationId, setCurrentConversationId] =
+		useState<string>("");
+	// Add a set to track tool call IDs we've already processed
+	const [processedToolCalls] = useState<Set<string>>(new Set());
 
-	const { messages, input, handleInputChange, handleSubmit, status, error } =
-		useChat({
-			api: "/api/chat",
-			initialMessages: [],
-			id: "eventpulse-assistant",
-			body: {
-				maxTokens: 1000,
-				temperature: 0,
-			},
-			onToolCall: ({ toolCall }) => {
-				// If we've already received an answer, don't process new tool calls
-				if (hasReceivedAnswer) {
-					console.log("Answer already received, ignoring new tool call");
-					return undefined;
-				}
-
-				// Use type assertion with a more specific interface
-				const extendedToolCall = toolCall as unknown as ExtendedToolCall;
-				console.log("Tool call received:", extendedToolCall);
-
-				// Generate a unique ID for this tool call
-				const toolId =
-					extendedToolCall.id ||
-					`tool-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-
-				const newToolCall: ToolCallInfo = {
-					name: extendedToolCall.toolName || "Unknown Tool",
-					parameters: extendedToolCall.args || {},
-					status: "running",
-					startTime: Date.now(),
-					id: toolId,
-				};
-
-				// Log the tool call for debugging
-				console.log("Processing tool call:", newToolCall);
-
-				// Reset the hasShownToolHistory flag when a new tool call is made
-				setHasShownToolHistory(false);
-
-				setCurrentTool(newToolCall);
-				// Only add to history if it's not a duplicate (same name and parameters)
-				setToolHistory((prev) => {
-					// Check if we already have this exact tool call in the history
-					const isDuplicate = prev.some(
-						(tool) =>
-							tool.name === newToolCall.name &&
-							JSON.stringify(tool.parameters) ===
-								JSON.stringify(newToolCall.parameters)
-					);
-
-					if (isDuplicate) {
-						console.log("Duplicate tool call detected, not adding to history");
-						return prev;
-					}
-
-					return [...prev, newToolCall];
-				});
-
-				// Return the tool call result (handled by the server)
+	const {
+		messages,
+		input,
+		handleInputChange,
+		handleSubmit,
+		status,
+		error,
+		id,
+	} = useChat({
+		api: "/api/chat",
+		initialMessages: [],
+		id: "eventpulse-assistant",
+		body: {
+			maxTokens: 1000,
+			temperature: 0,
+		},
+		onToolCall: ({ toolCall }) => {
+			// If we've already received an answer, don't process new tool calls
+			if (hasReceivedAnswer) {
+				console.log("Answer already received, ignoring new tool call");
 				return undefined;
-			},
-			onResponse: (response) => {
-				console.log("Response received:", response);
+			}
 
-				// Set hasReceivedAnswer to true when we get any response
-				// This will prevent duplicate tool calls after a response is received
-				setHasReceivedAnswer(true);
-				setHasShownToolHistory(true);
+			// Use type assertion with a more specific interface
+			const extendedToolCall = toolCall as unknown as ExtendedToolCall;
+			console.log("Tool call received:", extendedToolCall);
 
-				// Mark the current tool as completed when we get a response
-				if (currentTool) {
-					const updatedTool = { ...currentTool, status: "completed" as const };
-					setCurrentTool(null);
+			// Generate a unique ID for this tool call
+			const toolId =
+				extendedToolCall.id ||
+				`tool-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
-					// Update the tool in history
-					setToolHistory((prev) =>
-						prev.map((tool) =>
-							tool.id === updatedTool.id ? updatedTool : tool
-						)
-					);
+			// Check if we've already processed this tool call
+			if (processedToolCalls.has(toolId)) {
+				console.log(`Already processed tool call ${toolId}, ignoring`);
+				return undefined;
+			}
+
+			// Add this tool call to the processed set
+			processedToolCalls.add(toolId);
+
+			const newToolCall: ToolCallInfo = {
+				name: extendedToolCall.toolName || "Unknown Tool",
+				parameters: extendedToolCall.args || {},
+				status: "running",
+				startTime: Date.now(),
+				id: toolId,
+			};
+
+			// Log the tool call for debugging
+			console.log("Processing tool call:", newToolCall);
+
+			// Reset the hasShownToolHistory flag when a new tool call is made
+			setHasShownToolHistory(false);
+
+			// Update the current conversation ID if it's not set
+			if (!currentConversationId) {
+				setCurrentConversationId(id);
+			}
+
+			setCurrentTool(newToolCall);
+
+			// Only add to history if it's not a duplicate (same name and parameters)
+			setToolHistory((prev) => {
+				// Check if we already have this exact tool call in the history
+				const isDuplicate = prev.some(
+					(tool) =>
+						tool.name === newToolCall.name &&
+						JSON.stringify(tool.parameters) ===
+							JSON.stringify(newToolCall.parameters)
+				);
+
+				if (isDuplicate) {
+					console.log("Duplicate tool call detected, not adding to history");
+					return prev;
 				}
-			},
-			onError: (error) => {
-				console.error("Chat error:", error);
-				// Mark the current tool as error
-				if (currentTool) {
-					const updatedTool = { ...currentTool, status: "error" as const };
-					setCurrentTool(null);
 
-					// Update the tool in history
-					setToolHistory((prev) =>
-						prev.map((tool) =>
-							tool.id === updatedTool.id ? updatedTool : tool
-						)
-					);
-				}
+				return [...prev, newToolCall];
+			});
 
-				// Store more detailed error information
-				if (error instanceof Error) {
-					setErrorType(error.name);
-					setErrorDetails(`${error.name}: ${error.message}`);
-				} else if (typeof error === "object" && error !== null) {
-					try {
-						// Try to extract detailed error information from the response
-						const errorObj = error as ErrorResponse;
-						if (errorObj.details) {
-							setErrorDetails(JSON.stringify(errorObj.details, null, 2));
-							setErrorType(errorObj.error?.toString() || "Unknown Error");
-						} else {
-							setErrorDetails(JSON.stringify(error, null, 2));
-							setErrorType("API Error");
-						}
-					} catch {
-						setErrorDetails(String(error));
-						setErrorType("Unknown Error");
+			// Return the tool call result (handled by the server)
+			return undefined;
+		},
+		onResponse: (response) => {
+			console.log("Response received:", response);
+
+			// Set hasReceivedAnswer to true when we get any response
+			// This will prevent duplicate tool calls after a response is received
+			setHasReceivedAnswer(true);
+			setHasShownToolHistory(true);
+
+			// Mark the current tool as completed when we get a response
+			if (currentTool) {
+				const updatedTool = { ...currentTool, status: "completed" as const };
+				setCurrentTool(null);
+
+				// Update the tool in history
+				setToolHistory((prev) =>
+					prev.map((tool) => (tool.id === updatedTool.id ? updatedTool : tool))
+				);
+			}
+
+			// Mark all running tools as completed
+			setToolHistory((prev) =>
+				prev.map((tool) =>
+					tool.status === "running"
+						? { ...tool, status: "completed" as const }
+						: tool
+				)
+			);
+		},
+		onError: (error) => {
+			console.error("Chat error:", error);
+			// Mark the current tool as error
+			if (currentTool) {
+				const updatedTool = { ...currentTool, status: "error" as const };
+				setCurrentTool(null);
+
+				// Update the tool in history
+				setToolHistory((prev) =>
+					prev.map((tool) => (tool.id === updatedTool.id ? updatedTool : tool))
+				);
+			}
+
+			// Store more detailed error information
+			if (error instanceof Error) {
+				setErrorType(error.name);
+				setErrorDetails(`${error.name}: ${error.message}`);
+			} else if (typeof error === "object" && error !== null) {
+				try {
+					// Try to extract detailed error information from the response
+					const errorObj = error as ErrorResponse;
+					if (errorObj.details) {
+						setErrorDetails(JSON.stringify(errorObj.details, null, 2));
+						setErrorType(errorObj.error?.toString() || "Unknown Error");
+					} else {
+						setErrorDetails(JSON.stringify(error, null, 2));
+						setErrorType("API Error");
 					}
-				} else {
+				} catch {
 					setErrorDetails(String(error));
 					setErrorType("Unknown Error");
 				}
-			},
-		});
+			} else {
+				setErrorDetails(String(error));
+				setErrorType("Unknown Error");
+			}
+		},
+		onFinish: () => {
+			// When the entire response is finished, ensure all tools are marked as completed
+			setToolHistory((prev) =>
+				prev.map((tool) => ({ ...tool, status: "completed" as const }))
+			);
+
+			// Ensure we've shown the tool history
+			setHasShownToolHistory(true);
+		},
+	});
 
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const lastMessageContent = messages[messages.length - 1]?.content;
@@ -216,6 +257,17 @@ export default function ChatInterface() {
 		}
 	}, [error]);
 
+	// Reset the hasReceivedAnswer flag when starting a new conversation
+	useEffect(() => {
+		if (messages.length === 0) {
+			setHasReceivedAnswer(false);
+			setHasShownToolHistory(false);
+			setToolHistory([]);
+			setCurrentConversationId("");
+			processedToolCalls.clear();
+		}
+	}, [messages.length, processedToolCalls]);
+
 	// Reset error details when starting a new chat
 	const handleFormSubmit = (e: React.FormEvent) => {
 		setErrorDetails(null);
@@ -230,6 +282,13 @@ export default function ChatInterface() {
 			// Also reset the hasReceivedAnswer flag when starting a new conversation
 			setHasReceivedAnswer(false);
 			setHasShownToolHistory(false);
+			processedToolCalls.clear();
+
+			// If the conversation ID has changed, update it and clear processed tool calls
+			if (id !== currentConversationId) {
+				setCurrentConversationId(id);
+				processedToolCalls.clear();
+			}
 		}
 
 		handleSubmit(e);
@@ -255,73 +314,31 @@ export default function ChatInterface() {
 		return filteredParams ? `(${filteredParams})` : "";
 	};
 
-	// Add a useEffect to detect when a new assistant message is received
+	// Simplify the useEffect that detects when a new assistant message is received
+	// since we're now handling most of this logic in onResponse and onFinish
 	useEffect(() => {
-		// Check if the last message is from the assistant and there are tool calls in progress
-		const hasRunningTools = toolHistory.some(
-			(tool) => tool.status === "running"
-		);
-
+		// If we have a new assistant message and it has content, mark all tools as completed
 		if (
 			messages.length > 0 &&
 			messages[messages.length - 1].role === "assistant" &&
-			(currentTool || hasRunningTools)
+			messages[messages.length - 1].content &&
+			typeof messages[messages.length - 1].content === "string" &&
+			messages[messages.length - 1].content.trim().length > 0
 		) {
-			// Mark the current tool as completed
-			if (currentTool) {
-				const updatedTool = { ...currentTool, status: "completed" as const };
-				setCurrentTool(null);
-
-				// Update the tool in history
-				setToolHistory((prev) =>
-					prev.map((tool) => (tool.id === updatedTool.id ? updatedTool : tool))
-				);
-			}
-
-			// Mark all running tools as completed
-			setToolHistory((prev) =>
-				prev.map((tool) =>
-					tool.status === "running"
-						? { ...tool, status: "completed" as const }
-						: tool
-				)
+			console.log(
+				"Assistant provided an answer, marking all tools as completed"
 			);
 
-			// If the assistant message contains actual text content (not just a tool call result),
-			// we should abort any pending tool calls by setting them all to completed
-			const lastMessage = messages[messages.length - 1];
-			if (
-				lastMessage.role === "assistant" &&
-				lastMessage.content &&
-				typeof lastMessage.content === "string" &&
-				lastMessage.content.trim().length > 0
-			) {
-				console.log(
-					"Assistant provided an answer, marking all tools as completed"
-				);
+			// Mark all tools as completed
+			setToolHistory((prev) =>
+				prev.map((tool) => ({ ...tool, status: "completed" as const }))
+			);
 
-				// This ensures that all tools are marked as completed when an answer is received
-				setToolHistory((prev) =>
-					prev.map((tool) => ({ ...tool, status: "completed" as const }))
-				);
-
-				// Set the flag to indicate we've received an answer
-				setHasReceivedAnswer(true);
-
-				// Set the flag to indicate we should show the tool history
-				setHasShownToolHistory(true);
-			}
+			// Set flags to prevent further tool calls
+			setHasReceivedAnswer(true);
+			setHasShownToolHistory(true);
 		}
-	}, [messages, currentTool, toolHistory]);
-
-	// Reset the hasReceivedAnswer flag when starting a new conversation
-	useEffect(() => {
-		if (messages.length === 0) {
-			setHasReceivedAnswer(false);
-			setHasShownToolHistory(false);
-			setToolHistory([]);
-		}
-	}, [messages.length]);
+	}, [messages]);
 
 	return (
 		<div className="flex flex-col h-[600px] bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 rounded-xl border border-divider relative overflow-hidden">
