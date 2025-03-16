@@ -252,6 +252,7 @@ export async function getUpcomingEvents(
 	}
 ) {
 	try {
+		console.time("getUpcomingEvents");
 		// Get the authentication token from Clerk
 		const session = await auth();
 		const token = await session.getToken({ template: "convex" });
@@ -268,6 +269,7 @@ export async function getUpcomingEvents(
 		client.setAuth(token);
 
 		// Parse date parameters
+		console.time("parseDates");
 		let startTimestamp: number;
 		let endTimestamp: number;
 
@@ -293,6 +295,7 @@ export async function getUpcomingEvents(
 			endDate.setHours(23, 59, 59, 999);
 			endTimestamp = endDate.getTime();
 		}
+		console.timeEnd("parseDates");
 
 		// Set default inclusion parameters if not specified
 		const includeEvents = dateParams.includeEvents !== false;
@@ -300,10 +303,17 @@ export async function getUpcomingEvents(
 		// const includeHolidays = dateParams.includeHolidays !== false;
 
 		// Get all events for the user
-		const events = await client.query(api.events.getEvents);
-		const recipients = await client.query(api.recipients.getRecipients);
+		console.time("fetchData");
+		const [events, recipients] = await Promise.all([
+			includeEvents ? client.query(api.events.getEvents) : Promise.resolve([]),
+			includeBirthdays
+				? client.query(api.recipients.getRecipients)
+				: Promise.resolve([]),
+		]);
+		console.timeEnd("fetchData");
 
 		// Process and filter events
+		console.time("processEvents");
 		const upcomingEvents = [];
 
 		// Add custom events if included
@@ -326,9 +336,15 @@ export async function getUpcomingEvents(
 
 		// Add birthdays if included
 		if (includeBirthdays && recipients && recipients.length > 0) {
+			const currentYear = new Date().getFullYear();
+			const nextYear = currentYear + 1;
+
+			// Pre-calculate if the date range extends to next year
+			const nextYearStart = new Date(nextYear, 0, 1);
+			const includeNextYear = endTimestamp >= nextYearStart.getTime();
+
 			for (const recipient of recipients) {
 				const birthdayDate = new Date(recipient.birthday);
-				const currentYear = new Date().getFullYear();
 
 				// Check this year's birthday
 				const thisYearBirthday = new Date(
@@ -350,10 +366,9 @@ export async function getUpcomingEvents(
 				}
 
 				// Check next year's birthday if the date range extends to next year
-				const nextYearStart = new Date(currentYear + 1, 0, 1);
-				if (endTimestamp >= nextYearStart.getTime()) {
+				if (includeNextYear) {
 					const nextYearBirthday = new Date(
-						currentYear + 1,
+						nextYear,
 						birthdayDate.getMonth(),
 						birthdayDate.getDate()
 					);
@@ -369,10 +384,12 @@ export async function getUpcomingEvents(
 				}
 			}
 		}
+		console.timeEnd("processEvents");
 
 		// Sort events by date
 		upcomingEvents.sort((a, b) => a.timestamp - b.timestamp);
 
+		console.timeEnd("getUpcomingEvents");
 		return {
 			success: true,
 			events: upcomingEvents,

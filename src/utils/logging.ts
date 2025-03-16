@@ -23,6 +23,7 @@ export enum LogCategory {
 	EVENT = "event",
 	AUTH = "auth",
 	DATE_PARSING = "date_parsing",
+	PERFORMANCE = "performance",
 }
 
 /**
