@@ -167,6 +167,19 @@ Please use this structured data with the appropriate tool.`,
 					tools, // Pass the tools object
 					maxSteps: 5, // Allow multiple steps for tool usage
 					toolCallStreaming: true, // Enable streaming of tool calls for better UI feedback
+					onChunk: ({ chunk }) => {
+						// If we receive a text-delta chunk (actual text response, not a tool call)
+						// We can log that we've received a text response
+						if (
+							chunk.type === "text-delta" &&
+							chunk.textDelta &&
+							chunk.textDelta.trim().length > 0
+						) {
+							console.log(
+								"Text response received, tool calls should stop after this step"
+							);
+						}
+					},
 				});
 
 				// Add error handling to the data stream response
