@@ -112,6 +112,12 @@ export default function ChatInterface() {
 			},
 			onResponse: (response) => {
 				console.log("Response received:", response);
+
+				// Set hasReceivedAnswer to true when we get any response
+				// This will prevent duplicate tool calls after a response is received
+				setHasReceivedAnswer(true);
+				setHasShownToolHistory(true);
+
 				// Mark the current tool as completed when we get a response
 				if (currentTool) {
 					const updatedTool = { ...currentTool, status: "completed" as const };
@@ -313,6 +319,7 @@ export default function ChatInterface() {
 		if (messages.length === 0) {
 			setHasReceivedAnswer(false);
 			setHasShownToolHistory(false);
+			setToolHistory([]);
 		}
 	}, [messages.length]);
 
@@ -599,86 +606,75 @@ export default function ChatInterface() {
 														: "Steps completed:"}
 												</p>
 												<div className="space-y-2">
-													{toolHistory.map((tool, index) => (
-														<motion.div
-															key={tool.id}
-															className={`flex items-center gap-2 p-2 rounded-md ${
-																tool.status === "completed"
-																	? "bg-green-500/10 border border-green-500/20"
-																	: tool.status === "error"
-																		? "bg-red-500/10 border border-red-500/20"
-																		: "bg-primary/5 border border-primary/10"
-															}`}
-															initial={{ opacity: 0, x: -5 }}
-															animate={{ opacity: 1, x: 0 }}
-															transition={{ delay: index * 0.1 }}
-														>
-															{tool.status === "completed" ? (
-																<div className="h-5 w-5 rounded-full bg-green-500/20 flex items-center justify-center">
-																	<svg
-																		xmlns="http://www.w3.org/2000/svg"
-																		className="h-3 w-3 text-green-500"
-																		viewBox="0 0 20 20"
-																		fill="currentColor"
-																	>
-																		<path
-																			fillRule="evenodd"
-																			d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-																			clipRule="evenodd"
-																		/>
-																	</svg>
-																</div>
-															) : tool.status === "error" ? (
-																<div className="h-5 w-5 rounded-full bg-red-500/20 flex items-center justify-center">
-																	<svg
-																		xmlns="http://www.w3.org/2000/svg"
-																		className="h-3 w-3 text-red-500"
-																		viewBox="0 0 20 20"
-																		fill="currentColor"
-																	>
-																		<path
-																			fillRule="evenodd"
-																			d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-																			clipRule="evenodd"
-																		/>
-																	</svg>
-																</div>
-															) : (
-																<Loader2 className="h-4 w-4 text-primary animate-spin" />
-															)}
-															<div className="flex-1">
-																<p className="text-xs font-medium">
-																	{tool.name}
-																	{/* Only show parameters for running or error tools, not for completed ones */}
-																	{tool.status !== "completed" && (
-																		<span className="text-xs font-normal text-muted-foreground ml-1">
-																			{formatToolParameters(tool.parameters)}
-																		</span>
-																	)}
-																</p>
-															</div>
-														</motion.div>
-													))}
-
-													{currentTool && (
-														<motion.div
-															className="flex items-center gap-2 p-2 rounded-md bg-primary/5 border border-primary/10"
-															initial={{ opacity: 0, x: -5 }}
-															animate={{ opacity: 1, x: 0 }}
-														>
-															<Loader2 className="h-4 w-4 text-primary animate-spin" />
-															<div className="flex-1">
-																<p className="text-xs font-medium">
-																	{currentTool.name}
-																	<span className="text-xs font-normal text-muted-foreground ml-1">
-																		{formatToolParameters(
-																			currentTool.parameters
+													{/* Only show the most recent tool call if there are duplicates */}
+													{toolHistory
+														.filter((tool, index, self) => {
+															// Keep only the last occurrence of each tool name
+															return (
+																index ===
+																self.findLastIndex((t) => t.name === tool.name)
+															);
+														})
+														.map((tool, index) => (
+															<motion.div
+																key={tool.id}
+																className={`flex items-center gap-2 p-2 rounded-md ${
+																	tool.status === "completed"
+																		? "bg-green-500/10 border border-green-500/20"
+																		: tool.status === "error"
+																			? "bg-red-500/10 border border-red-500/20"
+																			: "bg-primary/5 border border-primary/10"
+																}`}
+																initial={{ opacity: 0, x: -5 }}
+																animate={{ opacity: 1, x: 0 }}
+																transition={{ delay: index * 0.1 }}
+															>
+																{tool.status === "completed" ? (
+																	<div className="h-5 w-5 rounded-full bg-green-500/20 flex items-center justify-center">
+																		<svg
+																			xmlns="http://www.w3.org/2000/svg"
+																			className="h-3 w-3 text-green-500"
+																			viewBox="0 0 20 20"
+																			fill="currentColor"
+																		>
+																			<path
+																				fillRule="evenodd"
+																				d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+																				clipRule="evenodd"
+																			/>
+																		</svg>
+																	</div>
+																) : tool.status === "error" ? (
+																	<div className="h-5 w-5 rounded-full bg-red-500/20 flex items-center justify-center">
+																		<svg
+																			xmlns="http://www.w3.org/2000/svg"
+																			className="h-3 w-3 text-red-500"
+																			viewBox="0 0 20 20"
+																			fill="currentColor"
+																		>
+																			<path
+																				fillRule="evenodd"
+																				d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+																				clipRule="evenodd"
+																			/>
+																		</svg>
+																	</div>
+																) : (
+																	<Loader2 className="h-4 w-4 text-primary animate-spin" />
+																)}
+																<div className="flex-1">
+																	<p className="text-xs font-medium">
+																		{tool.name}
+																		{/* Only show parameters for running or error tools, not for completed ones */}
+																		{tool.status !== "completed" && (
+																			<span className="text-xs font-normal text-muted-foreground ml-1">
+																				{formatToolParameters(tool.parameters)}
+																			</span>
 																		)}
-																	</span>
-																</p>
-															</div>
-														</motion.div>
-													)}
+																	</p>
+																</div>
+															</motion.div>
+														))}
 												</div>
 											</motion.div>
 										</motion.div>
