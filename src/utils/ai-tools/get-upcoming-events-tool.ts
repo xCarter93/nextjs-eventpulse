@@ -81,6 +81,9 @@ export const getUpcomingEventsTool = tool({
 		sessionId: string;
 	}) => {
 		try {
+			// Start a timer to track execution time
+			const startTime = Date.now();
+
 			// Log the tool call
 			logToolCall("getUpcomingEventsTool", "execute", {
 				dateRange:
@@ -179,7 +182,14 @@ export const getUpcomingEventsTool = tool({
 				}
 			}
 
+			// Log time taken for date parsing
+			const dateParsingTime = Date.now() - startTime;
+			logAI(LogLevel.INFO, LogCategory.PERFORMANCE, "date_parsing_time", {
+				timeMs: dateParsingTime,
+			});
+
 			// Get the authentication token from Clerk
+			const authStartTime = Date.now();
 			const session = await auth();
 			const token = await session.getToken({ template: "convex" });
 
@@ -195,6 +205,12 @@ export const getUpcomingEventsTool = tool({
 			// Set the authentication token on the Convex client
 			convex.setAuth(token);
 
+			// Log time taken for authentication
+			const authTime = Date.now() - authStartTime;
+			logAI(LogLevel.INFO, LogCategory.PERFORMANCE, "auth_time", {
+				timeMs: authTime,
+			});
+
 			// Convert includeTypes to the format expected by the server action
 			const includeBirthdays =
 				includeTypes === "all" || includeTypes === "birthdays";
@@ -208,11 +224,37 @@ export const getUpcomingEventsTool = tool({
 				includeEvents,
 			});
 
-			const result = await getUpcomingEvents(convex, {
+			// Set a timeout for the Convex query
+			const queryStartTime = Date.now();
+			let queryTimedOut = false;
+
+			// Create a promise that resolves with the query result
+			const queryPromise = getUpcomingEvents(convex, {
 				startDate,
 				endDate,
 				includeBirthdays,
 				includeEvents,
+			});
+
+			// Create a promise that rejects after 20 seconds
+			const timeoutPromise = new Promise((_, reject) => {
+				setTimeout(() => {
+					queryTimedOut = true;
+					reject(new Error("Query timed out after 20 seconds"));
+				}, 20000);
+			});
+
+			// Race the query against the timeout
+			const result = (await Promise.race([
+				queryPromise,
+				timeoutPromise,
+			])) as Awaited<ReturnType<typeof getUpcomingEvents>>;
+
+			// Log query time
+			const queryTime = Date.now() - queryStartTime;
+			logAI(LogLevel.INFO, LogCategory.PERFORMANCE, "query_time", {
+				timeMs: queryTime,
+				timedOut: queryTimedOut,
 			});
 
 			if (!result.success) {
@@ -229,7 +271,13 @@ export const getUpcomingEventsTool = tool({
 			// Format the results for display
 			const events = result.events || [];
 
+			// Log the number of events retrieved
+			logAI(LogLevel.INFO, LogCategory.EVENT, "events_retrieved", {
+				count: events.length,
+			});
+
 			// Always apply client-side filtering if searchTerm is provided and not empty
+			const filterStartTime = Date.now();
 			let filteredEvents = events;
 			if (searchTerm && searchTerm.trim() !== "") {
 				const searchTermLower = searchTerm.toLowerCase();
@@ -244,6 +292,7 @@ export const getUpcomingEventsTool = tool({
 					originalCount: events.length,
 					filteredCount: filteredEvents.length,
 					searchTerm,
+					filterTimeMs: Date.now() - filterStartTime,
 				});
 			}
 
@@ -269,11 +318,11 @@ export const getUpcomingEventsTool = tool({
 			if (formattedEvents.length === 0) {
 				response = `No events found ${
 					dateRangeDescription ? `for ${dateRangeDescription}` : ""
-				}.`;
+				}${searchTerm ? ` matching "${searchTerm}"` : ""}.`;
 			} else {
 				response = `Here are the upcoming events ${
 					dateRangeDescription ? `for ${dateRangeDescription}` : ""
-				}:\n\n`;
+				}${searchTerm ? ` matching "${searchTerm}"` : ""}:\n\n`;
 
 				formattedEvents.forEach((event) => {
 					response += `📅 ${event.formattedDate}: ${event.name}`;
@@ -288,6 +337,7 @@ export const getUpcomingEventsTool = tool({
 			}
 
 			// Add more detailed logging for debugging
+			const totalTime = Date.now() - startTime;
 			logAI(LogLevel.INFO, LogCategory.EVENT, "get_upcoming_events_result", {
 				eventCount: formattedEvents.length,
 				dateRange: {
@@ -296,6 +346,7 @@ export const getUpcomingEventsTool = tool({
 					description: dateRangeDescription,
 				},
 				searchTerm,
+				totalTimeMs: totalTime,
 			});
 
 			return {
@@ -309,12 +360,29 @@ export const getUpcomingEventsTool = tool({
 			logError(LogCategory.TOOL_CALL, "get_upcoming_events_tool_error", error);
 			console.error("Error in getUpcomingEventsTool:", error);
 
+			// Provide a more helpful error message
+			let errorMessage = "An unknown error occurred while retrieving events";
+			if (error instanceof Error) {
+				errorMessage = error.message;
+
+				// Check for timeout errors
+				if (errorMessage.includes("timed out")) {
+					errorMessage =
+						"The request took too long to complete. Please try a more specific search or a narrower date range.";
+				}
+				// Check for network errors
+				else if (
+					errorMessage.includes("network") ||
+					errorMessage.includes("fetch")
+				) {
+					errorMessage =
+						"There was a network error while retrieving events. Please check your internet connection and try again.";
+				}
+			}
+
 			return {
 				success: false,
-				error:
-					error instanceof Error
-						? error.message
-						: "An unknown error occurred while retrieving events",
+				error: errorMessage,
 				sessionId,
 			};
 		}
