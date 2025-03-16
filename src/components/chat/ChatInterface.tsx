@@ -273,22 +273,15 @@ export default function ChatInterface() {
 		setErrorDetails(null);
 		setErrorType(null);
 
-		// Clear tool history if this is a new conversation (no messages or only user messages)
-		if (
-			messages.length === 0 ||
-			messages[messages.length - 1].role === "user"
-		) {
-			setToolHistory([]);
-			// Also reset the hasReceivedAnswer flag when starting a new conversation
-			setHasReceivedAnswer(false);
-			setHasShownToolHistory(false);
-			processedToolCalls.clear();
+		// Always clear tool history when submitting a new message
+		setToolHistory([]);
+		setHasReceivedAnswer(false);
+		setHasShownToolHistory(false);
+		processedToolCalls.clear();
 
-			// If the conversation ID has changed, update it and clear processed tool calls
-			if (id !== currentConversationId) {
-				setCurrentConversationId(id);
-				processedToolCalls.clear();
-			}
+		// If the conversation ID has changed, update it
+		if (id !== currentConversationId) {
+			setCurrentConversationId(id);
 		}
 
 		handleSubmit(e);
@@ -625,6 +618,7 @@ export default function ChatInterface() {
 												<div className="space-y-2">
 													{/* Only show the most recent tool call if there are duplicates */}
 													{toolHistory
+														// First filter out any duplicate tool calls
 														.filter((tool, index, self) => {
 															// Keep only the last occurrence of each tool name
 															return (
@@ -632,6 +626,8 @@ export default function ChatInterface() {
 																self.findLastIndex((t) => t.name === tool.name)
 															);
 														})
+														// Then sort by start time to ensure consistent order
+														.sort((a, b) => a.startTime - b.startTime)
 														.map((tool, index) => (
 															<motion.div
 																key={tool.id}
