@@ -3,7 +3,6 @@
 import { Button, Input } from "@heroui/react";
 import {
 	Send,
-	Wrench,
 	Loader2,
 	Sparkles,
 	Calendar,
@@ -27,12 +26,14 @@ interface ToolCallInfo {
 	parameters?: Record<string, unknown>;
 	status: "running" | "completed" | "error";
 	startTime: number;
+	id: string;
 }
 
 // Define a more specific interface for the tool call
 interface ExtendedToolCall {
 	toolName: string;
 	args: Record<string, unknown>;
+	id?: string;
 	[key: string]: unknown;
 }
 
@@ -40,8 +41,8 @@ export default function ChatInterface() {
 	const [errorDetails, setErrorDetails] = useState<string | null>(null);
 	const [errorType, setErrorType] = useState<string | null>(null);
 	const [currentTool, setCurrentTool] = useState<ToolCallInfo | null>(null);
-	// We're tracking tool history for potential future features but not using it yet
-	// const [toolHistory, setToolHistory] = useState<ToolCallInfo[]>([]);
+	// Track tool history for displaying steps
+	const [toolHistory, setToolHistory] = useState<ToolCallInfo[]>([]);
 
 	const { messages, input, handleInputChange, handleSubmit, status, error } =
 		useChat({
@@ -53,19 +54,24 @@ export default function ChatInterface() {
 				temperature: 0,
 			},
 			onToolCall: ({ toolCall }) => {
-				// Track the tool call
 				// Use type assertion with a more specific interface
 				const extendedToolCall = toolCall as unknown as ExtendedToolCall;
+
+				// Generate a unique ID for this tool call
+				const toolId =
+					extendedToolCall.id ||
+					`tool-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
 				const newToolCall: ToolCallInfo = {
 					name: extendedToolCall.toolName || "Unknown Tool",
 					parameters: extendedToolCall.args || {},
 					status: "running",
 					startTime: Date.now(),
+					id: toolId,
 				};
 
 				setCurrentTool(newToolCall);
-				// setToolHistory(prev => [...prev, newToolCall]);
+				setToolHistory((prev) => [...prev, newToolCall]);
 
 				// Return the tool call result (handled by the server)
 				return undefined;
@@ -73,22 +79,29 @@ export default function ChatInterface() {
 			onResponse: () => {
 				// Mark the current tool as completed when we get a response
 				if (currentTool) {
-					setCurrentTool((prev) =>
-						prev ? { ...prev, status: "completed" } : null
-					);
+					const updatedTool = { ...currentTool, status: "completed" as const };
+					setCurrentTool(null);
 
-					// Clear the current tool after a short delay
-					setTimeout(() => {
-						setCurrentTool(null);
-					}, 2000);
+					// Update the tool in history
+					setToolHistory((prev) =>
+						prev.map((tool) =>
+							tool.id === updatedTool.id ? updatedTool : tool
+						)
+					);
 				}
 			},
 			onError: (error) => {
 				console.error("Chat error:", error);
 				// Mark the current tool as error
 				if (currentTool) {
-					setCurrentTool((prev) =>
-						prev ? { ...prev, status: "error" } : null
+					const updatedTool = { ...currentTool, status: "error" as const };
+					setCurrentTool(null);
+
+					// Update the tool in history
+					setToolHistory((prev) =>
+						prev.map((tool) =>
+							tool.id === updatedTool.id ? updatedTool : tool
+						)
 					);
 				}
 
@@ -189,12 +202,19 @@ export default function ChatInterface() {
 		return filteredParams ? `(${filteredParams})` : "";
 	};
 
+	// Clear tool history when starting a new conversation
+	useEffect(() => {
+		if (messages.length === 0) {
+			setToolHistory([]);
+		}
+	}, [messages.length]);
+
 	return (
 		<div className="flex flex-col h-[600px] bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 rounded-xl border border-divider relative overflow-hidden">
 			{/* Gradient Border Effect */}
 			<div className="absolute inset-0 rounded-xl border border-primary/20 [background:linear-gradient(var(--background),var(--background))_padding-box,linear-gradient(to_bottom,hsl(var(--primary)),transparent)_border-box] pointer-events-none" />
 
-			{/* Header with Status Indicators */}
+			{/* Header with Status Indicators - Simplified */}
 			<div className="p-2 border-b border-divider bg-background/40 flex items-center justify-between">
 				<div className="flex items-center gap-2">
 					<div className="h-6 w-6 rounded-full bg-gradient-to-br from-primary/80 to-primary/30 flex items-center justify-center shadow-sm">
@@ -206,38 +226,6 @@ export default function ChatInterface() {
 				</div>
 
 				<div className="flex items-center">
-					{currentTool && (
-						<motion.div
-							className="flex items-center gap-1.5"
-							initial={{ opacity: 0, x: 10 }}
-							animate={{ opacity: 1, x: 0 }}
-							exit={{ opacity: 0, x: 10 }}
-						>
-							{currentTool.status === "running" ? (
-								<Loader2 className="h-3.5 w-3.5 text-primary animate-spin" />
-							) : currentTool.status === "completed" ? (
-								<motion.div
-									className="h-2 w-2 rounded-full bg-green-500"
-									initial={{ scale: 0 }}
-									animate={{ scale: 1 }}
-									transition={{ type: "spring", stiffness: 500, damping: 10 }}
-								></motion.div>
-							) : (
-								<motion.div
-									className="h-2 w-2 rounded-full bg-red-500"
-									initial={{ scale: 0 }}
-									animate={{ scale: 1 }}
-									transition={{ type: "spring", stiffness: 500, damping: 10 }}
-								></motion.div>
-							)}
-							<span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full flex items-center gap-1">
-								<Wrench className="h-3 w-3" />
-								{currentTool.name}
-								{formatToolParameters(currentTool.parameters)}
-							</span>
-						</motion.div>
-					)}
-
 					{status === "submitted" && !currentTool && (
 						<motion.span
 							className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full flex items-center gap-1"
@@ -462,6 +450,118 @@ export default function ChatInterface() {
 									</motion.div>
 								</motion.div>
 							))}
+
+							{/* Display tool steps after the last assistant message */}
+							{messages.length > 0 &&
+								messages[messages.length - 1].role === "assistant" &&
+								toolHistory.length > 0 && (
+									<motion.div
+										className="flex items-start gap-2 mt-2"
+										initial={{ opacity: 0, y: 10 }}
+										animate={{ opacity: 1, y: 0 }}
+										transition={{ type: "spring", stiffness: 200, damping: 20 }}
+									>
+										<div className="flex-shrink-0 mr-1">
+											<div className="h-6 w-6 rounded-full bg-gradient-to-br from-primary/80 to-primary/30 flex items-center justify-center shadow-sm">
+												<div className="text-[10px] font-bold text-primary-foreground">
+													P
+												</div>
+											</div>
+										</div>
+
+										<motion.div
+											className="rounded-lg px-3 py-2 bg-muted/50 border border-primary/10 w-full max-w-[80%]"
+											initial={{ scale: 0.95 }}
+											animate={{ scale: 1 }}
+											transition={{
+												type: "spring",
+												stiffness: 300,
+												damping: 20,
+											}}
+										>
+											<p className="text-xs font-medium text-primary mb-2">
+												Working on your request...
+											</p>
+											<div className="space-y-2">
+												{toolHistory.map((tool, index) => (
+													<motion.div
+														key={tool.id}
+														className={`flex items-center gap-2 p-2 rounded-md ${
+															tool.status === "completed"
+																? "bg-green-500/10 border border-green-500/20"
+																: tool.status === "error"
+																	? "bg-red-500/10 border border-red-500/20"
+																	: "bg-primary/5 border border-primary/10"
+														}`}
+														initial={{ opacity: 0, x: -5 }}
+														animate={{ opacity: 1, x: 0 }}
+														transition={{ delay: index * 0.1 }}
+													>
+														{tool.status === "completed" ? (
+															<div className="h-5 w-5 rounded-full bg-green-500/20 flex items-center justify-center">
+																<svg
+																	xmlns="http://www.w3.org/2000/svg"
+																	className="h-3 w-3 text-green-500"
+																	viewBox="0 0 20 20"
+																	fill="currentColor"
+																>
+																	<path
+																		fillRule="evenodd"
+																		d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+																		clipRule="evenodd"
+																	/>
+																</svg>
+															</div>
+														) : tool.status === "error" ? (
+															<div className="h-5 w-5 rounded-full bg-red-500/20 flex items-center justify-center">
+																<svg
+																	xmlns="http://www.w3.org/2000/svg"
+																	className="h-3 w-3 text-red-500"
+																	viewBox="0 0 20 20"
+																	fill="currentColor"
+																>
+																	<path
+																		fillRule="evenodd"
+																		d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+																		clipRule="evenodd"
+																	/>
+																</svg>
+															</div>
+														) : (
+															<Loader2 className="h-4 w-4 text-primary animate-spin" />
+														)}
+														<div className="flex-1">
+															<p className="text-xs font-medium">
+																{tool.name}
+																<span className="text-xs font-normal text-muted-foreground ml-1">
+																	{formatToolParameters(tool.parameters)}
+																</span>
+															</p>
+														</div>
+													</motion.div>
+												))}
+
+												{currentTool && (
+													<motion.div
+														className="flex items-center gap-2 p-2 rounded-md bg-primary/5 border border-primary/10"
+														initial={{ opacity: 0, x: -5 }}
+														animate={{ opacity: 1, x: 0 }}
+													>
+														<Loader2 className="h-4 w-4 text-primary animate-spin" />
+														<div className="flex-1">
+															<p className="text-xs font-medium">
+																{currentTool.name}
+																<span className="text-xs font-normal text-muted-foreground ml-1">
+																	{formatToolParameters(currentTool.parameters)}
+																</span>
+															</p>
+														</div>
+													</motion.div>
+												)}
+											</div>
+										</motion.div>
+									</motion.div>
+								)}
 						</AnimatePresence>
 						{/* Invisible element to scroll to */}
 						<div ref={messagesEndRef} />

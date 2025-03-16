@@ -52,6 +52,11 @@ export const getUpcomingEventsTool = tool({
 			.describe(
 				"The types of events to include in the results ('all' for both birthdays and events, 'birthdays' for only birthdays, 'events' for only custom events)"
 			),
+		// Add a new parameter for search term
+		searchTerm: z
+			.string()
+			.optional()
+			.describe("Optional search term to filter events by name or description"),
 		sessionId: z
 			.string()
 			.describe("Session ID to track this specific tool flow"),
@@ -59,6 +64,7 @@ export const getUpcomingEventsTool = tool({
 	execute: async ({
 		dateRange,
 		includeTypes,
+		searchTerm,
 		sessionId,
 	}: {
 		dateRange:
@@ -70,6 +76,7 @@ export const getUpcomingEventsTool = tool({
 					relativeDescription: string;
 			  };
 		includeTypes: "all" | "birthdays" | "events";
+		searchTerm?: string;
 		sessionId: string;
 	}) => {
 		try {
@@ -78,6 +85,7 @@ export const getUpcomingEventsTool = tool({
 				dateRange:
 					typeof dateRange === "string" ? dateRange : dateRange.description,
 				includeTypes,
+				searchTerm,
 				sessionId,
 			});
 
@@ -110,6 +118,26 @@ export const getUpcomingEventsTool = tool({
 				endDate = dateRange.endDate;
 				dateRangeDescription =
 					dateRange.relativeDescription || dateRange.description;
+
+				// FIX: If relativeDescription is "upcoming", expand the date range
+				if (dateRange.relativeDescription === "upcoming") {
+					// Keep startDate as today, but set endDate to 6 months from now
+					const sixMonthsFromNow = new Date(startDate);
+					sixMonthsFromNow.setMonth(sixMonthsFromNow.getMonth() + 6);
+					endDate = sixMonthsFromNow.toISOString().split("T")[0];
+
+					logAI(
+						LogLevel.INFO,
+						LogCategory.DATE_PARSING,
+						"expanded_upcoming_date_range",
+						{
+							startDate,
+							endDate,
+							originalEndDate: dateRange.endDate,
+						}
+					);
+				}
+
 				logAI(
 					LogLevel.INFO,
 					LogCategory.DATE_PARSING,
@@ -199,7 +227,26 @@ export const getUpcomingEventsTool = tool({
 
 			// Format the results for display
 			const events = result.events || [];
-			const formattedEvents = events.map((event) => {
+
+			// Always apply client-side filtering if searchTerm is provided
+			let filteredEvents = events;
+			if (searchTerm) {
+				const searchTermLower = searchTerm.toLowerCase();
+				filteredEvents = events.filter(
+					(event) =>
+						event.name.toLowerCase().includes(searchTermLower) ||
+						(event.person &&
+							event.person.toLowerCase().includes(searchTermLower))
+				);
+
+				logAI(LogLevel.INFO, LogCategory.EVENT, "client_side_filtering", {
+					originalCount: events.length,
+					filteredCount: filteredEvents.length,
+					searchTerm,
+				});
+			}
+
+			const formattedEvents = filteredEvents.map((event) => {
 				const date = new Date(event.timestamp);
 				return {
 					...event,
@@ -239,6 +286,17 @@ export const getUpcomingEventsTool = tool({
 				});
 			}
 
+			// Add more detailed logging for debugging
+			logAI(LogLevel.INFO, LogCategory.EVENT, "get_upcoming_events_result", {
+				eventCount: formattedEvents.length,
+				dateRange: {
+					startDate,
+					endDate,
+					description: dateRangeDescription,
+				},
+				searchTerm,
+			});
+
 			return {
 				success: true,
 				events: formattedEvents,
@@ -246,7 +304,10 @@ export const getUpcomingEventsTool = tool({
 				sessionId,
 			};
 		} catch (error) {
+			// Improve error logging
 			logError(LogCategory.TOOL_CALL, "get_upcoming_events_tool_error", error);
+			console.error("Error in getUpcomingEventsTool:", error);
+
 			return {
 				success: false,
 				error:
