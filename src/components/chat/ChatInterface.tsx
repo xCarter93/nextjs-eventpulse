@@ -64,6 +64,7 @@ export default function ChatInterface() {
 
 				// Use type assertion with a more specific interface
 				const extendedToolCall = toolCall as unknown as ExtendedToolCall;
+				console.log("Tool call received:", extendedToolCall);
 
 				// Generate a unique ID for this tool call
 				const toolId =
@@ -78,13 +79,17 @@ export default function ChatInterface() {
 					id: toolId,
 				};
 
+				// Log the tool call for debugging
+				console.log("Processing tool call:", newToolCall);
+
 				setCurrentTool(newToolCall);
 				setToolHistory((prev) => [...prev, newToolCall]);
 
 				// Return the tool call result (handled by the server)
 				return undefined;
 			},
-			onResponse: () => {
+			onResponse: (response) => {
+				console.log("Response received:", response);
 				// Mark the current tool as completed when we get a response
 				if (currentTool) {
 					const updatedTool = { ...currentTool, status: "completed" as const };
@@ -528,125 +533,122 @@ export default function ChatInterface() {
 
 							{/* Display tool steps after the last assistant message */}
 							<AnimatePresence>
-								{messages.length > 0 &&
-									messages[messages.length - 1].role === "assistant" &&
-									toolHistory.length > 0 &&
-									(currentTool ||
-										toolHistory.some((tool) => tool.status === "running")) && (
+								{messages.length > 0 && toolHistory.length > 0 && (
+									<motion.div
+										className="flex items-start gap-2 mt-2"
+										initial={{ opacity: 0, y: 10 }}
+										animate={{ opacity: 1, y: 0 }}
+										exit={{ opacity: 0, y: -10 }}
+										transition={{
+											type: "spring",
+											stiffness: 200,
+											damping: 20,
+										}}
+									>
+										<div className="flex-shrink-0 mr-1">
+											<div className="h-6 w-6 rounded-full bg-gradient-to-br from-primary/80 to-primary/30 flex items-center justify-center shadow-sm">
+												<div className="text-[10px] font-bold text-primary-foreground">
+													P
+												</div>
+											</div>
+										</div>
+
 										<motion.div
-											className="flex items-start gap-2 mt-2"
-											initial={{ opacity: 0, y: 10 }}
-											animate={{ opacity: 1, y: 0 }}
-											exit={{ opacity: 0, y: -10 }}
+											className="rounded-lg px-3 py-2 bg-muted/50 border border-primary/10 w-full max-w-[80%]"
+											initial={{ scale: 0.95 }}
+											animate={{ scale: 1 }}
 											transition={{
 												type: "spring",
-												stiffness: 200,
+												stiffness: 300,
 												damping: 20,
 											}}
 										>
-											<div className="flex-shrink-0 mr-1">
-												<div className="h-6 w-6 rounded-full bg-gradient-to-br from-primary/80 to-primary/30 flex items-center justify-center shadow-sm">
-													<div className="text-[10px] font-bold text-primary-foreground">
-														P
-													</div>
-												</div>
-											</div>
-
-											<motion.div
-												className="rounded-lg px-3 py-2 bg-muted/50 border border-primary/10 w-full max-w-[80%]"
-												initial={{ scale: 0.95 }}
-												animate={{ scale: 1 }}
-												transition={{
-													type: "spring",
-													stiffness: 300,
-													damping: 20,
-												}}
-											>
-												<p className="text-xs font-medium text-primary mb-2">
-													Working on your request...
-												</p>
-												<div className="space-y-2">
-													{toolHistory.map((tool, index) => (
-														<motion.div
-															key={tool.id}
-															className={`flex items-center gap-2 p-2 rounded-md ${
-																tool.status === "completed"
-																	? "bg-green-500/10 border border-green-500/20"
-																	: tool.status === "error"
-																		? "bg-red-500/10 border border-red-500/20"
-																		: "bg-primary/5 border border-primary/10"
-															}`}
-															initial={{ opacity: 0, x: -5 }}
-															animate={{ opacity: 1, x: 0 }}
-															transition={{ delay: index * 0.1 }}
-														>
-															{tool.status === "completed" ? (
-																<div className="h-5 w-5 rounded-full bg-green-500/20 flex items-center justify-center">
-																	<svg
-																		xmlns="http://www.w3.org/2000/svg"
-																		className="h-3 w-3 text-green-500"
-																		viewBox="0 0 20 20"
-																		fill="currentColor"
-																	>
-																		<path
-																			fillRule="evenodd"
-																			d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-																			clipRule="evenodd"
-																		/>
-																	</svg>
-																</div>
-															) : tool.status === "error" ? (
-																<div className="h-5 w-5 rounded-full bg-red-500/20 flex items-center justify-center">
-																	<svg
-																		xmlns="http://www.w3.org/2000/svg"
-																		className="h-3 w-3 text-red-500"
-																		viewBox="0 0 20 20"
-																		fill="currentColor"
-																	>
-																		<path
-																			fillRule="evenodd"
-																			d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-																			clipRule="evenodd"
-																		/>
-																	</svg>
-																</div>
-															) : (
-																<Loader2 className="h-4 w-4 text-primary animate-spin" />
-															)}
-															<div className="flex-1">
-																<p className="text-xs font-medium">
-																	{tool.name}
-																	<span className="text-xs font-normal text-muted-foreground ml-1">
-																		{formatToolParameters(tool.parameters)}
-																	</span>
-																</p>
+											<p className="text-xs font-medium text-primary mb-2">
+												{currentTool ||
+												toolHistory.some((tool) => tool.status === "running")
+													? "Working on your request..."
+													: "Steps completed:"}
+											</p>
+											<div className="space-y-2">
+												{toolHistory.map((tool, index) => (
+													<motion.div
+														key={tool.id}
+														className={`flex items-center gap-2 p-2 rounded-md ${
+															tool.status === "completed"
+																? "bg-green-500/10 border border-green-500/20"
+																: tool.status === "error"
+																	? "bg-red-500/10 border border-red-500/20"
+																	: "bg-primary/5 border border-primary/10"
+														}`}
+														initial={{ opacity: 0, x: -5 }}
+														animate={{ opacity: 1, x: 0 }}
+														transition={{ delay: index * 0.1 }}
+													>
+														{tool.status === "completed" ? (
+															<div className="h-5 w-5 rounded-full bg-green-500/20 flex items-center justify-center">
+																<svg
+																	xmlns="http://www.w3.org/2000/svg"
+																	className="h-3 w-3 text-green-500"
+																	viewBox="0 0 20 20"
+																	fill="currentColor"
+																>
+																	<path
+																		fillRule="evenodd"
+																		d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+																		clipRule="evenodd"
+																	/>
+																</svg>
 															</div>
-														</motion.div>
-													))}
-
-													{currentTool && (
-														<motion.div
-															className="flex items-center gap-2 p-2 rounded-md bg-primary/5 border border-primary/10"
-															initial={{ opacity: 0, x: -5 }}
-															animate={{ opacity: 1, x: 0 }}
-														>
+														) : tool.status === "error" ? (
+															<div className="h-5 w-5 rounded-full bg-red-500/20 flex items-center justify-center">
+																<svg
+																	xmlns="http://www.w3.org/2000/svg"
+																	className="h-3 w-3 text-red-500"
+																	viewBox="0 0 20 20"
+																	fill="currentColor"
+																>
+																	<path
+																		fillRule="evenodd"
+																		d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+																		clipRule="evenodd"
+																	/>
+																</svg>
+															</div>
+														) : (
 															<Loader2 className="h-4 w-4 text-primary animate-spin" />
-															<div className="flex-1">
-																<p className="text-xs font-medium">
-																	{currentTool.name}
-																	<span className="text-xs font-normal text-muted-foreground ml-1">
-																		{formatToolParameters(
-																			currentTool.parameters
-																		)}
-																	</span>
-																</p>
-															</div>
-														</motion.div>
-													)}
-												</div>
-											</motion.div>
+														)}
+														<div className="flex-1">
+															<p className="text-xs font-medium">
+																{tool.name}
+																<span className="text-xs font-normal text-muted-foreground ml-1">
+																	{formatToolParameters(tool.parameters)}
+																</span>
+															</p>
+														</div>
+													</motion.div>
+												))}
+
+												{currentTool && (
+													<motion.div
+														className="flex items-center gap-2 p-2 rounded-md bg-primary/5 border border-primary/10"
+														initial={{ opacity: 0, x: -5 }}
+														animate={{ opacity: 1, x: 0 }}
+													>
+														<Loader2 className="h-4 w-4 text-primary animate-spin" />
+														<div className="flex-1">
+															<p className="text-xs font-medium">
+																{currentTool.name}
+																<span className="text-xs font-normal text-muted-foreground ml-1">
+																	{formatToolParameters(currentTool.parameters)}
+																</span>
+															</p>
+														</div>
+													</motion.div>
+												)}
+											</div>
 										</motion.div>
-									)}
+									</motion.div>
+								)}
 							</AnimatePresence>
 							{/* Invisible element to scroll to */}
 							<div ref={messagesEndRef} />
