@@ -157,33 +157,30 @@ export const getUpcomingEventsTool = tool({
 					}
 				);
 			} else {
-				// Handle the string format (for backward compatibility)
+				// For backward compatibility, use a simple approach
+				// Just pass the string to the server and let it handle the parsing
 				const dateRangeStr =
 					typeof dateRange === "string" ? dateRange : "unknown date range";
 				dateRangeDescription = dateRangeStr;
 
-				// Handle different date range formats
-				if (dateRangeStr.toLowerCase().includes("next")) {
-					// For "next week", "next month", etc.
-					startDate = "today";
-					endDate = dateRangeStr;
-				} else if (
-					dateRangeStr.toLowerCase().includes("from") &&
-					dateRangeStr.toLowerCase().includes("to")
-				) {
-					// For "from X to Y" format
-					const parts = dateRangeStr
-						.split(/from|to/i)
-						.filter((part) => part.trim().length > 0);
-					if (parts.length >= 2) {
-						startDate = parts[0].trim();
-						endDate = parts[1].trim();
+				// Set startDate to today by default
+				startDate = new Date().toISOString().split("T")[0];
+
+				// Default to 30 days from now for endDate
+				const defaultEndDate = new Date();
+				defaultEndDate.setDate(defaultEndDate.getDate() + 30);
+				endDate = defaultEndDate.toISOString().split("T")[0];
+
+				logAI(
+					LogLevel.INFO,
+					LogCategory.DATE_PARSING,
+					"using_default_date_range",
+					{
+						originalInput: dateRangeStr,
+						startDate,
+						endDate,
 					}
-				} else {
-					// Default to treating the input as the start date with a default end date
-					startDate = dateRangeStr;
-					// End date will be handled by the server function default (30 days)
-				}
+				);
 			}
 
 			// Log time taken for date parsing
