@@ -52,11 +52,12 @@ export const getUpcomingEventsTool = tool({
 			.describe(
 				"The types of events to include in the results ('all' for both birthdays and events, 'birthdays' for only birthdays, 'events' for only custom events)"
 			),
-		// Add a new parameter for search term
+		// Add a new parameter for search term - make it required but allow empty string
 		searchTerm: z
 			.string()
-			.optional()
-			.describe("Optional search term to filter events by name or description"),
+			.describe(
+				"Search term to filter events by name or description (can be empty string)"
+			),
 		sessionId: z
 			.string()
 			.describe("Session ID to track this specific tool flow"),
@@ -76,7 +77,7 @@ export const getUpcomingEventsTool = tool({
 					relativeDescription: string;
 			  };
 		includeTypes: "all" | "birthdays" | "events";
-		searchTerm?: string;
+		searchTerm: string;
 		sessionId: string;
 	}) => {
 		try {
@@ -228,9 +229,9 @@ export const getUpcomingEventsTool = tool({
 			// Format the results for display
 			const events = result.events || [];
 
-			// Always apply client-side filtering if searchTerm is provided
+			// Always apply client-side filtering if searchTerm is provided and not empty
 			let filteredEvents = events;
-			if (searchTerm) {
+			if (searchTerm && searchTerm.trim() !== "") {
 				const searchTermLower = searchTerm.toLowerCase();
 				filteredEvents = events.filter(
 					(event) =>

@@ -70,6 +70,11 @@ const getUpcomingEventsSchema = z.object({
 	includeTypes: z
 		.enum(["all", "birthdays", "events"])
 		.describe("What types of events to include"),
+	searchTerm: z
+		.string()
+		.describe(
+			"Search term to filter events by name or person (can be empty string)"
+		),
 });
 
 /**
@@ -192,7 +197,8 @@ export async function parseGetUpcomingEventsData(userMessage: string) {
       
 User message: "${userMessage}"
 
-Extract the date range and event types from the user's message.
+Extract the date range, event types, and search term from the user's message.
+
 For the date range:
 1. Identify the natural language description (e.g., "within a month from now", "next week")
 2. Convert it to explicit start and end dates in ISO format (YYYY-MM-DD)
@@ -208,6 +214,11 @@ For event types:
 - If the user doesn't specify event types, use includeTypes="all"
 - If the user specifically asks for birthdays, use includeTypes="birthdays"
 - If the user specifically asks for events (not birthdays), use includeTypes="events"
+
+For search term:
+- Extract any specific names, events, or keywords the user is looking for
+- For example, if they ask "When is Amanda's wedding?", the search term would be "Amanda wedding"
+- If no specific search term is mentioned, provide an empty string
 
 Provide a complete structured response with all fields filled in.`,
 		});
@@ -228,6 +239,7 @@ Provide a complete structured response with all fields filled in.`,
 				relativeDescription: "next month",
 			},
 			includeTypes: "all" as const,
+			searchTerm: "",
 		};
 	}
 }
