@@ -51,8 +51,10 @@ export default function ChatInterface() {
 	// Add a flag to track the current conversation ID to prevent duplicate tool calls
 	const [currentConversationId, setCurrentConversationId] =
 		useState<string>("");
-	// Add a set to track tool call IDs we've already processed
-	const [processedToolCalls] = useState<Set<string>>(new Set());
+	// Track already processed tool call IDs to prevent duplicates
+	const processedToolCallIds = useRef(new Set<string>());
+	// Flag to track if we've already logged the finish message
+	const [finishLogged, setFinishLogged] = useState<boolean>(false);
 
 	const {
 		messages,
@@ -71,29 +73,29 @@ export default function ChatInterface() {
 			temperature: 0,
 		},
 		onToolCall: ({ toolCall }) => {
-			// If we've already received an answer, don't process new tool calls
+			// Use type assertion with a more specific interface
+			const extendedToolCall = toolCall as unknown as ExtendedToolCall;
+			console.log("Tool call received:", extendedToolCall);
+
+			// Generate a unique ID for this tool call if it doesn't have one
+			const toolId =
+				extendedToolCall.id ||
+				`tool-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+			// Check if we've already processed this exact tool call
+			if (processedToolCallIds.current.has(toolId)) {
+				console.log(`Already processed tool call ID ${toolId}, ignoring`);
+				return undefined;
+			}
+
+			// If we've already received a final answer, don't process new tool calls
 			if (hasReceivedAnswer) {
 				console.log("Answer already received, ignoring new tool call");
 				return undefined;
 			}
 
-			// Use type assertion with a more specific interface
-			const extendedToolCall = toolCall as unknown as ExtendedToolCall;
-			console.log("Tool call received:", extendedToolCall);
-
-			// Generate a unique ID for this tool call
-			const toolId =
-				extendedToolCall.id ||
-				`tool-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-
-			// Check if we've already processed this tool call
-			if (processedToolCalls.has(toolId)) {
-				console.log(`Already processed tool call ${toolId}, ignoring`);
-				return undefined;
-			}
-
-			// Add this tool call to the processed set
-			processedToolCalls.add(toolId);
+			// Add this tool call ID to the processed set
+			processedToolCallIds.current.add(toolId);
 
 			const newToolCall: ToolCallInfo = {
 				name: extendedToolCall.toolName || "Unknown Tool",
@@ -102,9 +104,6 @@ export default function ChatInterface() {
 				startTime: Date.now(),
 				id: toolId,
 			};
-
-			// Log the tool call for debugging
-			console.log("Processing tool call:", newToolCall);
 
 			// Reset the hasShownToolHistory flag when a new tool call is made
 			setHasShownToolHistory(false);
@@ -118,7 +117,7 @@ export default function ChatInterface() {
 
 			// Only add to history if it's not a duplicate (same name and parameters)
 			setToolHistory((prev) => {
-				// Check if we already have this exact tool call in the history
+				// Check if we already have this exact tool call in the history by comparing parameters
 				const isDuplicate = prev.some(
 					(tool) =>
 						tool.name === newToolCall.name &&
@@ -134,18 +133,13 @@ export default function ChatInterface() {
 				return [...prev, newToolCall];
 			});
 
-			// Return the tool call result (handled by the server)
+			// Return undefined to let the SDK handle the tool call
 			return undefined;
 		},
 		onResponse: (response) => {
 			console.log("Response received:", response);
 
-			// Set hasReceivedAnswer to true when we get any response
-			// This will prevent duplicate tool calls after a response is received
-			setHasReceivedAnswer(true);
-			setHasShownToolHistory(true);
-
-			// Mark the current tool as completed when we get a response
+			// Only update tool status if this response is about a tool
 			if (currentTool) {
 				const updatedTool = { ...currentTool, status: "completed" as const };
 				setCurrentTool(null);
@@ -155,15 +149,6 @@ export default function ChatInterface() {
 					prev.map((tool) => (tool.id === updatedTool.id ? updatedTool : tool))
 				);
 			}
-
-			// Mark all running tools as completed
-			setToolHistory((prev) =>
-				prev.map((tool) =>
-					tool.status === "running"
-						? { ...tool, status: "completed" as const }
-						: tool
-				)
-			);
 		},
 		onError: (error) => {
 			console.error("Chat error:", error);
@@ -203,6 +188,26 @@ export default function ChatInterface() {
 			}
 		},
 		onFinish: () => {
+			// Check if the last message has content - this is when we know a final answer was provided
+			const lastMessage = messages[messages.length - 1];
+			if (
+				!finishLogged &&
+				lastMessage &&
+				lastMessage.role === "assistant" &&
+				lastMessage.content &&
+				typeof lastMessage.content === "string" &&
+				lastMessage.content.trim().length > 0
+			) {
+				console.log(
+					"Text response received, tool calls should stop after this step"
+				);
+				setFinishLogged(true);
+
+				// Set flags to prevent further tool calls
+				setHasReceivedAnswer(true);
+				setHasShownToolHistory(true);
+			}
+
 			// When the entire response is finished, ensure all tools are marked as completed
 			setToolHistory((prev) =>
 				prev.map((tool) => ({ ...tool, status: "completed" as const }))
@@ -257,27 +262,18 @@ export default function ChatInterface() {
 		}
 	}, [error]);
 
-	// Reset the hasReceivedAnswer flag when starting a new conversation
-	useEffect(() => {
-		if (messages.length === 0) {
-			setHasReceivedAnswer(false);
-			setHasShownToolHistory(false);
-			setToolHistory([]);
-			setCurrentConversationId("");
-			processedToolCalls.clear();
-		}
-	}, [messages.length, processedToolCalls]);
-
-	// Reset error details when starting a new chat
+	// Reset everything when starting a new conversation
 	const handleFormSubmit = (e: React.FormEvent) => {
 		setErrorDetails(null);
 		setErrorType(null);
 
-		// Always clear tool history when submitting a new message
+		// Clear tool history and reset all flags
 		setToolHistory([]);
 		setHasReceivedAnswer(false);
 		setHasShownToolHistory(false);
-		processedToolCalls.clear();
+		processedToolCallIds.current.clear();
+		setCurrentTool(null);
+		setFinishLogged(false); // Reset the finish logged flag
 
 		// If the conversation ID has changed, update it
 		if (id !== currentConversationId) {
@@ -312,6 +308,7 @@ export default function ChatInterface() {
 	useEffect(() => {
 		// If we have a new assistant message and it has content, mark all tools as completed
 		if (
+			!finishLogged &&
 			messages.length > 0 &&
 			messages[messages.length - 1].role === "assistant" &&
 			messages[messages.length - 1].content &&
@@ -321,6 +318,7 @@ export default function ChatInterface() {
 			console.log(
 				"Assistant provided an answer, marking all tools as completed"
 			);
+			setFinishLogged(true);
 
 			// Mark all tools as completed
 			setToolHistory((prev) =>
@@ -331,7 +329,7 @@ export default function ChatInterface() {
 			setHasReceivedAnswer(true);
 			setHasShownToolHistory(true);
 		}
-	}, [messages]);
+	}, [messages, finishLogged]);
 
 	return (
 		<div className="flex flex-col h-[600px] bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 rounded-xl border border-divider relative overflow-hidden">
@@ -576,11 +574,12 @@ export default function ChatInterface() {
 							))}
 
 							{/* Display tool steps before the last assistant message */}
-							<AnimatePresence>
+							<AnimatePresence key="tool-history-presence">
 								{messages.length > 0 &&
 									toolHistory.length > 0 &&
 									!hasShownToolHistory && (
 										<motion.div
+											key="tool-history"
 											className="flex items-start gap-2 mt-2"
 											initial={{ opacity: 0, y: 10 }}
 											animate={{ opacity: 1, y: 0 }}
@@ -610,22 +609,35 @@ export default function ChatInterface() {
 												}}
 											>
 												<p className="text-xs font-medium text-primary mb-2">
-													{currentTool ||
-													toolHistory.some((tool) => tool.status === "running")
+													{currentTool
 														? "Working on your request..."
 														: "Steps completed:"}
 												</p>
 												<div className="space-y-2">
-													{/* Only show the most recent tool call if there are duplicates */}
+													{/* Only show the most recent version of each tool and filter out duplicates */}
 													{toolHistory
-														// First filter out any duplicate tool calls
-														.filter((tool, index, self) => {
-															// Keep only the last occurrence of each tool name
-															return (
-																index ===
-																self.findLastIndex((t) => t.name === tool.name)
+														// First filter out any duplicate tool calls by name
+														.reduce((unique, current) => {
+															// Find existing tool with the same name
+															const existingTool = unique.find(
+																(tool) => tool.name === current.name
 															);
-														})
+
+															// If no existing tool with this name or the current one is newer, use the current
+															if (
+																!existingTool ||
+																existingTool.startTime < current.startTime
+															) {
+																// Remove existing tool if present
+																if (existingTool) {
+																	unique = unique.filter(
+																		(tool) => tool.name !== current.name
+																	);
+																}
+																unique.push(current);
+															}
+															return unique;
+														}, [] as ToolCallInfo[])
 														// Then sort by start time to ensure consistent order
 														.sort((a, b) => a.startTime - b.startTime)
 														.map((tool, index) => (
@@ -678,8 +690,9 @@ export default function ChatInterface() {
 																<div className="flex-1">
 																	<p className="text-xs font-medium">
 																		{tool.name}
-																		{/* Only show parameters for running or error tools, not for completed ones */}
-																		{tool.status !== "completed" && (
+																		{/* Show parameters for all tools in a cleaner format */}
+																		{Object.keys(tool.parameters || {}).length >
+																			0 && (
 																			<span className="text-xs font-normal text-muted-foreground ml-1">
 																				{formatToolParameters(tool.parameters)}
 																			</span>
