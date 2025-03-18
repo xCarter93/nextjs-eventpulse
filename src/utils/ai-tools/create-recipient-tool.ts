@@ -39,7 +39,7 @@ export const createRecipientTool = tool({
 		birthday: z
 			.string()
 			.describe(
-				"The recipient's birthday in MM/DD/YYYY format (can be empty for some steps)"
+				"The recipient's birthday in MM/DD/YYYY format or natural language (can be empty for some steps)"
 			),
 		sessionId: z
 			.string()
@@ -150,7 +150,7 @@ export const createRecipientTool = tool({
 
 					return {
 						status: "in_progress",
-						message: `Now, when is ${name}'s birthday? Please provide it in MM/DD/YYYY format.`,
+						message: `Now, when is ${name}'s birthday? You can provide it in any format (e.g., "04/20/1969", "April 20, 1969", etc.).`,
 						nextStep: "collect-birthday",
 						name,
 						email,
@@ -172,7 +172,7 @@ export const createRecipientTool = tool({
 						return {
 							status: "error",
 							message:
-								"I need a birthday for the recipient. Please provide it in MM/DD/YYYY format.",
+								'I need a birthday for the recipient. You can provide it in any format (e.g., "04/20/1969", "April 20, 1969", etc.).',
 							nextStep: "collect-birthday",
 							name,
 							email,
@@ -180,17 +180,45 @@ export const createRecipientTool = tool({
 						};
 					}
 
-					// Basic date validation and conversion to timestamp
-					let birthdayTimestamp: number;
+					// Birthday validation and conversion to timestamp
+					let birthdayTimestamp: number = 0; // Initialize with a default value
 					try {
 						// Clean up the input - remove any extra spaces
 						const cleanBirthday = birthday.trim();
+						logAI(
+							LogLevel.DEBUG,
+							LogCategory.DATE_PARSING,
+							"processing_birthday",
+							{
+								input: cleanBirthday,
+							}
+						);
 
-						// Try multiple date formats
+						// Try to parse the date to validate it
 						let dateObj: Date | null = null;
 
-						// First try MM/DD/YYYY format
-						if (!dateObj) {
+						// First try using parseDate which handles natural language
+						try {
+							birthdayTimestamp = parseDate(cleanBirthday);
+							dateObj = new Date(birthdayTimestamp);
+							logAI(
+								LogLevel.DEBUG,
+								LogCategory.DATE_PARSING,
+								"parse_date_result",
+								{ result: dateObj.toISOString() }
+							);
+						} catch (parseError) {
+							logAI(
+								LogLevel.ERROR,
+								LogCategory.DATE_PARSING,
+								"parse_date_failed",
+								{ input: cleanBirthday, error: String(parseError) }
+							);
+						}
+
+						// If parseDate failed, try other methods
+						if (!dateObj || isNaN(dateObj.getTime())) {
+							// Try MM/DD/YYYY format
 							const parts = cleanBirthday.split("/");
 
 							if (parts.length === 3) {
@@ -208,46 +236,24 @@ export const createRecipientTool = tool({
 										dateObj.getFullYear() !== year
 									) {
 										dateObj = null;
+									} else {
+										birthdayTimestamp = dateObj.getTime();
 									}
 								}
 							}
 						}
 
-						// Try standard date parsing as fallback for natural language dates
-						if (!dateObj) {
+						// Try standard date parsing as fallback
+						if (!dateObj || isNaN(dateObj.getTime())) {
 							const parsedDate = new Date(cleanBirthday);
 							if (!isNaN(parsedDate.getTime())) {
 								dateObj = parsedDate;
-							}
-						}
-
-						// If we still couldn't parse the date, try to interpret it as a relative date
-						if (!dateObj) {
-							// Initialize the Convex URL to check configuration
-							const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
-							if (!convexUrl) {
-								throw new Error("Convex URL is not configured");
-							}
-
-							// Use the parseDate function to handle relative dates
-							try {
-								const timestamp = parseDate(cleanBirthday);
-								dateObj = new Date(timestamp);
-							} catch (parseError) {
-								logAI(
-									LogLevel.DEBUG,
-									LogCategory.DATE_PARSING,
-									"parse_date_failed",
-									{ input: cleanBirthday, error: String(parseError) }
-								);
-								throw new Error(
-									`I couldn't understand the date format. Please provide the date in a clear format like "MM/DD/YYYY" (e.g., 03/18/2025) or a natural description like "March 18, 2025", "next Tuesday", "two weeks from today", or "in 3 months".`
-								);
+								birthdayTimestamp = dateObj.getTime();
 							}
 						}
 
 						// If we still couldn't parse the date, throw an error
-						if (!dateObj) {
+						if (!dateObj || isNaN(dateObj.getTime())) {
 							logAI(
 								LogLevel.ERROR,
 								LogCategory.DATE_PARSING,
@@ -255,12 +261,9 @@ export const createRecipientTool = tool({
 								{ input: cleanBirthday }
 							);
 							throw new Error(
-								`I couldn't understand the date format. Please provide the date in a clear format like "MM/DD/YYYY" (e.g., 03/18/2025) or a natural description like "March 18, 2025", "next Tuesday", "two weeks from today", or "in 3 months".`
+								`I couldn't understand the date format. Please provide the date in a clear format like "MM/DD/YYYY" (e.g., 04/20/1969) or a natural description like "April 20, 1969".`
 							);
 						}
-
-						// Get the timestamp
-						birthdayTimestamp = dateObj.getTime();
 
 						// Sanity check the year
 						const year = dateObj.getFullYear();
@@ -284,7 +287,7 @@ export const createRecipientTool = tool({
 							message:
 								error instanceof Error
 									? `${error.message}`
-									: "That doesn't look like a valid date. Please provide the birthday in MM/DD/YYYY format (e.g., 10/02/1989).",
+									: "I couldn't understand that date format. Please provide the birthday in a clear format like MM/DD/YYYY (e.g., 04/20/1969) or a natural description like 'April 20, 1969'.",
 							nextStep: "collect-birthday",
 							name,
 							email,
@@ -320,68 +323,42 @@ export const createRecipientTool = tool({
 						};
 					}
 
-					// Ensure birthday is a valid timestamp
-					let birthdayDate: Date;
+					// Try to parse the birthday using same approach as collect-birthday
 					let confirmedBirthdayTimestamp: number;
 					try {
-						// Try to parse the birthday as a timestamp first
+						// If it's already a timestamp, use it
 						const timestampValue = Number(birthday);
-
 						if (!isNaN(timestampValue) && timestampValue > 0) {
-							birthdayDate = new Date(timestampValue);
 							confirmedBirthdayTimestamp = timestampValue;
-
-							// Sanity check - if the date is before 1900 or after current year, it's probably wrong
-							const year = birthdayDate.getFullYear();
-							if (year < 1900 || year > new Date().getFullYear()) {
+						} else {
+							// Otherwise try to parse it
+							try {
+								confirmedBirthdayTimestamp = parseDate(birthday.trim());
+							} catch (parseError) {
 								logAI(
 									LogLevel.ERROR,
 									LogCategory.DATE_PARSING,
-									"suspicious_year_in_timestamp",
-									{ year, timestamp: confirmedBirthdayTimestamp }
-								);
-								throw new Error(
-									`The year ${year} doesn't seem right. Please provide a year between 1900 and ${new Date().getFullYear()}.`
-								);
-							}
-						} else {
-							// If it's not a valid timestamp, try to parse as MM/DD/YYYY
-							// Clean up the input - remove any extra spaces
-							const cleanBirthday = birthday.trim();
-
-							// Try to parse as MM/DD/YYYY
-							const parts = cleanBirthday.split("/");
-
-							if (parts.length === 3) {
-								const month = parseInt(parts[0], 10);
-								const day = parseInt(parts[1], 10);
-								const year = parseInt(parts[2], 10);
-
-								if (!isNaN(month) && !isNaN(day) && !isNaN(year)) {
-									birthdayDate = new Date(year, month - 1, day);
-
-									// Verify the date is valid
-									if (
-										birthdayDate.getMonth() !== month - 1 ||
-										birthdayDate.getDate() !== day ||
-										birthdayDate.getFullYear() !== year
-									) {
-										throw new Error(
-											`Invalid date: ${month}/${day}/${year} does not exist.`
-										);
+									"confirm_parse_birthday_error",
+									{
+										error:
+											parseError instanceof Error
+												? parseError.message
+												: String(parseError),
 									}
-
-									confirmedBirthdayTimestamp = birthdayDate.getTime();
-								} else {
-									throw new Error(
-										"Invalid date format. Please use MM/DD/YYYY format."
-									);
-								}
-							} else {
+								);
 								throw new Error(
-									"Invalid date format. Please use MM/DD/YYYY format."
+									`Failed to parse birthday: ${parseError instanceof Error ? parseError.message : String(parseError)}`
 								);
 							}
+						}
+
+						// Sanity check the date
+						const birthdayDate = new Date(confirmedBirthdayTimestamp);
+						const year = birthdayDate.getFullYear();
+						if (year < 1900 || year > new Date().getFullYear()) {
+							throw new Error(
+								`The year ${year} doesn't seem right. Please provide a year between 1900 and ${new Date().getFullYear()}.`
+							);
 						}
 					} catch (error) {
 						logAI(
@@ -393,9 +370,7 @@ export const createRecipientTool = tool({
 						return {
 							status: "error",
 							message:
-								error instanceof Error
-									? `${error.message} Let's try again with the birthday.`
-									: "There was an issue with the birthday format. Let's try again with the birthday.",
+								"There was an issue with the birthday format. Let's try again with the birthday.",
 							nextStep: "collect-birthday",
 							name,
 							email,
@@ -405,7 +380,7 @@ export const createRecipientTool = tool({
 
 					return {
 						status: "in_progress",
-						message: `I'll now create a recipient for ${name} with email ${email} and birthday ${birthdayDate.toLocaleDateString()}.`,
+						message: `I'll now create a recipient for ${name} with email ${email} and birthday ${new Date(confirmedBirthdayTimestamp).toLocaleDateString()}.`,
 						nextStep: "submit",
 						name,
 						email,
@@ -446,7 +421,7 @@ export const createRecipientTool = tool({
 
 						const convex = new ConvexHttpClient(convexUrl);
 
-						// Parse the birthday - handle both timestamp and MM/DD/YYYY format
+						// Parse the birthday - handle both timestamp and natural language format
 						let birthdayTimestamp: number;
 
 						// First try to parse as a timestamp
@@ -455,10 +430,18 @@ export const createRecipientTool = tool({
 						if (!isNaN(timestampValue) && timestampValue > 0) {
 							// It's already a timestamp
 							birthdayTimestamp = timestampValue;
+							logAI(
+								LogLevel.DEBUG,
+								LogCategory.DATE_PARSING,
+								"using_timestamp_value",
+								{
+									timestamp: birthdayTimestamp,
+									date: new Date(birthdayTimestamp).toISOString(),
+								}
+							);
 						} else {
-							// It's a string format, pass it directly to parseDate
+							// It's a string format, try to parse it
 							try {
-								// Use the parseDate function to handle various date formats
 								logAI(
 									LogLevel.DEBUG,
 									LogCategory.DATE_PARSING,
@@ -466,55 +449,8 @@ export const createRecipientTool = tool({
 									{ input: birthday }
 								);
 
-								// For natural language dates, pass the string directly
+								// For natural language dates, use parseDate
 								birthdayTimestamp = parseDate(birthday);
-
-								// Verify the date is correct (for debugging)
-								const parsedDate = new Date(birthdayTimestamp);
-								const today = new Date();
-								today.setHours(0, 0, 0, 0);
-
-								if (birthday.toLowerCase() === "two weeks from today") {
-									// Calculate expected date (2 weeks from today)
-									const expectedDate = new Date(today);
-									expectedDate.setDate(today.getDate() + 14);
-
-									logAI(
-										LogLevel.DEBUG,
-										LogCategory.DATE_PARSING,
-										"date_parsing_debug",
-										{
-											today: today.toISOString(),
-											expectedDate: expectedDate.toISOString(),
-											actualParsedDate: parsedDate.toISOString(),
-										}
-									);
-
-									// Check if the dates are approximately equal (within 1 day)
-									const diffTime = Math.abs(
-										parsedDate.getTime() - expectedDate.getTime()
-									);
-									const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-									if (diffDays > 1) {
-										logAI(
-											LogLevel.ERROR,
-											LogCategory.DATE_PARSING,
-											"date_parsing_mismatch",
-											{
-												expected: expectedDate.toISOString(),
-												actual: parsedDate.toISOString(),
-											}
-										);
-									} else {
-										logAI(
-											LogLevel.DEBUG,
-											LogCategory.DATE_PARSING,
-											"date_parsing_success",
-											{ diffDays }
-										);
-									}
-								}
 
 								logAI(
 									LogLevel.DEBUG,
@@ -522,7 +458,7 @@ export const createRecipientTool = tool({
 									"date_parsing_success",
 									{
 										timestamp: birthdayTimestamp,
-										date: parsedDate.toISOString(),
+										date: new Date(birthdayTimestamp).toISOString(),
 									}
 								);
 							} catch (parseError) {
@@ -538,7 +474,7 @@ export const createRecipientTool = tool({
 									}
 								);
 								throw new Error(
-									"Invalid birthday format. Please provide the birthday in MM/DD/YYYY format."
+									"I couldn't understand that date format. Please provide the birthday in a clear format like MM/DD/YYYY (e.g., 04/20/1969) or a natural description like 'April 20, 1969'."
 								);
 							}
 						}
