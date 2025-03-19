@@ -23,6 +23,7 @@ export function UpcomingEvents() {
 	if (!recipients || !customEvents) return null;
 
 	const daysToShow = user?.settings?.upcomingEvents?.daysToShow ?? 30;
+	const maxEvents = user?.settings?.upcomingEvents?.maxEvents ?? 10;
 
 	const getDaysUntil = (date: Date) => {
 		const today = new Date();
@@ -54,7 +55,8 @@ export function UpcomingEvents() {
 
 	const allEvents = [...birthdayEvents, ...customEventsList]
 		.filter((event) => event.daysUntil >= 0 && event.daysUntil <= daysToShow)
-		.sort((a, b) => a.daysUntil - b.daysUntil);
+		.sort((a, b) => a.daysUntil - b.daysUntil)
+		.slice(0, maxEvents);
 
 	return (
 		<Card className="w-full upcoming-events" shadow="sm">
