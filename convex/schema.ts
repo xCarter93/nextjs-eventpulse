@@ -14,11 +14,7 @@ export default defineSchema({
 			v.object({
 				address: v.optional(
 					v.object({
-						line1: v.string(),
-						line2: v.optional(v.string()),
 						city: v.string(),
-						state: v.string(),
-						postalCode: v.string(),
 						country: v.string(),
 						countryCode: v.string(),
 						coordinates: v.object({
@@ -91,13 +87,8 @@ export default defineSchema({
 				phoneNumber: v.optional(v.string()),
 				address: v.optional(
 					v.object({
-						line1: v.optional(v.string()),
-						line2: v.optional(v.string()),
 						city: v.optional(v.string()),
-						state: v.optional(v.string()),
-						postalCode: v.optional(v.string()),
 						country: v.optional(v.string()),
-						countryCode: v.optional(v.string()),
 						coordinates: v.optional(
 							v.object({
 								latitude: v.number(),

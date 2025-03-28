@@ -155,10 +155,7 @@ export default function SettingsPage() {
 							<AddressForm
 								defaultAddress={
 									settings.address || {
-										line1: "",
 										city: "",
-										state: "",
-										postalCode: "",
 										country: "",
 										countryCode: "",
 										coordinates: {
