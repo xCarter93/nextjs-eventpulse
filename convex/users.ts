@@ -98,11 +98,7 @@ export const updateSettings = mutation({
 		settings: v.object({
 			address: v.optional(
 				v.object({
-					line1: v.string(),
-					line2: v.optional(v.string()),
 					city: v.string(),
-					state: v.string(),
-					postalCode: v.string(),
 					country: v.string(),
 					countryCode: v.string(),
 					coordinates: v.object({

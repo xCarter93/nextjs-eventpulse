@@ -10,11 +10,7 @@ import { useEffect } from "react";
 
 const addressSchema = z.object({
 	address: z.object({
-		line1: z.string(),
-		line2: z.string().optional(),
 		city: z.string(),
-		state: z.string(),
-		postalCode: z.string(),
 		country: z.string(),
 		countryCode: z.string(),
 		coordinates: z.object({
@@ -29,11 +25,7 @@ type AddressFormFields = {
 };
 
 const emptyAddress: AddressData = {
-	line1: "",
-	line2: "",
 	city: "",
-	state: "",
-	postalCode: "",
 	country: "",
 	countryCode: "",
 	coordinates: {

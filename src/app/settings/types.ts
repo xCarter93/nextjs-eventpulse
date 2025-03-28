@@ -1,9 +1,5 @@
 export interface AddressData {
-	line1: string;
-	line2?: string;
 	city: string;
-	state: string;
-	postalCode: string;
 	country: string;
 	countryCode: string;
 	coordinates: {
@@ -13,11 +9,7 @@ export interface AddressData {
 }
 
 export interface RecipientAddressData {
-	line1?: string;
-	line2?: string;
 	city?: string;
-	state?: string;
-	postalCode?: string;
 	country?: string;
 	coordinates?: {
 		latitude: number;
