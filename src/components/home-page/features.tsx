@@ -1,138 +1,108 @@
 "use client";
 
-import * as Accordion from "@radix-ui/react-accordion";
 import { motion } from "framer-motion";
-import type { ReactNode } from "react";
-import React, { forwardRef, useEffect, useRef, useState } from "react";
-import { Image } from "@heroui/react";
+import React, { useEffect, useState } from "react";
+import { Image, Card, CardBody, Tabs, Tab } from "@heroui/react";
 import { cn } from "@/lib/utils";
-
-type AccordionItemProps = {
-	children: React.ReactNode;
-	className?: string;
-} & Accordion.AccordionItemProps;
-
-const AccordionItem = forwardRef<HTMLDivElement, AccordionItemProps>(
-	({ children, className, ...props }, forwardedRef) => (
-		<Accordion.Item
-			className={cn(
-				"mt-px overflow-hidden focus-within:relative focus-within:z-10",
-				className
-			)}
-			{...props}
-			ref={forwardedRef}
-		>
-			{children}
-		</Accordion.Item>
-	)
-);
-AccordionItem.displayName = "AccordionItem";
-
-interface AccordionTriggerProps {
-	children: React.ReactNode;
-	className?: string;
-}
-
-const AccordionTrigger = forwardRef<HTMLButtonElement, AccordionTriggerProps>(
-	({ children, className, ...props }, forwardedRef) => (
-		<Accordion.Header className="flex">
-			<Accordion.Trigger
-				className={cn(
-					"group flex flex-1 cursor-pointer items-center justify-between px-5 text-[15px] leading-none outline-none",
-					className
-				)}
-				{...props}
-				ref={forwardedRef}
-			>
-				{children}
-			</Accordion.Trigger>
-		</Accordion.Header>
-	)
-);
-AccordionTrigger.displayName = "AccordionTrigger";
-type AccordionContentProps = {
-	children: ReactNode;
-	className?: string;
-} & Accordion.AccordionContentProps;
-
-const AccordionContent = forwardRef<HTMLDivElement, AccordionContentProps>(
-	({ children, className, ...props }, forwardedRef) => (
-		<Accordion.Content
-			className={cn(
-				"data-[state=closed]:animate-slide-up data-[state=open]:animate-slide-down overflow-hidden text-[15px] font-medium",
-				className
-			)}
-			{...props}
-			ref={forwardedRef}
-		>
-			<div className="px-5 py-2">{children}</div>
-		</Accordion.Content>
-	)
-);
-AccordionContent.displayName = "AccordionContent";
+import {
+	CheckIcon,
+	UsersIcon,
+	CalendarIcon,
+	BellIcon,
+	MailIcon,
+	SettingsIcon,
+} from "lucide-react";
 
 export interface FeaturesDataProps {
 	id: number;
 	title: string;
 	content: string;
 	image?: string;
-	video?: string;
 	icon?: React.ReactNode;
+	key?: string;
+	features?: string[];
 }
 
 export interface FeaturesProps {
 	collapseDelay?: number;
-	ltr?: boolean;
-	linePosition?: "left" | "right" | "top" | "bottom";
-	data: FeaturesDataProps[];
+	data?: FeaturesDataProps[];
 }
-
-const NumberIcon = ({ number }: { number: number }) => (
-	<div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-		{number}
-	</div>
-);
 
 export const featuresData: FeaturesDataProps[] = [
 	{
 		id: 1,
-		title: "Add Your First Recipient",
+		key: "recipients",
+		title: "Contact Management",
 		content:
-			"Start by adding your first recipient in the Recipients section. Enter their name, email, birthday, and any special dates you want to remember. You can also add notes about their preferences to make your greetings more personal.",
-		icon: <NumberIcon number={1} />,
+			"The Recipients Management feature allows you to organize and segment contact lists, import/export recipient data, and track engagement and interaction history. You can manage recipient preferences and settings, group contacts by categories or relationships, perform bulk actions for multiple recipients, and use powerful search and filter capabilities.",
+		icon: <UsersIcon className="h-5 w-5" />,
 		image: "/features/recipients.webp",
+		features: [
+			"Organize and segment contact lists",
+			"Import/export recipient data",
+			"Track engagement and interaction history",
+			"Group contacts by categories or relationships",
+		],
 	},
 	{
 		id: 2,
-		title: "Upload Your First Animation",
+		key: "animations",
+		title: "Animation Studio",
 		content:
-			"Visit the Animations section to upload your first custom animation. We support GIFs, images, and various animation formats. You can preview how they'll look in your emails and organize them into categories for easy access.",
-		icon: <NumberIcon number={2} />,
+			"The Animation Studio enables you to create custom animations for email content, design engaging visual elements, and export animations for email campaigns. It includes a library of pre-built animation templates with customization options for colors, timing, and effects, ensuring mobile-responsive animation designs.",
+		icon: <BellIcon className="h-5 w-5" />,
 		image: "/features/animations.webp",
+		features: [
+			"Create custom animations for email content",
+			"Design engaging visual elements",
+			"Preview and test animations",
+			"Library of pre-built animation templates",
+		],
 	},
 	{
 		id: 3,
-		title: "Use the Email Builder",
+		key: "builder",
+		title: "Email Campaign Tools",
 		content:
-			"Open the Email Builder to create your first greeting. Choose a template, add your custom animations, and personalize the message. You can preview how it will look on different devices and schedule it to be sent at the perfect moment.",
-		icon: <NumberIcon number={3} />,
+			"Our Email Campaign Tools help you schedule automated email communications, create and manage email templates, and track delivery and open rates. You can set up event reminders and follow-ups, conduct A/B testing for email content, use personalization tokens for dynamic content, and access various scheduling options.",
+		icon: <MailIcon className="h-5 w-5" />,
 		image: "/features/email-builder.webp",
+		features: [
+			"Schedule automated email communications",
+			"Create and manage email templates",
+			"Set up event reminders and follow-ups",
+			"A/B testing for email content",
+		],
 	},
 	{
 		id: 4,
-		title: "View Your Unified Dashboard",
+		key: "dashboard",
+		title: "Dashboard Features",
 		content:
-			"Access your personalized dashboard to see all upcoming events, scheduled emails, and recipient birthdays at a glance. The timeline view helps you plan ahead and ensure you never miss an important date.",
-		icon: <NumberIcon number={4} />,
+			"The Dashboard provides real-time analytics and event performance metrics, quick access to upcoming events and recent activities, user engagement statistics, and email campaign performance tracking. It includes a calendar view with monthly, weekly, and daily views, along with event status indicators and priority flags.",
+		icon: <CalendarIcon className="h-5 w-5" />,
 		image: "/features/dashboard.webp",
+		features: [
+			"Real-time analytics and event performance metrics",
+			"Quick access to upcoming events and activities",
+			"User engagement statistics",
+			"Calendar view with monthly, weekly, and daily views",
+		],
 	},
 	{
 		id: 5,
-		title: "Configure Your Settings",
+		key: "settings",
+		title: "Settings & Configuration",
 		content:
-			"Customize your experience in the Settings section. Set up email reminders for upcoming events, configure your preferred notification schedule, and manage your calendar integrations to stay perfectly organized.",
-		icon: <NumberIcon number={5} />,
+			"The Settings & Configuration section allows you to manage account preferences, integration settings, email delivery configurations, and user access management. You can customize notification preferences, configure API access and webhook configuration, and adjust data retention and privacy settings.",
+		icon: <SettingsIcon className="h-5 w-5" />,
 		image: "/features/settings.webp",
+		features: [
+			"Account preferences and integration settings",
+			"Email delivery configurations",
+			"User access management",
+			"API access and webhook configuration",
+		],
 	},
 ];
 
@@ -140,90 +110,160 @@ export function Features({
 	collapseDelay = 6000,
 	data = featuresData,
 }: FeaturesProps) {
-	const [currentIndex, setCurrentIndex] = useState<number>(0);
-	const ref = useRef(null);
+	const [selectedKey, setSelectedKey] = useState<string>(
+		data[0].key || "recipients"
+	);
 
+	// Auto-rotate through tabs
 	useEffect(() => {
 		const timer = setInterval(() => {
-			setCurrentIndex((prev) => (prev + 1) % data.length);
+			const currentIndex = data.findIndex((item) => item.key === selectedKey);
+			const nextIndex = (currentIndex + 1) % data.length;
+			setSelectedKey(data[nextIndex].key || "recipients");
 		}, collapseDelay);
 
 		return () => clearInterval(timer);
-	}, [collapseDelay, data.length]);
+	}, [collapseDelay, data, selectedKey]);
+
+	// Get current feature
+	const currentFeature =
+		data.find((item) => item.key === selectedKey) || data[0];
+
+	// Animation variants
+	const fadeIn = {
+		hidden: { opacity: 0, y: 20 },
+		visible: {
+			opacity: 1,
+			y: 0,
+			transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+		},
+	};
 
 	return (
-		<section ref={ref} id="features" className="w-full">
+		<section id="features" className="py-20 md:py-28 bg-background">
 			<div className="container mx-auto px-4">
-				<div className="mx-auto max-w-7xl">
-					{/* Feature Steps */}
-					<div className="mb-8 flex items-center justify-center space-x-[2rem] sm:space-x-[2rem]">
-						{data.map((item, index) => (
-							<button
-								key={item.id}
-								onClick={() => setCurrentIndex(index)}
-								className="group relative"
-							>
-								<div
-									className={cn(
-										"flex h-8 w-8 sm:h-12 sm:w-12 items-center justify-center rounded-full transition-all duration-300",
-										index === currentIndex
-											? "bg-primary text-primary-foreground"
-											: "bg-primary/10 text-primary hover:bg-primary/20"
-									)}
-								>
-									<span className="text-base sm:text-lg font-bold">
-										{item.id}
-									</span>
-								</div>
-								{index < data.length - 1 && (
-									<div
-										className="absolute left-full top-1/2 h-[2px] w-[2rem] -translate-y-1/2 bg-primary/30"
-										style={{
-											background: `linear-gradient(to right, rgba(var(--primary) / 0.3), rgba(var(--primary) / 0.3))`,
-										}}
-									/>
-								)}
-							</button>
-						))}
-					</div>
+				<div className="text-center max-w-3xl mx-auto mb-16">
+					<h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+						Everything You Need for Perfect Personalized Greetings
+					</h2>
+					<p className="text-lg text-muted-foreground">
+						EventPulse provides powerful tools to streamline your event planning
+						process from start to finish.
+					</p>
+				</div>
 
-					{/* Active Feature Content */}
-					<div className="mb-8 text-center px-4">
-						<h3 className="mb-4 text-xl sm:text-2xl font-bold">
-							{data[currentIndex].title}
-						</h3>
-						<p className="mx-auto max-w-2xl text-sm sm:text-base text-muted-foreground">
-							{data[currentIndex].content}
-						</p>
-					</div>
-
-					{/* Feature Image */}
-					<div className="relative mx-auto h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px] w-full max-w-5xl overflow-hidden rounded-xl">
-						<motion.div
-							key={currentIndex}
-							className="h-full w-full"
-							initial={{ opacity: 0, scale: 0.98 }}
-							animate={{ opacity: 1, scale: 1 }}
-							exit={{ opacity: 0, scale: 0.98 }}
-							transition={{ duration: 0.25, ease: "easeOut" }}
+				{/* Left-aligned tabs */}
+				<div className="max-w-5xl mx-auto">
+					<div className="mb-12">
+						<Tabs
+							aria-label="EventPulse Features"
+							selectedKey={selectedKey}
+							onSelectionChange={(key: React.Key) =>
+								setSelectedKey(String(key))
+							}
+							color="primary"
+							variant="underlined"
+							classNames={{
+								tabList: "justify-start gap-4",
+								cursor: "w-full",
+								tab: "max-w-fit px-2 h-12",
+							}}
 						>
-							<Image
-								src={data[currentIndex].image}
-								alt={`Feature: ${data[currentIndex].title}`}
-								className="h-full w-full transition-all duration-300"
-								radius="lg"
-								classNames={{
-									wrapper:
-										"h-full w-full shadow-[0_20px_50px_-12px_rgba(var(--primary)_/_0.7)]",
-									img: "object-cover object-center",
-									zoomedWrapper: "h-full w-full",
-								}}
-								fallbackSrc="/EventPulse Logo-Photoroom.png"
-								style={{
-									objectFit: "cover",
-								}}
-							/>
-						</motion.div>
+							{data.map((item) => (
+								<Tab
+									key={item.key}
+									title={
+										<div className="flex items-center gap-2">
+											{item.icon}
+											<span className="font-medium hidden md:hidden lg:block">
+												{item.key === "recipients" && "Contacts"}
+												{item.key === "animations" && "Animations"}
+												{item.key === "builder" && "Emails"}
+												{item.key === "dashboard" && "Dashboard"}
+												{item.key === "settings" && "Settings"}
+											</span>
+										</div>
+									}
+								/>
+							))}
+						</Tabs>
+					</div>
+
+					{/* Feature content */}
+					<motion.div
+						key={selectedKey}
+						initial="hidden"
+						animate="visible"
+						variants={fadeIn}
+						className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center"
+					>
+						<div>
+							<h3 className="text-2xl font-bold mb-3">
+								{currentFeature.title}
+							</h3>
+							<p className="text-muted-foreground mb-6">
+								{currentFeature.content}
+							</p>
+
+							{currentFeature.features && (
+								<ul className="space-y-3">
+									{currentFeature.features.map((feature, index) => (
+										<li key={index} className="flex items-start gap-3">
+											<div className="rounded-full bg-primary/10 p-1 mt-1">
+												<CheckIcon className="h-3.5 w-3.5 text-primary" />
+											</div>
+											<span className="text-foreground">{feature}</span>
+										</li>
+									))}
+								</ul>
+							)}
+						</div>
+
+						<Card className="shadow-xl border border-divider overflow-hidden">
+							<CardBody className="p-0">
+								<div className="w-full max-h-[500px] flex items-center justify-center bg-muted/20">
+									<Image
+										src={currentFeature.image}
+										alt={currentFeature.title}
+										className="w-full max-h-[500px] transition-all duration-300"
+										radius="lg"
+										classNames={{
+											wrapper:
+												"w-full h-auto shadow-[0_10px_40px_-12px_rgba(var(--primary)_/_0.5)]",
+											img: "object-contain object-center w-full h-auto",
+										}}
+										fallbackSrc="/EventPulse Logo-Photoroom.png"
+										style={{ objectFit: "contain" }}
+									/>
+								</div>
+							</CardBody>
+						</Card>
+					</motion.div>
+
+					{/* Feature cards below */}
+					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-24">
+						{data.map((feature, index) => (
+							<Card
+								key={index}
+								className={cn(
+									"h-full border border-divider cursor-pointer hover:border-primary/50 transition-all",
+									selectedKey === feature.key ? "border-primary shadow-md" : ""
+								)}
+								onClick={() => setSelectedKey(feature.key || "")}
+							>
+								<CardBody className="p-6">
+									<div className="rounded-full bg-primary/10 p-3 w-12 h-12 flex items-center justify-center mb-5">
+										{feature.icon}
+									</div>
+									<h3 className="text-xl font-semibold mb-3">
+										{feature.title}
+									</h3>
+									<p className="text-muted-foreground text-sm line-clamp-3">
+										{feature.content.split(".")[0]}.
+									</p>
+								</CardBody>
+							</Card>
+						))}
 					</div>
 				</div>
 			</div>
