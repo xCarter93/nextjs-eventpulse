@@ -24,10 +24,10 @@ export const tools = {
 				),
 			isRecurring: z
 				.boolean()
-				.default(false)
-				.describe("Whether the event recurs annually"),
+				.optional()
+				.describe("Whether the event recurs annually (defaults to false)"),
 		}),
-		execute: async ({ name, date, isRecurring }) => {
+		execute: async ({ name, date, isRecurring = false }) => {
 			try {
 				logToolCall("createEvent", "execute", { name, date, isRecurring });
 
