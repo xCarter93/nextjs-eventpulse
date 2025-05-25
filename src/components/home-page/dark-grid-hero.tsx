@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { AnimationProps, motion } from "framer-motion";
-import { ArrowRightIcon } from "lucide-react";
+import { PlayCircleIcon, ZapIcon } from "lucide-react";
 import Link from "next/link";
+import { Button, Card, CardBody } from "@heroui/react";
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 
 interface DarkGridHeroProps {
 	isSignedIn?: boolean;
@@ -28,102 +30,125 @@ interface ContentProps {
 
 const Content = ({ isSignedIn, onDashboardClick }: ContentProps) => {
 	return (
-		<div className="relative z-20 mx-auto flex max-w-6xl flex-col items-center justify-center px-4 py-24 md:px-8 md:py-36">
-			<motion.div
-				initial={{
-					y: 25,
-					opacity: 0,
-				}}
-				animate={{
-					y: 0,
-					opacity: 1,
-				}}
-				transition={{
-					duration: 1.25,
-					ease: "easeInOut",
-				}}
-				className="relative"
-			>
-				<GlowingChip>✨ Event Management Reimagined</GlowingChip>
-			</motion.div>
-			<motion.h1
-				initial={{
-					y: 25,
-					opacity: 0,
-				}}
-				animate={{
-					y: 0,
-					opacity: 1,
-				}}
-				transition={{
-					duration: 1.25,
-					delay: 0.25,
-					ease: "easeInOut",
-				}}
-				className="mb-3 text-center text-3xl font-bold leading-tight text-foreground sm:text-4xl sm:leading-tight md:text-5xl md:leading-tight lg:text-7xl lg:leading-tight"
-			>
-				Never Miss Another Important Moment
-			</motion.h1>
-			<motion.p
-				initial={{
-					y: 25,
-					opacity: 0,
-				}}
-				animate={{
-					y: 0,
-					opacity: 1,
-				}}
-				transition={{
-					duration: 1.25,
-					delay: 0.5,
-					ease: "easeInOut",
-				}}
-				className="mb-9 max-w-2xl text-center text-base leading-relaxed text-muted-foreground sm:text-lg md:text-lg md:leading-relaxed"
-			>
-				EventPulse helps you track important dates, create stunning animated
-				emails, and delight your recipients with personalized celebrations—all
-				with the help of our AI assistant.
-			</motion.p>
-			<motion.div
-				initial={{
-					y: 25,
-					opacity: 0,
-				}}
-				animate={{
-					y: 0,
-					opacity: 1,
-				}}
-				transition={{
-					duration: 1.25,
-					delay: 0.75,
-					ease: "easeInOut",
-				}}
-				className="flex flex-col items-center gap-6 sm:flex-row"
-			>
-				{isSignedIn ? (
-					<button
-						onClick={onDashboardClick}
-						className="relative inline-flex h-12 overflow-hidden rounded-full p-[2px] focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
+		<div className="relative z-20 mx-auto max-w-7xl px-4 py-16 md:py-24 lg:py-28">
+			<div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
+				{/* Left Column - Text and Buttons */}
+				<motion.div
+					className="flex-1 text-center lg:text-left"
+					initial={{ y: 25, opacity: 0 }}
+					animate={{ y: 0, opacity: 1 }}
+					transition={{ duration: 1.25, ease: "easeInOut" }}
+				>
+					<GlowingChip>✨ Event Management Reimagined</GlowingChip>
+
+					<motion.h1
+						initial={{ y: 25, opacity: 0 }}
+						animate={{ y: 0, opacity: 1 }}
+						transition={{ duration: 1.25, delay: 0.25, ease: "easeInOut" }}
+						className="mt-4 text-4xl font-bold leading-tight text-foreground sm:text-5xl sm:leading-tight md:text-5xl md:leading-tight lg:text-6xl lg:leading-tight"
 					>
-						<span className="absolute inset-[-1000%] animate-[spin_2s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,theme(colors.primary.DEFAULT/0.1)_0%,theme(colors.primary.DEFAULT/0.8)_50%,theme(colors.primary.DEFAULT/0.1)_100%)]" />
-						<span className="inline-flex h-full w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-background px-8 py-1 text-base font-medium text-foreground backdrop-blur-3xl">
-							Continue to Dashboard
-							<ArrowRightIcon className="h-5 w-5" />
-						</span>
-					</button>
-				) : (
-					<Link
-						href="/sign-up"
-						className="relative inline-flex h-12 overflow-hidden rounded-full p-[2px] focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
+						Never Miss Another{" "}
+						<span className="text-primary">Important Moment</span>
+					</motion.h1>
+
+					<motion.p
+						initial={{ y: 25, opacity: 0 }}
+						animate={{ y: 0, opacity: 1 }}
+						transition={{ duration: 1.25, delay: 0.5, ease: "easeInOut" }}
+						className="mt-6 text-base leading-relaxed text-muted-foreground sm:text-lg md:text-lg md:leading-relaxed max-w-xl mx-auto lg:mx-0"
 					>
-						<span className="absolute inset-[-1000%] animate-[spin_2s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,theme(colors.primary.DEFAULT/0.1)_0%,theme(colors.primary.DEFAULT/0.8)_50%,theme(colors.primary.DEFAULT/0.1)_100%)]" />
-						<span className="inline-flex h-full w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-background px-8 py-1 text-base font-medium text-foreground backdrop-blur-3xl">
-							Sign Up to get started
-							<ArrowRightIcon className="h-5 w-5" />
-						</span>
-					</Link>
-				)}
-			</motion.div>
+						EventPulse helps you track important dates, create stunning animated
+						emails, and delight your recipients with personalized
+						celebrations—all with the help of our AI assistant.
+					</motion.p>
+
+					<motion.div
+						initial={{ y: 25, opacity: 0 }}
+						animate={{ y: 0, opacity: 1 }}
+						transition={{ duration: 1.25, delay: 0.75, ease: "easeInOut" }}
+						className="mt-10 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
+					>
+						{isSignedIn ? (
+							<Button
+								color="primary"
+								size="lg"
+								className="px-8 font-medium"
+								startContent={<ZapIcon className="h-4 w-4" />}
+								onClick={onDashboardClick}
+							>
+								Continue to Dashboard
+							</Button>
+						) : (
+							<Link href="/sign-up">
+								<Button
+									color="primary"
+									size="lg"
+									className="px-8 font-medium"
+									startContent={<ZapIcon className="h-4 w-4" />}
+								>
+									Get Started Free
+								</Button>
+							</Link>
+						)}
+						<motion.div
+							whileHover={{
+								scale: 1.05,
+								transition: { duration: 0.2 },
+							}}
+						>
+							<Button
+								variant="bordered"
+								size="lg"
+								className="px-8 font-medium hover:bg-primary/10 hover:border-primary transition-colors"
+								startContent={<PlayCircleIcon className="h-4 w-4" />}
+							>
+								Watch Demo
+							</Button>
+						</motion.div>
+					</motion.div>
+
+					<motion.div
+						initial={{ opacity: 0, y: 30 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ duration: 1, delay: 1 }}
+						className="mt-8 flex items-center justify-center lg:justify-start gap-4"
+					>
+						<div className="flex -space-x-2">
+							{[1, 2, 3, 4].map((id) => (
+								<div
+									key={id}
+									className="w-8 h-8 rounded-full bg-primary/20 border-2 border-background overflow-hidden"
+								/>
+							))}
+						</div>
+						<p className="text-sm text-muted-foreground">
+							<span className="font-semibold text-foreground">1,000+</span>{" "}
+							event planners trust EventPulse
+						</p>
+					</motion.div>
+				</motion.div>
+
+				{/* Right Column - Lottie Animation */}
+				<motion.div
+					className="flex-1"
+					initial={{ opacity: 0, scale: 0.95 }}
+					animate={{ opacity: 1, scale: 1 }}
+					transition={{ duration: 0.5, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+				>
+					<Card className="shadow-xl border border-primary/10 overflow-hidden bg-background/20 backdrop-blur-sm">
+						<CardBody className="p-0 flex items-center justify-center">
+							<div className="w-full max-w-md mx-auto aspect-square">
+								<DotLottieReact
+									src="https://lottie.host/1f5b2a77-f3b0-4d02-a48f-940fe94bc7b2/pnU3lr9UGa.lottie"
+									loop
+									autoplay
+									className="w-full h-full object-contain"
+								/>
+							</div>
+						</CardBody>
+					</Card>
+				</motion.div>
+			</div>
 		</div>
 	);
 };

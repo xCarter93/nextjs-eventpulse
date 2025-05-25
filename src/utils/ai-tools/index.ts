@@ -1,6 +1,10 @@
-// Re-export all tools from their individual files
-export * from "./state";
-export * from "./create-recipient-tool";
-export * from "./search-recipients-tool";
-export * from "./get-upcoming-events-tool";
-export * from "./create-event-tool";
+// Export utilities for client use
+export { handleToolError, ToolError } from "./error-handling";
+export { parseFlexibleDate, validateDateRange } from "../date-parser";
+
+// Export AI components
+export { EventCreated } from "../../components/ai/EventCreated";
+export { RecipientCreated } from "../../components/ai/RecipientCreated";
+export { EventsList } from "../../components/ai/EventsList";
+export { RecipientsList } from "../../components/ai/RecipientsList";
+export { ToolLoading } from "../../components/ai/ToolLoading";

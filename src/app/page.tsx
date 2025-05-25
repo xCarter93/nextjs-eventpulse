@@ -7,6 +7,7 @@ import { Features, featuresData } from "@/components/home-page/features";
 import { Footer } from "@/components/layout/footer";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
+import { FAQ } from "@/components/home-page/faq";
 
 export default function LandingPage() {
 	const { isSignedIn } = useUser();
@@ -24,14 +25,11 @@ export default function LandingPage() {
 			</div>
 
 			{/* Features Section */}
-			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
-				<div className="text-center mb-12">
-					<h2 className="text-3xl font-bold text-foreground" id="features">
-						Everything You Need for Perfect Personalized Greetings
-					</h2>
-				</div>
-				<Features data={featuresData} />
-			</div>
+
+			<Features data={featuresData} />
+
+			{/* Add FAQ Section here */}
+			<FAQ />
 
 			{/* Pricing Section */}
 			<DarkGradientPricing />

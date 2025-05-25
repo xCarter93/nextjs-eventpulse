@@ -21,6 +21,8 @@
 		"@dnd-kit/utilities": "^3.2.2",
 		"@heroui/react": "^2.6.14",
 		"@hookform/resolvers": "^3.10.0",
+		"@iconify/react": "^6.0.0",
+		"@lottiefiles/dotlottie-react": "^0.13.5",
 		"@mapbox/mapbox-gl-geocoder": "^5.0.3",
 		"@mapbox/search-js-core": "^1.0.0-beta.25",
 		"@mapbox/search-js-react": "^1.0.0-beta.25",
