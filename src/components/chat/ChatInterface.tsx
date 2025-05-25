@@ -14,13 +14,6 @@ import { useChat } from "@ai-sdk/react";
 import ReactMarkdown from "react-markdown";
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-	EventCreated,
-	RecipientCreated,
-	EventsList,
-	RecipientsList,
-	ToolLoading,
-} from "@/utils/ai-tools";
 
 interface ErrorResponse {
 	error?: string;
@@ -28,47 +21,202 @@ interface ErrorResponse {
 	[key: string]: unknown;
 }
 
+interface ToolCallInfo {
+	name: string;
+	parameters?: Record<string, unknown>;
+	status: "running" | "completed" | "error";
+	startTime: number;
+	id: string;
+}
+
+// Define a more specific interface for the tool call
+interface ExtendedToolCall {
+	toolName: string;
+	args: Record<string, unknown>;
+	id?: string;
+	[key: string]: unknown;
+}
+
 export default function ChatInterface() {
 	const [errorDetails, setErrorDetails] = useState<string | null>(null);
 	const [errorType, setErrorType] = useState<string | null>(null);
+	const [currentTool, setCurrentTool] = useState<ToolCallInfo | null>(null);
+	// Track tool history for displaying steps
+	const [toolHistory, setToolHistory] = useState<ToolCallInfo[]>([]);
+	// Add a flag to track if we've received an answer
+	const [hasReceivedAnswer, setHasReceivedAnswer] = useState<boolean>(false);
+	// Add a flag to track if we've shown the tool history for the current response
+	const [hasShownToolHistory, setHasShownToolHistory] =
+		useState<boolean>(false);
+	// Add a flag to track the current conversation ID to prevent duplicate tool calls
+	const [currentConversationId, setCurrentConversationId] =
+		useState<string>("");
+	// Track already processed tool call IDs to prevent duplicates
+	const processedToolCallIds = useRef(new Set<string>());
+	// Flag to track if we've already logged the finish message
+	const [finishLogged, setFinishLogged] = useState<boolean>(false);
 
-	const { messages, input, handleInputChange, handleSubmit, status, error } =
-		useChat({
-			api: "/api/chat",
-			initialMessages: [],
-			id: "eventpulse-assistant",
-			body: {
-				maxTokens: 2000,
-				temperature: 0.1,
-			},
-			// Remove complex onToolCall logic - let the SDK handle it
-			onError: (error) => {
-				console.error("Chat error:", error);
-				// Store error information for display
-				if (error instanceof Error) {
-					setErrorType(error.name);
-					setErrorDetails(`${error.name}: ${error.message}`);
-				} else if (typeof error === "object" && error !== null) {
-					try {
-						// Try to extract detailed error information from the response
-						const errorObj = error as ErrorResponse;
-						if (errorObj.details) {
-							setErrorDetails(JSON.stringify(errorObj.details, null, 2));
-							setErrorType(errorObj.error?.toString() || "Unknown Error");
-						} else {
-							setErrorDetails(JSON.stringify(error, null, 2));
-							setErrorType("API Error");
-						}
-					} catch {
-						setErrorDetails(String(error));
-						setErrorType("Unknown Error");
+	const {
+		messages,
+		input,
+		handleInputChange,
+		handleSubmit,
+		status,
+		error,
+		id,
+	} = useChat({
+		api: "/api/chat",
+		initialMessages: [],
+		id: "eventpulse-assistant",
+		body: {
+			maxTokens: 1000,
+			temperature: 0,
+		},
+		onToolCall: ({ toolCall }) => {
+			// Use type assertion with a more specific interface
+			const extendedToolCall = toolCall as unknown as ExtendedToolCall;
+			console.log("Tool call received:", extendedToolCall);
+
+			// Generate a unique ID for this tool call if it doesn't have one
+			const toolId =
+				extendedToolCall.id ||
+				`tool-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+			// Check if we've already processed this exact tool call
+			if (processedToolCallIds.current.has(toolId)) {
+				console.log(`Already processed tool call ID ${toolId}, ignoring`);
+				return undefined;
+			}
+
+			// If we've already received a final answer, don't process new tool calls
+			if (hasReceivedAnswer) {
+				console.log("Answer already received, ignoring new tool call");
+				return undefined;
+			}
+
+			// Add this tool call ID to the processed set
+			processedToolCallIds.current.add(toolId);
+
+			const newToolCall: ToolCallInfo = {
+				name: extendedToolCall.toolName || "Unknown Tool",
+				parameters: extendedToolCall.args || {},
+				status: "running",
+				startTime: Date.now(),
+				id: toolId,
+			};
+
+			// Reset the hasShownToolHistory flag when a new tool call is made
+			setHasShownToolHistory(false);
+
+			// Update the current conversation ID if it's not set
+			if (!currentConversationId) {
+				setCurrentConversationId(id);
+			}
+
+			setCurrentTool(newToolCall);
+
+			// Only add to history if it's not a duplicate (same name and parameters)
+			setToolHistory((prev) => {
+				// Check if we already have this exact tool call in the history by comparing parameters
+				const isDuplicate = prev.some(
+					(tool) =>
+						tool.name === newToolCall.name &&
+						JSON.stringify(tool.parameters) ===
+							JSON.stringify(newToolCall.parameters)
+				);
+
+				if (isDuplicate) {
+					console.log("Duplicate tool call detected, not adding to history");
+					return prev;
+				}
+
+				return [...prev, newToolCall];
+			});
+
+			// Return undefined to let the SDK handle the tool call
+			return undefined;
+		},
+		onResponse: (response) => {
+			console.log("Response received:", response);
+
+			// Only update tool status if this response is about a tool
+			if (currentTool) {
+				const updatedTool = { ...currentTool, status: "completed" as const };
+				setCurrentTool(null);
+
+				// Update the tool in history
+				setToolHistory((prev) =>
+					prev.map((tool) => (tool.id === updatedTool.id ? updatedTool : tool))
+				);
+			}
+		},
+		onError: (error) => {
+			console.error("Chat error:", error);
+			// Mark the current tool as error
+			if (currentTool) {
+				const updatedTool = { ...currentTool, status: "error" as const };
+				setCurrentTool(null);
+
+				// Update the tool in history
+				setToolHistory((prev) =>
+					prev.map((tool) => (tool.id === updatedTool.id ? updatedTool : tool))
+				);
+			}
+
+			// Store more detailed error information
+			if (error instanceof Error) {
+				setErrorType(error.name);
+				setErrorDetails(`${error.name}: ${error.message}`);
+			} else if (typeof error === "object" && error !== null) {
+				try {
+					// Try to extract detailed error information from the response
+					const errorObj = error as ErrorResponse;
+					if (errorObj.details) {
+						setErrorDetails(JSON.stringify(errorObj.details, null, 2));
+						setErrorType(errorObj.error?.toString() || "Unknown Error");
+					} else {
+						setErrorDetails(JSON.stringify(error, null, 2));
+						setErrorType("API Error");
 					}
-				} else {
+				} catch {
 					setErrorDetails(String(error));
 					setErrorType("Unknown Error");
 				}
-			},
-		});
+			} else {
+				setErrorDetails(String(error));
+				setErrorType("Unknown Error");
+			}
+		},
+		onFinish: () => {
+			// Check if the last message has content - this is when we know a final answer was provided
+			const lastMessage = messages[messages.length - 1];
+			if (
+				!finishLogged &&
+				lastMessage &&
+				lastMessage.role === "assistant" &&
+				lastMessage.content &&
+				typeof lastMessage.content === "string" &&
+				lastMessage.content.trim().length > 0
+			) {
+				console.log(
+					"Text response received, tool calls should stop after this step"
+				);
+				setFinishLogged(true);
+
+				// Set flags to prevent further tool calls
+				setHasReceivedAnswer(true);
+				setHasShownToolHistory(true);
+			}
+
+			// When the entire response is finished, ensure all tools are marked as completed
+			setToolHistory((prev) =>
+				prev.map((tool) => ({ ...tool, status: "completed" as const }))
+			);
+
+			// Ensure we've shown the tool history
+			setHasShownToolHistory(true);
+		},
+	});
 
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const lastMessageContent = messages[messages.length - 1]?.content;
@@ -114,17 +262,74 @@ export default function ChatInterface() {
 		}
 	}, [error]);
 
-	// Reset errors when starting a new conversation
+	// Reset everything when starting a new conversation
 	const handleFormSubmit = (e: React.FormEvent) => {
 		setErrorDetails(null);
 		setErrorType(null);
+
+		// Clear tool history and reset all flags
+		setToolHistory([]);
+		setHasReceivedAnswer(false);
+		setHasShownToolHistory(false);
+		processedToolCallIds.current.clear();
+		setCurrentTool(null);
+		setFinishLogged(false); // Reset the finish logged flag
+
+		// If the conversation ID has changed, update it
+		if (id !== currentConversationId) {
+			setCurrentConversationId(id);
+		}
+
 		handleSubmit(e);
 	};
 
-	// Scroll to bottom when messages change
+	// Format parameter display for the tool call
+	const formatToolParameters = (params?: Record<string, unknown>): string => {
+		if (!params) return "";
+
+		// Filter out empty or undefined values and format for display
+		const filteredParams = Object.entries(params)
+			.filter(([, value]) => value !== undefined && value !== "")
+			.map(([key, value]) => {
+				// Truncate long values
+				const displayValue =
+					typeof value === "string" && value.length > 20
+						? `${value.substring(0, 20)}...`
+						: value;
+				return `${key}: ${displayValue}`;
+			})
+			.join(", ");
+
+		return filteredParams ? `(${filteredParams})` : "";
+	};
+
+	// Simplify the useEffect that detects when a new assistant message is received
+	// since we're now handling most of this logic in onResponse and onFinish
 	useEffect(() => {
-		scrollToBottom();
-	}, [messages]);
+		// If we have a new assistant message and it has content, mark all tools as completed
+		if (
+			!finishLogged &&
+			messages.length > 0 &&
+			messages[messages.length - 1].role === "assistant" &&
+			messages[messages.length - 1].content &&
+			typeof messages[messages.length - 1].content === "string" &&
+			messages[messages.length - 1].content.trim().length > 0
+		) {
+			console.log(
+				"Assistant provided an answer, marking all tools as completed"
+			);
+			setFinishLogged(true);
+
+			// Mark all tools as completed
+			setToolHistory((prev) =>
+				prev.map((tool) => ({ ...tool, status: "completed" as const }))
+			);
+
+			// Set flags to prevent further tool calls
+			setHasReceivedAnswer(true);
+			setHasShownToolHistory(true);
+		}
+	}, [messages, finishLogged]);
 
 	return (
 		<div className="flex flex-col h-[600px] bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 rounded-xl border border-divider relative overflow-hidden">
@@ -143,7 +348,7 @@ export default function ChatInterface() {
 				</div>
 
 				<div className="flex items-center">
-					{status === "submitted" && (
+					{status === "submitted" && !currentTool && (
 						<motion.span
 							className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full flex items-center gap-1"
 							initial={{ opacity: 0 }}
@@ -360,72 +565,147 @@ export default function ChatInterface() {
 												{message.content}
 											</p>
 										) : (
-											<>
-												{/* Render text content */}
-												{message.content && (
-													<div className="prose prose-sm dark:prose-invert prose-p:leading-relaxed prose-pre:p-0 max-w-full overflow-x-auto">
-														<ReactMarkdown>{message.content}</ReactMarkdown>
-													</div>
-												)}
-
-												{/* Render tool invocations */}
-												{message.toolInvocations?.map((toolInvocation) => {
-													const { toolName, toolCallId, state } =
-														toolInvocation;
-
-													if (state === "result") {
-														const { result } = toolInvocation;
-
-														switch (toolName) {
-															case "createEvent":
-																return (
-																	<EventCreated key={toolCallId} {...result} />
-																);
-															case "createRecipient":
-																return (
-																	<RecipientCreated
-																		key={toolCallId}
-																		{...result}
-																	/>
-																);
-															case "searchEvents":
-																return (
-																	<EventsList key={toolCallId} {...result} />
-																);
-															case "searchRecipients":
-																return (
-																	<RecipientsList
-																		key={toolCallId}
-																		{...result}
-																	/>
-																);
-															default:
-																return (
-																	<div
-																		key={toolCallId}
-																		className="p-3 bg-gray-50 rounded-lg"
-																	>
-																		<pre className="text-xs overflow-auto">
-																			{JSON.stringify(result, null, 2)}
-																		</pre>
-																	</div>
-																);
-														}
-													} else {
-														return (
-															<ToolLoading
-																key={toolCallId}
-																toolName={toolName}
-															/>
-														);
-													}
-												})}
-											</>
+											<div className="prose prose-sm dark:prose-invert prose-p:leading-relaxed prose-pre:p-0 max-w-full overflow-x-auto">
+												<ReactMarkdown>{message.content}</ReactMarkdown>
+											</div>
 										)}
 									</motion.div>
 								</motion.div>
 							))}
 
+							{/* Display tool steps before the last assistant message */}
+							<AnimatePresence key="tool-history-presence">
+								{messages.length > 0 &&
+									toolHistory.length > 0 &&
+									!hasShownToolHistory && (
+										<motion.div
+											key="tool-history"
+											className="flex items-start gap-2 mt-2"
+											initial={{ opacity: 0, y: 10 }}
+											animate={{ opacity: 1, y: 0 }}
+											exit={{ opacity: 0, y: -10 }}
+											transition={{
+												type: "spring",
+												stiffness: 200,
+												damping: 20,
+											}}
+										>
+											<div className="flex-shrink-0 mr-1">
+												<div className="h-6 w-6 rounded-full bg-gradient-to-br from-primary/80 to-primary/30 flex items-center justify-center shadow-sm">
+													<div className="text-[10px] font-bold text-primary-foreground">
+														P
+													</div>
+												</div>
+											</div>
+
+											<motion.div
+												className="rounded-lg px-3 py-2 bg-muted/50 border border-primary/10 w-full max-w-[80%]"
+												initial={{ scale: 0.95 }}
+												animate={{ scale: 1 }}
+												transition={{
+													type: "spring",
+													stiffness: 300,
+													damping: 20,
+												}}
+											>
+												<p className="text-xs font-medium text-primary mb-2">
+													{currentTool
+														? "Working on your request..."
+														: "Steps completed:"}
+												</p>
+												<div className="space-y-2">
+													{/* Only show the most recent version of each tool and filter out duplicates */}
+													{toolHistory
+														// First filter out any duplicate tool calls by name
+														.reduce((unique, current) => {
+															// Find existing tool with the same name
+															const existingTool = unique.find(
+																(tool) => tool.name === current.name
+															);
+
+															// If no existing tool with this name or the current one is newer, use the current
+															if (
+																!existingTool ||
+																existingTool.startTime < current.startTime
+															) {
+																// Remove existing tool if present
+																if (existingTool) {
+																	unique = unique.filter(
+																		(tool) => tool.name !== current.name
+																	);
+																}
+																unique.push(current);
+															}
+															return unique;
+														}, [] as ToolCallInfo[])
+														// Then sort by start time to ensure consistent order
+														.sort((a, b) => a.startTime - b.startTime)
+														.map((tool, index) => (
+															<motion.div
+																key={tool.id}
+																className={`flex items-center gap-2 p-2 rounded-md ${
+																	tool.status === "completed"
+																		? "bg-green-500/10 border border-green-500/20"
+																		: tool.status === "error"
+																			? "bg-red-500/10 border border-red-500/20"
+																			: "bg-primary/5 border border-primary/10"
+																}`}
+																initial={{ opacity: 0, x: -5 }}
+																animate={{ opacity: 1, x: 0 }}
+																transition={{ delay: index * 0.1 }}
+															>
+																{tool.status === "completed" ? (
+																	<div className="h-5 w-5 rounded-full bg-green-500/20 flex items-center justify-center">
+																		<svg
+																			xmlns="http://www.w3.org/2000/svg"
+																			className="h-3 w-3 text-green-500"
+																			viewBox="0 0 20 20"
+																			fill="currentColor"
+																		>
+																			<path
+																				fillRule="evenodd"
+																				d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+																				clipRule="evenodd"
+																			/>
+																		</svg>
+																	</div>
+																) : tool.status === "error" ? (
+																	<div className="h-5 w-5 rounded-full bg-red-500/20 flex items-center justify-center">
+																		<svg
+																			xmlns="http://www.w3.org/2000/svg"
+																			className="h-3 w-3 text-red-500"
+																			viewBox="0 0 20 20"
+																			fill="currentColor"
+																		>
+																			<path
+																				fillRule="evenodd"
+																				d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+																				clipRule="evenodd"
+																			/>
+																		</svg>
+																	</div>
+																) : (
+																	<Loader2 className="h-4 w-4 text-primary animate-spin" />
+																)}
+																<div className="flex-1">
+																	<p className="text-xs font-medium">
+																		{tool.name}
+																		{/* Show parameters for all tools in a cleaner format */}
+																		{Object.keys(tool.parameters || {}).length >
+																			0 && (
+																			<span className="text-xs font-normal text-muted-foreground ml-1">
+																				{formatToolParameters(tool.parameters)}
+																			</span>
+																		)}
+																	</p>
+																</div>
+															</motion.div>
+														))}
+												</div>
+											</motion.div>
+										</motion.div>
+									)}
+							</AnimatePresence>
 							{/* Invisible element to scroll to */}
 							<div ref={messagesEndRef} />
 						</AnimatePresence>

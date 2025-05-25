@@ -1,3 +1,5 @@
+import { parseDate as originalParseDate } from "../server-actions";
+
 export function parseFlexibleDate(input: string): number {
 	// Clean up the input
 	const cleanInput = input.trim();
@@ -53,19 +55,14 @@ export function parseFlexibleDate(input: string): number {
 		}
 	}
 
-	// Handle natural language dates using basic parsing
+	// Fallback to the original parseDate function for natural language
 	try {
-		const date = new Date(cleanInput);
-		if (!isNaN(date.getTime())) {
-			return date.getTime();
-		}
+		return originalParseDate(cleanInput);
 	} catch {
-		// Fall through to error
+		throw new Error(
+			`Could not parse date "${cleanInput}". Please use formats like "MM/DD/YYYY", "March 15, 2024", or "next Tuesday".`
+		);
 	}
-
-	throw new Error(
-		`Could not parse date "${cleanInput}". Please use formats like "MM/DD/YYYY", "March 15, 2024", or standard date formats.`
-	);
 }
 
 export function validateDateRange(year: number): void {
