@@ -5,8 +5,8 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useState } from "react";
 import { PremiumModal } from "../premium/PremiumModal";
-import { Card, CardHeader, CardBody } from "@heroui/card";
 import { Modal, ModalContent, ModalHeader, ModalBody } from "@heroui/react";
+import { Accordion, AccordionItem } from "@heroui/react";
 import {
 	Users,
 	Upload,
@@ -127,63 +127,74 @@ export function QuickActions() {
 
 	return (
 		<>
-			<Card className="w-full quick-actions" shadow="sm">
-				<CardHeader className="flex items-center px-4 py-3">
-					<div className="flex items-center gap-2">
-						<Zap className="h-4 w-4 text-primary" />
-						<div className="text-sm font-medium">Quick Actions</div>
-					</div>
-				</CardHeader>
-				<CardBody className="px-4 py-3">
-					<div className="grid grid-cols-2 gap-3">
-						{actions.map((action) =>
-							action.isButton ? (
-								<button
-									key={action.name}
-									onClick={action.onClick}
-									disabled={action.disabled || action.loading}
-									className={`flex flex-col items-center p-3 rounded-lg transition-all ${
-										action.disabled
-											? "opacity-50 cursor-not-allowed"
-											: "hover:scale-[1.02] hover:shadow-sm cursor-pointer"
-									}`}
-								>
-									<div className={`p-2 rounded-full ${action.color} mb-2`}>
-										{action.isImage ? (
-											<action.icon />
-										) : (
-											<action.icon
-												className={`h-4 w-4 ${action.loading ? "animate-spin" : ""}`}
-											/>
-										)}
-									</div>
-									<span className="text-xs font-medium text-gray-700 dark:text-gray-300">
-										{action.name}
-									</span>
-									{action.lastSync && (
-										<span className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">
-											{action.lastSync}
-										</span>
-									)}
-								</button>
-							) : (
-								<Link
-									key={action.name}
-									href={action.href || "/"}
-									className="flex flex-col items-center p-3 rounded-lg transition-all hover:scale-[1.02] hover:shadow-sm cursor-pointer"
-								>
-									<div className={`p-2 rounded-full ${action.color} mb-2`}>
-										<action.icon className="h-4 w-4" />
-									</div>
-									<span className="text-xs font-medium text-gray-700 dark:text-gray-300">
-										{action.name}
-									</span>
-								</Link>
-							)
-						)}
-					</div>
-				</CardBody>
-			</Card>
+			<div className="w-full quick-actions">
+				<Accordion variant="shadow" selectionMode="multiple" className="w-full">
+					<AccordionItem
+						key="quick-actions"
+						aria-label="Quick Actions"
+						title={
+							<div className="flex items-center gap-2">
+								<Zap className="h-4 w-4 text-primary" />
+								<span className="text-sm font-medium">Quick Actions</span>
+							</div>
+						}
+						classNames={{
+							trigger:
+								"px-4 py-3 data-[hover=true]:bg-gray-50 dark:data-[hover=true]:bg-gray-800/50",
+						}}
+					>
+						<div className="px-4 pb-4">
+							<div className="grid grid-cols-2 gap-3">
+								{actions.map((action) =>
+									action.isButton ? (
+										<button
+											key={action.name}
+											onClick={action.onClick}
+											disabled={action.disabled || action.loading}
+											className={`flex flex-col items-center p-3 rounded-lg transition-all ${
+												action.disabled
+													? "opacity-50 cursor-not-allowed"
+													: "hover:scale-[1.02] hover:shadow-sm cursor-pointer"
+											}`}
+										>
+											<div className={`p-2 rounded-full ${action.color} mb-2`}>
+												{action.isImage ? (
+													<action.icon />
+												) : (
+													<action.icon
+														className={`h-4 w-4 ${action.loading ? "animate-spin" : ""}`}
+													/>
+												)}
+											</div>
+											<span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+												{action.name}
+											</span>
+											{action.lastSync && (
+												<span className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">
+													{action.lastSync}
+												</span>
+											)}
+										</button>
+									) : (
+										<Link
+											key={action.name}
+											href={action.href || "/"}
+											className="flex flex-col items-center p-3 rounded-lg transition-all hover:scale-[1.02] hover:shadow-sm cursor-pointer"
+										>
+											<div className={`p-2 rounded-full ${action.color} mb-2`}>
+												<action.icon className="h-4 w-4" />
+											</div>
+											<span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+												{action.name}
+											</span>
+										</Link>
+									)
+								)}
+							</div>
+						</div>
+					</AccordionItem>
+				</Accordion>
+			</div>
 
 			{/* Premium Modal */}
 			<PremiumModal
