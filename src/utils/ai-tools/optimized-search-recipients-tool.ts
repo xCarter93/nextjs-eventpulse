@@ -71,7 +71,7 @@ export const optimizedSearchRecipientsTool = tool({
 		searchQuery: SearchQuerySchema.describe(
 			"The search query. Can be a name, email, or birthday (MM/DD or MM/DD/YYYY format). Examples: 'John Smith', 'john@email.com', '10/15'"
 		),
-		searchType: SearchTypeEnum.default("any").describe(
+		searchType: SearchTypeEnum.describe(
 			"Type of search to perform. Use 'any' for auto-detection based on query format"
 		),
 		sessionId: SessionIdSchema.describe("Session ID to track this search request"),
