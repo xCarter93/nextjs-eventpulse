@@ -39,8 +39,10 @@ function enhancePrompt(userPrompt: string): string {
 }
 
 export async function POST(req: Request) {
+	console.log("POST /api/generate-image - Request received");
 	try {
 		const { prompt, size = "1024x1024", quality = "standard" } = await req.json();
+		console.log("Request parsed successfully, prompt:", prompt);
 
 		// Enhanced validation
 		if (!prompt || typeof prompt !== "string") {
@@ -133,4 +135,11 @@ export async function POST(req: Request) {
 			{ status: 500 }
 		);
 	}
+}
+
+export async function GET() {
+	return NextResponse.json(
+		{ message: "AI Image Generation API is running. Use POST to generate images." },
+		{ status: 200 }
+	);
 }

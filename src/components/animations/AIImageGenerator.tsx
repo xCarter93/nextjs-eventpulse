@@ -95,7 +95,23 @@ export function AIImageGenerator({ onSuccess }: AIImageGeneratorProps) {
 				body: JSON.stringify({ prompt: prompt.trim() }),
 			});
 
-			const data = await response.json();
+			// Get response text first to handle both JSON and non-JSON responses
+			const responseText = await response.text();
+			
+			// Check if response is JSON
+			const contentType = response.headers.get("content-type");
+			if (!contentType || !contentType.includes("application/json")) {
+				console.error("Non-JSON response received:", responseText);
+				throw new Error(`Server returned HTML instead of JSON. Status: ${response.status}. Response: ${responseText.substring(0, 200)}...`);
+			}
+
+			let data;
+			try {
+				data = JSON.parse(responseText);
+			} catch {
+				console.error("Failed to parse JSON response:", responseText);
+				throw new Error(`Invalid JSON response from server. Response: ${responseText.substring(0, 200)}...`);
+			}
 
 			if (!response.ok) {
 				throw new Error(
