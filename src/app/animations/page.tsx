@@ -6,7 +6,8 @@ import { TemplateCard } from "@/components/animations/TemplateCard";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Image, Upload, Sparkles, FileImage } from "lucide-react";
-import { Pagination, Card, CardBody, Tabs, Tab } from "@heroui/react";
+import { Pagination, Card, CardBody } from "@heroui/react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageWithStats } from "@/components/shared/PageWithStats";
 import { CustomAnimationUploader } from "@/components/animations/CustomAnimationUploader";
 import { AIImageGenerator } from "@/components/animations/AIImageGenerator";
@@ -73,8 +74,8 @@ export default function AnimationsPage() {
 	const endIndex = startIndex + itemsPerPage;
 	const currentTemplates = templates.slice(startIndex, endIndex);
 
-	const handleTabChange = (key: string | number) => {
-		setActiveTab(key.toString());
+	const handleTabChange = (value: string) => {
+		setActiveTab(value);
 	};
 
 	const handleAnimationAdded = () => {
@@ -95,16 +96,33 @@ export default function AnimationsPage() {
 					</p>
 				</div>
 
-				<Card className="flex-1" radius="lg" shadow="md" isBlurred={true}>
-					<CardBody className="p-6">
-						<Tabs
-							selectedKey={activeTab}
-							onSelectionChange={handleTabChange}
-							className="mb-6"
-							variant="underlined"
-							size="lg"
-						>
-							<Tab key="gallery" title="My Gallery">
+				<Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+					<div className="flex items-center justify-between">
+						<TabsList className="bg-secondary/20">
+							<TabsTrigger
+								value="gallery"
+								className="data-[state=active]:bg-purple-500 data-[state=active]:text-white"
+							>
+								My Gallery
+							</TabsTrigger>
+							<TabsTrigger
+								value="upload"
+								className="data-[state=active]:bg-purple-500 data-[state=active]:text-white"
+							>
+								Upload Animation
+							</TabsTrigger>
+							<TabsTrigger
+								value="generate"
+								className="data-[state=active]:bg-purple-500 data-[state=active]:text-white"
+							>
+								AI Generate
+							</TabsTrigger>
+						</TabsList>
+					</div>
+
+					<TabsContent value="gallery" className="space-y-4">
+						<Card className="flex-1" radius="lg" shadow="md" isBlurred={true}>
+							<CardBody className="p-6">
 								<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 animations-grid">
 									{currentTemplates.length > 0 ? (
 										currentTemplates.map((template) => (
@@ -139,16 +157,18 @@ export default function AnimationsPage() {
 										/>
 									</div>
 								)}
-							</Tab>
-							<Tab key="upload" title="Upload Animation">
-								<CustomAnimationUploader onSuccess={handleAnimationAdded} />
-							</Tab>
-							<Tab key="generate" title="AI Generate">
-								<AIImageGenerator onSuccess={handleAnimationAdded} />
-							</Tab>
-						</Tabs>
-					</CardBody>
-				</Card>
+							</CardBody>
+						</Card>
+					</TabsContent>
+
+					<TabsContent value="upload" className="space-y-4">
+						<CustomAnimationUploader onSuccess={handleAnimationAdded} />
+					</TabsContent>
+
+					<TabsContent value="generate" className="space-y-4">
+						<AIImageGenerator onSuccess={handleAnimationAdded} />
+					</TabsContent>
+				</Tabs>
 			</div>
 		</PageWithStats>
 	);
