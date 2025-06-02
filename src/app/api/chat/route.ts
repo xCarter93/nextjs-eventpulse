@@ -2,8 +2,8 @@ import { openai } from "@ai-sdk/openai";
 import { streamText } from "ai";
 import { type Message as AIMessage } from "ai";
 import { createSystemPrompt } from "@/utils/ai-context";
-import { createRecipientTool } from "@/utils/ai-tools/create-recipient-tool";
-import { searchRecipientsTool } from "@/utils/ai-tools/search-recipients-tool";
+import { optimizedCreateRecipientTool } from "@/utils/ai-tools/optimized-create-recipient-tool";
+import { optimizedSearchRecipientsTool } from "@/utils/ai-tools/optimized-search-recipients-tool";
 import { getUpcomingEventsTool } from "@/utils/ai-tools/get-upcoming-events-tool";
 import { createEventTool } from "@/utils/ai-tools/create-event-tool";
 import { activeToolFlows } from "@/utils/ai-tools/state";
@@ -46,8 +46,8 @@ export async function POST(req: Request) {
 			// Define the tools as an object with named keys
 			// The key should match what's referenced in the system prompt
 			const tools = {
-				createRecipient: createRecipientTool,
-				searchRecipients: searchRecipientsTool,
+				createRecipient: optimizedCreateRecipientTool,
+				searchRecipients: optimizedSearchRecipientsTool,
 				getUpcomingEvents: getUpcomingEventsTool,
 				createEvent: createEventTool,
 			};
