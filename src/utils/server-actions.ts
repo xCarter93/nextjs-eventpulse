@@ -470,6 +470,70 @@ export function parseDate(date: Date | number | string): number {
 			return yesterday.getTime();
 		}
 
+		// Handle "this [day]" patterns (e.g., "this thursday", "this monday")
+		const thisDayMatch = lowerDate.match(
+			/^this\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/
+		);
+		if (thisDayMatch) {
+			const targetDayName = thisDayMatch[1];
+			const daysOfWeek = [
+				"sunday",
+				"monday",
+				"tuesday",
+				"wednesday",
+				"thursday",
+				"friday",
+				"saturday",
+			];
+			const targetDayIndex = daysOfWeek.indexOf(targetDayName);
+			const currentDayIndex = now.getDay();
+
+			// Calculate days until the target day
+			let daysUntil = targetDayIndex - currentDayIndex;
+			if (daysUntil <= 0) {
+				daysUntil += 7; // Move to next week if the day has passed or is today
+			}
+
+			const targetDate = new Date(now);
+			targetDate.setDate(targetDate.getDate() + daysUntil);
+			console.log(
+				`Parsed "this ${targetDayName}" as ${targetDate.toISOString()}`
+			);
+			return targetDate.getTime();
+		}
+
+		// Handle "next [day]" patterns (e.g., "next thursday", "next monday")
+		const nextDayMatch = lowerDate.match(
+			/^next\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/
+		);
+		if (nextDayMatch) {
+			const targetDayName = nextDayMatch[1];
+			const daysOfWeek = [
+				"sunday",
+				"monday",
+				"tuesday",
+				"wednesday",
+				"thursday",
+				"friday",
+				"saturday",
+			];
+			const targetDayIndex = daysOfWeek.indexOf(targetDayName);
+			const currentDayIndex = now.getDay();
+
+			// Always go to next week for "next [day]"
+			let daysUntil = targetDayIndex - currentDayIndex + 7;
+			if (daysUntil > 7) {
+				daysUntil -= 7;
+			}
+
+			const targetDate = new Date(now);
+			targetDate.setDate(targetDate.getDate() + daysUntil);
+			console.log(
+				`Parsed "next ${targetDayName}" as ${targetDate.toISOString()}`
+			);
+			return targetDate.getTime();
+		}
+
 		// Handle "next week", "next month", "next year"
 		if (lowerDate === "next week") {
 			const nextWeek = new Date(now);
@@ -631,9 +695,10 @@ export function parseDate(date: Date | number | string): number {
 		}
 	}
 
-	// Default to current date if parsing fails
-	console.error(`Failed to parse date: ${date}, using current date instead`);
-	return new Date().getTime();
+	// Instead of defaulting to current date, throw an error for invalid dates
+	// This prevents unintended fallbacks that could cause issues
+	console.error(`Failed to parse date: ${date}`);
+	throw new Error(`Could not parse date: ${date}`);
 }
 
 /**

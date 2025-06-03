@@ -53,7 +53,7 @@ const validateYear = (year: number): boolean => {
 	return year >= 1900 && year <= currentYear;
 };
 
-// Dedicated birthday parsing function that ensures UTC dates to prevent timezone shifts
+// Dedicated birthday parsing function that ensures consistent date handling
 const parseBirthdayToUTC = (birthday: string): number => {
 	const cleanBirthday = sanitizeInput(birthday);
 
@@ -65,14 +65,14 @@ const parseBirthdayToUTC = (birthday: string): number => {
 		const dayNum = parseInt(day);
 		const yearNum = parseInt(year);
 
-		// Use Date.UTC to create date in UTC timezone to avoid local timezone shifts
-		const date = new Date(Date.UTC(yearNum, monthNum, dayNum));
+		// Create date in local timezone to match how dates are typically interpreted
+		const date = new Date(yearNum, monthNum, dayNum);
 
-		// Validate the date components using UTC methods
+		// Validate the date components
 		if (
-			date.getUTCMonth() !== monthNum ||
-			date.getUTCDate() !== dayNum ||
-			date.getUTCFullYear() !== yearNum
+			date.getMonth() !== monthNum ||
+			date.getDate() !== dayNum ||
+			date.getFullYear() !== yearNum
 		) {
 			throw new DateParsingError("Invalid date values", cleanBirthday);
 		}
@@ -90,23 +90,15 @@ const parseBirthdayToUTC = (birthday: string): number => {
 	// Try to parse natural language dates (like "April 20, 1969")
 	const parsedDate = new Date(cleanBirthday);
 	if (!isNaN(parsedDate.getTime())) {
-		// Convert to UTC to prevent timezone shifts
-		const utcDate = new Date(
-			Date.UTC(
-				parsedDate.getFullYear(),
-				parsedDate.getMonth(),
-				parsedDate.getDate()
-			)
-		);
-
-		if (!validateYear(utcDate.getUTCFullYear())) {
+		// Use the parsed date as-is in local timezone
+		if (!validateYear(parsedDate.getFullYear())) {
 			throw new DateParsingError(
-				`The year ${utcDate.getUTCFullYear()} seems invalid. Please use a year between 1900 and ${new Date().getFullYear()}.`,
+				`The year ${parsedDate.getFullYear()} seems invalid. Please use a year between 1900 and ${new Date().getFullYear()}.`,
 				cleanBirthday
 			);
 		}
 
-		return utcDate.getTime();
+		return parsedDate.getTime();
 	}
 
 	throw new DateParsingError(
@@ -121,7 +113,7 @@ const parseBirthdayWithValidation = (birthday: string): number => {
 	try {
 		return parseBirthdayToUTC(cleanBirthday);
 	} catch (error) {
-		// If our dedicated parser fails, try the general parseDate as fallback but convert to UTC
+		// If our dedicated parser fails, try the general parseDate as fallback but handle errors properly
 		try {
 			const timestamp = parseDate(cleanBirthday);
 			const date = new Date(timestamp);
@@ -133,13 +125,10 @@ const parseBirthdayWithValidation = (birthday: string): number => {
 				);
 			}
 
-			// Convert to UTC to prevent timezone shifts for birthdays
-			const utcDate = new Date(
-				Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
-			);
-			return utcDate.getTime();
+			// Use the date as-is without UTC conversion for birthdays
+			return date.getTime();
 		} catch {
-			// Re-throw the original error from our dedicated parser
+			// Re-throw the original error from our dedicated parser instead of using parseDate's error
 			throw error;
 		}
 	}

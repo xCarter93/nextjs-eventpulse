@@ -269,6 +269,51 @@ export const optimizedCreateEventTool = tool({
 
 			switch (step) {
 				case "start":
+					// Check if all information is already provided for single-prompt creation
+					if (sanitizedName && sanitizedDate) {
+						// We have both name and date, we can go directly to submission
+						try {
+							const dateTimestamp = parseEventDateWithValidation(sanitizedDate);
+							const isRecurringBool =
+								isRecurring !== undefined
+									? parseRecurringResponse(isRecurring)
+									: false;
+
+							logAI(
+								LogLevel.INFO,
+								LogCategory.EVENT,
+								"single_prompt_event_creation",
+								{
+									name: sanitizedName,
+									date: sanitizedDate,
+									isRecurring: isRecurringBool,
+								}
+							);
+
+							// Go directly to submit
+							return {
+								status: "in_progress",
+								message: `Creating event "${sanitizedName}" on ${formatEventDate(dateTimestamp)}${isRecurringBool ? " (recurring annually)" : ""}...`,
+								nextStep: "submit",
+								name: sanitizedName,
+								date: dateTimestamp.toString(),
+								isRecurring: isRecurringBool,
+								sessionId: flowSessionId,
+							};
+						} catch (error) {
+							if (error instanceof EventDateParsingError) {
+								// If date parsing fails, fall back to step-by-step
+								return {
+									status: "in_progress",
+									message: `I couldn't parse the date "${sanitizedDate}". Let's create the event step by step. What's the name of the event?`,
+									nextStep: "collect-name",
+									sessionId: flowSessionId,
+								};
+							}
+							throw error;
+						}
+					}
+
 					return {
 						status: "in_progress",
 						message: "Let's create a new event. What's the name of the event?",

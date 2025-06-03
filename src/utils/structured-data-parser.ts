@@ -10,6 +10,7 @@ const toolSelectionSchema = z.object({
 			"searchRecipients",
 			"getRecipients",
 			"getUpcomingEvents",
+			"createEvent",
 			"none",
 		])
 		.describe("The tool that should be used based on the user's request"),
@@ -92,6 +93,31 @@ const getUpcomingEventsSchema = z.object({
 		),
 });
 
+// Schema for createEvent tool parameters
+const createEventSchema = z.object({
+	step: z
+		.enum([
+			"start",
+			"collect-name",
+			"collect-date",
+			"collect-recurring",
+			"confirm",
+			"submit",
+		])
+		.describe("The current step in the event creation process"),
+	name: z.string().describe("The event name (can be empty for some steps)"),
+	date: z
+		.string()
+		.describe(
+			"The event date in any format - natural language is preferred (can be empty for some steps)"
+		),
+	isRecurring: z
+		.boolean()
+		.describe(
+			"Whether the event recurs annually (default false for single-prompt creation)"
+		),
+});
+
 /**
  * Determines which tool should be used based on the user's message
  * @param userMessage The user's message
@@ -111,12 +137,14 @@ Available tools:
 2. searchRecipients - Use when the user wants to search for existing recipients/contacts with specific criteria
 3. getRecipients - Use when the user wants to know how many recipients they have, see all recipients, or get a list of all their contacts
 4. getUpcomingEvents - Use when the user wants to see upcoming events or birthdays
-5. none - Use when the user's request doesn't require any of the above tools
+5. createEvent - Use when the user wants to create a new event
+6. none - Use when the user's request doesn't require any of the above tools
 
 Guidelines:
 - Use "getRecipients" for questions like "how many recipients do I have?", "list all my contacts", "show me all my recipients"
 - Use "searchRecipients" for specific searches like "find John Smith", "contacts with gmail addresses", "birthdays in October"
 - Use "createRecipient" when they want to add a new contact
+- Use "createEvent" when they want to create a new event, add an event to their calendar, or schedule something
 
 Determine which tool should be used, if any.`,
 		});
@@ -304,6 +332,59 @@ Provide a complete structured response with all fields filled in.`,
 }
 
 /**
+ * Parses the user's message into structured data for the createEvent tool
+ * @param userMessage The user's message
+ * @param currentStep The current step in the event creation process
+ * @returns Structured data for the createEvent tool
+ */
+export async function parseCreateEventData(
+	userMessage: string,
+	currentStep: string = "start",
+	existingData: Record<string, string | boolean> = {}
+) {
+	try {
+		const { object } = await generateObject({
+			model: openai("o3-mini"),
+			schema: createEventSchema,
+			prompt: `Parse the following user message for creating an event.
+      
+User message: "${userMessage}"
+Current step: ${currentStep}
+Existing data: ${JSON.stringify(existingData)}
+
+Extract the relevant information for the createEvent tool.
+
+For single-prompt event creation (when all information is provided at once):
+- If the user provides an event name and date in one message, extract both
+- For the date, preserve the EXACT natural language expression (e.g., "this thursday", "next week", "March 18, 2025")
+- Default isRecurring to false unless the user explicitly mentions it's recurring/annual
+- If all information is present, you can go directly to the submit step
+
+Guidelines:
+- Event name: Extract the event name from the message
+- Date: Keep the exact date expression as provided by the user
+- isRecurring: Only set to true if user mentions "annual", "yearly", "recurring", or similar`,
+		});
+
+		return object;
+	} catch (error) {
+		console.error("Error parsing createEvent data:", error);
+		return {
+			step: currentStep as
+				| "start"
+				| "collect-name"
+				| "collect-date"
+				| "collect-recurring"
+				| "confirm"
+				| "submit",
+			name: existingData.name || "",
+			date: existingData.date || "",
+			isRecurring: existingData.isRecurring || false,
+		};
+	}
+}
+
+/**
  * Main function to parse a user message into structured data for the appropriate tool
  * @param userMessage The user's message
  * @returns An object containing the tool to use and the structured data for that tool
@@ -327,6 +408,9 @@ export async function parseUserMessage(userMessage: string) {
 			break;
 		case "getUpcomingEvents":
 			structuredData = await parseGetUpcomingEventsData(userMessage);
+			break;
+		case "createEvent":
+			structuredData = await parseCreateEventData(userMessage);
 			break;
 		case "none":
 		default:
