@@ -5,7 +5,13 @@ import { openai } from "@ai-sdk/openai";
 // Schema for determining which tool to use
 const toolSelectionSchema = z.object({
 	toolToUse: z
-		.enum(["createRecipient", "searchRecipients", "getUpcomingEvents", "none"])
+		.enum([
+			"createRecipient",
+			"searchRecipients",
+			"getRecipients",
+			"getUpcomingEvents",
+			"none",
+		])
 		.describe("The tool that should be used based on the user's request"),
 	reason: z
 		.string()
@@ -45,6 +51,15 @@ const searchRecipientsSchema = z.object({
 	searchType: z
 		.enum(["name", "email", "birthday", "any"])
 		.describe("The type of search to perform"),
+});
+
+// Schema for getRecipients tool parameters
+const getRecipientsSchema = z.object({
+	showDetails: z
+		.boolean()
+		.describe(
+			"Whether to show detailed information for each recipient (true) or just the count (false)"
+		),
 });
 
 // Enhanced schema for getUpcomingEvents tool parameters with more structured date range
@@ -93,9 +108,15 @@ User message: "${userMessage}"
 
 Available tools:
 1. createRecipient - Use when the user wants to create a new recipient/contact
-2. searchRecipients - Use when the user wants to search for existing recipients/contacts
-3. getUpcomingEvents - Use when the user wants to see upcoming events or birthdays
-4. none - Use when the user's request doesn't require any of the above tools
+2. searchRecipients - Use when the user wants to search for existing recipients/contacts with specific criteria
+3. getRecipients - Use when the user wants to know how many recipients they have, see all recipients, or get a list of all their contacts
+4. getUpcomingEvents - Use when the user wants to see upcoming events or birthdays
+5. none - Use when the user's request doesn't require any of the above tools
+
+Guidelines:
+- Use "getRecipients" for questions like "how many recipients do I have?", "list all my contacts", "show me all my recipients"
+- Use "searchRecipients" for specific searches like "find John Smith", "contacts with gmail addresses", "birthdays in October"
+- Use "createRecipient" when they want to add a new contact
 
 Determine which tool should be used, if any.`,
 		});
@@ -184,6 +205,44 @@ If the search type is not clear, use searchType="any".`,
 }
 
 /**
+ * Parses the user's message into structured data for the getRecipients tool
+ * @param userMessage The user's message
+ * @returns Structured data for the getRecipients tool
+ */
+export async function parseGetRecipientsData(userMessage: string) {
+	try {
+		const { object } = await generateObject({
+			model: openai("o3-mini"),
+			schema: getRecipientsSchema,
+			prompt: `Parse the following user message for getting recipients information.
+      
+User message: "${userMessage}"
+
+Determine if the user wants detailed information (showDetails=true) or just a count (showDetails=false).
+
+Use showDetails=true when the user asks to:
+- "list all my contacts"
+- "show me all my recipients"
+- "what are my contacts"
+- "display my recipients"
+
+Use showDetails=false when the user asks:
+- "how many recipients do I have?"
+- "how many contacts do I have?"
+- "what's my contact count?"
+- "do I have any recipients?"`,
+		});
+
+		return object;
+	} catch (error) {
+		console.error("Error parsing getRecipients data:", error);
+		return {
+			showDetails: false,
+		};
+	}
+}
+
+/**
  * Parses the user's message into structured data for the getUpcomingEvents tool
  * @param userMessage The user's message
  * @returns Structured data for the getUpcomingEvents tool
@@ -262,6 +321,9 @@ export async function parseUserMessage(userMessage: string) {
 			break;
 		case "searchRecipients":
 			structuredData = await parseSearchRecipientsData(userMessage);
+			break;
+		case "getRecipients":
+			structuredData = await parseGetRecipientsData(userMessage);
 			break;
 		case "getUpcomingEvents":
 			structuredData = await parseGetUpcomingEventsData(userMessage);
