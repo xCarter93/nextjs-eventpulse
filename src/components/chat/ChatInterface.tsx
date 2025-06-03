@@ -1,6 +1,14 @@
 "use client";
 
-import { Button, Input } from "@heroui/react";
+import {
+	Button,
+	Input,
+	Card,
+	CardBody,
+	Avatar,
+	Chip,
+	ScrollShadow,
+} from "@heroui/react";
 import {
 	Send,
 	Loader2,
@@ -9,6 +17,11 @@ import {
 	Users,
 	Search,
 	HelpCircle,
+	Bot,
+	User,
+	CheckCircle,
+	AlertCircle,
+	Settings,
 } from "lucide-react";
 import { useChat } from "@ai-sdk/react";
 import ReactMarkdown from "react-markdown";
@@ -332,419 +345,529 @@ export default function ChatInterface() {
 	}, [messages, finishLogged]);
 
 	return (
-		<div className="flex flex-col h-[600px] bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 rounded-xl border border-divider relative overflow-hidden">
-			{/* Gradient Border Effect */}
-			<div className="absolute inset-0 rounded-xl border border-primary/20 [background:linear-gradient(var(--background),var(--background))_padding-box,linear-gradient(to_bottom,hsl(var(--primary)),transparent)_border-box] pointer-events-none" />
-
-			{/* Header with Status Indicators - Simplified */}
-			<div className="p-2 border-b border-divider bg-background/40 flex items-center justify-between">
-				<div className="flex items-center gap-2">
-					<div className="h-6 w-6 rounded-full bg-gradient-to-br from-primary/80 to-primary/30 flex items-center justify-center shadow-sm">
-						<div className="text-[10px] font-bold text-primary-foreground">
-							P
+		<div className="flex flex-col h-[calc(100vh-8rem)] max-h-[800px] min-h-[500px] w-full max-w-4xl mx-auto">
+			<Card className="flex-1 flex flex-col shadow-xl border-0 bg-gradient-to-br from-background/95 to-background/80 backdrop-blur-md">
+				{/* Modern Header */}
+				<div className="flex items-center justify-between p-4 border-b border-divider/50 bg-background/60 backdrop-blur-sm">
+					<div className="flex items-center gap-3">
+						<Avatar
+							src=""
+							icon={<Bot className="h-5 w-5" />}
+							className="bg-gradient-to-br from-primary to-secondary"
+							size="sm"
+						/>
+						<div className="flex flex-col">
+							<h2 className="text-sm font-semibold text-foreground">Pulsy</h2>
+							<p className="text-xs text-muted-foreground">
+								{status === "submitted" && currentTool
+									? "Working..."
+									: "EventPulse Assistant"}
+							</p>
 						</div>
 					</div>
-					<span className="text-xs font-medium text-foreground">Pulsy</span>
-				</div>
 
-				<div className="flex items-center">
-					{status === "submitted" && !currentTool && (
-						<motion.span
-							className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full flex items-center gap-1"
-							initial={{ opacity: 0 }}
-							animate={{ opacity: 1 }}
-							exit={{ opacity: 0 }}
-						>
-							<Loader2 className="h-3.5 w-3.5 animate-spin" />
-							Thinking...
-						</motion.span>
-					)}
-				</div>
-			</div>
-
-			{/* Messages Container - Adjusted to take full height */}
-			<div className="flex-1 overflow-y-auto p-3 space-y-3">
-				{error && (
-					<motion.div
-						className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-500 text-sm"
-						initial={{ opacity: 0, y: 10 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ type: "spring" }}
-					>
-						<p className="font-medium">
-							{errorType || "Error"}:{" "}
-							{error.message || "Something went wrong. Please try again."}
-						</p>
-						{errorDetails && (
-							<details className="mt-2" open>
-								<summary className="cursor-pointer text-xs font-medium">
-									Error Details
-								</summary>
-								<pre className="mt-2 p-2 bg-red-500/5 rounded text-xs overflow-auto whitespace-pre-wrap">
-									{errorDetails}
-								</pre>
-							</details>
-						)}
-						<div className="mt-3 flex gap-2">
-							<Button
+					{/* Status Indicator */}
+					<div className="flex items-center gap-2">
+						{status === "submitted" && currentTool && (
+							<Chip
 								size="sm"
-								color="danger"
-								variant="light"
-								onClick={() => window.location.reload()}
-							>
-								Reload Page
-							</Button>
-							<Button
-								size="sm"
+								variant="flat"
 								color="primary"
-								variant="light"
-								onClick={() => {
-									setErrorDetails(null);
-									setErrorType(null);
-								}}
+								startContent={<Loader2 className="h-3 w-3 animate-spin" />}
 							>
-								Dismiss Error
-							</Button>
-						</div>
-					</motion.div>
-				)}
-
-				{messages.length === 0 ? (
-					<motion.div
-						className="flex flex-col items-center justify-center h-full space-y-4 text-muted-foreground px-2"
-						initial={{ opacity: 0 }}
-						animate={{ opacity: 1 }}
-						transition={{ duration: 0.5 }}
-					>
-						{/* Pulsy Avatar */}
-						<motion.div
-							className="relative"
-							initial={{ scale: 0.8, rotate: -10 }}
-							animate={{ scale: 1, rotate: 0 }}
-							transition={{
-								type: "spring",
-								stiffness: 260,
-								damping: 20,
-								delay: 0.2,
-							}}
+								Processing
+							</Chip>
+						)}
+						{error && (
+							<Chip
+								size="sm"
+								variant="flat"
+								color="danger"
+								startContent={<AlertCircle className="h-3 w-3" />}
+							>
+								Error
+							</Chip>
+						)}
+						<Button
+							isIconOnly
+							variant="light"
+							size="sm"
+							className="text-muted-foreground"
 						>
-							<div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/80 to-primary/30 flex items-center justify-center shadow-lg">
-								<div className="w-16 h-16 rounded-full bg-background flex items-center justify-center">
-									<div className="text-2xl font-bold text-primary">P</div>
-								</div>
-							</div>
-							<motion.div
-								className="absolute -top-2 -right-2"
-								initial={{ scale: 0 }}
-								animate={{ scale: 1 }}
-								transition={{ delay: 0.8 }}
-							>
-								<Sparkles className="h-5 w-5 text-yellow-400" />
-							</motion.div>
-							<motion.div
-								className="absolute -bottom-1 -left-1"
-								initial={{ scale: 0 }}
-								animate={{ scale: 1 }}
-								transition={{ delay: 1.0 }}
-							>
-								<Calendar className="h-4 w-4 text-primary" />
-							</motion.div>
-						</motion.div>
+							<Settings className="h-4 w-4" />
+						</Button>
+					</div>
+				</div>
 
-						<motion.div
-							className="text-center space-y-2"
-							initial={{ y: 20, opacity: 0 }}
-							animate={{ y: 0, opacity: 1 }}
-							transition={{ delay: 0.4 }}
-						>
-							<motion.h2
-								className="text-lg font-bold text-foreground"
-								initial={{ y: 10, opacity: 0 }}
-								animate={{ y: 0, opacity: 1 }}
-								transition={{ delay: 0.5 }}
-							>
-								Hi, I&apos;m Pulsy!
-							</motion.h2>
-							<motion.p
-								className="text-xs max-w-sm"
-								initial={{ y: 10, opacity: 0 }}
-								animate={{ y: 0, opacity: 1 }}
-								transition={{ delay: 0.6 }}
-							>
-								Your EventPulse assistant, ready to help you manage your events
-								and contacts with ease. Just ask me anything!
-							</motion.p>
-						</motion.div>
-
-						{/* Capabilities Overview */}
-						<motion.div
-							className="w-full max-w-sm space-y-3 px-2"
-							initial={{ y: 20, opacity: 0 }}
-							animate={{ y: 0, opacity: 1 }}
-							transition={{ delay: 0.7 }}
-						>
-							<p className="text-xs font-medium text-center text-primary">
-								My Capabilities
-							</p>
-							<div className="grid grid-cols-2 gap-2">
-								{capabilities.map((capability, index) => (
-									<motion.div
-										key={index}
-										className="bg-muted/50 rounded-lg p-2 flex flex-col gap-1 border border-primary/10 hover:border-primary/30 transition-colors"
-										initial={{ opacity: 0, y: 10 }}
-										animate={{ opacity: 1, y: 0 }}
-										transition={{ delay: 0.8 + index * 0.1 }}
-										whileHover={{ y: -2 }}
-									>
-										<div className="flex items-center gap-1.5">
-											<div className="p-1 rounded-md bg-primary/10 text-primary">
-												{capability.icon}
-											</div>
-											<h4 className="font-medium text-xs">
-												{capability.title}
-											</h4>
-										</div>
-										<p className="text-[10px] text-muted-foreground leading-tight">
-											{capability.description}
-										</p>
-									</motion.div>
-								))}
-							</div>
-							<motion.p
-								className="text-[10px] text-center text-muted-foreground mt-2"
-								initial={{ opacity: 0 }}
-								animate={{ opacity: 1 }}
-								transition={{ delay: 1.3 }}
-							>
-								Just type your question or request below to get started!
-							</motion.p>
-						</motion.div>
-					</motion.div>
-				) : (
-					<>
-						<AnimatePresence>
-							{messages.map((message) => (
+				{/* Messages Container with ScrollShadow */}
+				<CardBody className="flex-1 p-0 overflow-hidden">
+					<ScrollShadow className="flex-1 h-full" hideScrollBar size={20}>
+						<div className="p-4 space-y-4 min-h-full">
+							{/* Error Display */}
+							{error && (
 								<motion.div
-									key={message.id}
-									className={`flex items-start gap-2 ${
-										message.role === "user" ? "flex-row-reverse" : "flex-row"
-									}`}
-									initial={{ opacity: 0, y: 10 }}
-									animate={{ opacity: 1, y: 0 }}
-									transition={{ type: "spring", stiffness: 200, damping: 20 }}
+									initial={{ opacity: 0, scale: 0.95 }}
+									animate={{ opacity: 1, scale: 1 }}
+									className="mx-4"
 								>
-									{/* Avatar for messages */}
-									<div
-										className={`flex-shrink-0 ${message.role === "user" ? "ml-1" : "mr-1"}`}
-									>
-										{message.role === "user" ? (
-											<div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center text-[10px] font-medium text-primary-foreground">
-												You
-											</div>
-										) : (
-											<div className="h-6 w-6 rounded-full bg-gradient-to-br from-primary/80 to-primary/30 flex items-center justify-center shadow-sm">
-												<div className="text-[10px] font-bold text-primary-foreground">
-													P
-												</div>
-											</div>
-										)}
-									</div>
-
-									<motion.div
-										className={`rounded-lg px-3 py-2 max-w-[80%] ${
-											message.role === "user"
-												? "bg-primary text-primary-foreground"
-												: "bg-muted"
-										}`}
-										initial={{ scale: 0.95 }}
-										animate={{ scale: 1 }}
-										transition={{ type: "spring", stiffness: 300, damping: 20 }}
-									>
-										{message.role === "user" ? (
-											<p className="whitespace-pre-wrap text-sm">
-												{message.content}
-											</p>
-										) : (
-											<div className="prose prose-sm dark:prose-invert prose-p:leading-relaxed prose-pre:p-0 max-w-full overflow-x-auto">
-												<ReactMarkdown>{message.content}</ReactMarkdown>
-											</div>
-										)}
-									</motion.div>
-								</motion.div>
-							))}
-
-							{/* Display tool steps before the last assistant message */}
-							<AnimatePresence key="tool-history-presence">
-								{messages.length > 0 &&
-									toolHistory.length > 0 &&
-									!hasShownToolHistory && (
-										<motion.div
-											key="tool-history"
-											className="flex items-start gap-2 mt-2"
-											initial={{ opacity: 0, y: 10 }}
-											animate={{ opacity: 1, y: 0 }}
-											exit={{ opacity: 0, y: -10 }}
-											transition={{
-												type: "spring",
-												stiffness: 200,
-												damping: 20,
-											}}
-										>
-											<div className="flex-shrink-0 mr-1">
-												<div className="h-6 w-6 rounded-full bg-gradient-to-br from-primary/80 to-primary/30 flex items-center justify-center shadow-sm">
-													<div className="text-[10px] font-bold text-primary-foreground">
-														P
+									<Card className="border-danger/20 bg-danger/5">
+										<CardBody className="p-4">
+											<div className="flex items-start gap-3">
+												<AlertCircle className="h-5 w-5 text-danger flex-shrink-0 mt-0.5" />
+												<div className="flex-1">
+													<p className="font-medium text-danger text-sm">
+														{errorType || "Error"}
+													</p>
+													<p className="text-sm text-danger/80 mt-1">
+														{error.message ||
+															"Something went wrong. Please try again."}
+													</p>
+													{errorDetails && (
+														<details className="mt-3">
+															<summary className="cursor-pointer text-xs font-medium text-danger/70 hover:text-danger">
+																Show Details
+															</summary>
+															<Card className="mt-2 bg-danger/5 border border-danger/10">
+																<CardBody className="p-3">
+																	<pre className="text-xs text-danger/80 whitespace-pre-wrap overflow-auto">
+																		{errorDetails}
+																	</pre>
+																</CardBody>
+															</Card>
+														</details>
+													)}
+													<div className="flex gap-2 mt-3">
+														<Button
+															size="sm"
+															color="danger"
+															variant="flat"
+															onClick={() => window.location.reload()}
+														>
+															Reload
+														</Button>
+														<Button
+															size="sm"
+															variant="light"
+															onClick={() => {
+																setErrorDetails(null);
+																setErrorType(null);
+															}}
+														>
+															Dismiss
+														</Button>
 													</div>
 												</div>
 											</div>
+										</CardBody>
+									</Card>
+								</motion.div>
+							)}
 
-											<motion.div
-												className="rounded-lg px-3 py-2 bg-muted/50 border border-primary/10 w-full max-w-[80%]"
-												initial={{ scale: 0.95 }}
-												animate={{ scale: 1 }}
-												transition={{
-													type: "spring",
-													stiffness: 300,
-													damping: 20,
-												}}
-											>
-												<p className="text-xs font-medium text-primary mb-2">
-													{currentTool
-														? "Working on your request..."
-														: "Steps completed:"}
-												</p>
-												<div className="space-y-2">
-													{/* Only show the most recent version of each tool and filter out duplicates */}
-													{toolHistory
-														// First filter out any duplicate tool calls by name
-														.reduce((unique, current) => {
-															// Find existing tool with the same name
-															const existingTool = unique.find(
-																(tool) => tool.name === current.name
-															);
+							{/* Welcome Screen */}
+							{messages.length === 0 ? (
+								<motion.div
+									className="flex flex-col items-center justify-center h-full space-y-6 px-4 py-8"
+									initial={{ opacity: 0, y: 20 }}
+									animate={{ opacity: 1, y: 0 }}
+									transition={{ duration: 0.6 }}
+								>
+									{/* Hero Avatar */}
+									<motion.div
+										className="relative"
+										initial={{ scale: 0.8 }}
+										animate={{ scale: 1 }}
+										transition={{
+											type: "spring",
+											stiffness: 200,
+											damping: 15,
+											delay: 0.2,
+										}}
+									>
+										<Avatar
+											src=""
+											icon={<Bot className="h-12 w-12" />}
+											className="w-24 h-24 bg-gradient-to-br from-primary via-secondary to-primary shadow-2xl"
+										/>
+										<motion.div
+											className="absolute -top-2 -right-2"
+											initial={{ scale: 0, rotate: -180 }}
+											animate={{ scale: 1, rotate: 0 }}
+											transition={{ delay: 0.8, type: "spring" }}
+										>
+											<div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-400 rounded-full flex items-center justify-center shadow-lg">
+												<Sparkles className="h-4 w-4 text-white" />
+											</div>
+										</motion.div>
+									</motion.div>
 
-															// If no existing tool with this name or the current one is newer, use the current
-															if (
-																!existingTool ||
-																existingTool.startTime < current.startTime
-															) {
-																// Remove existing tool if present
-																if (existingTool) {
-																	unique = unique.filter(
-																		(tool) => tool.name !== current.name
-																	);
-																}
-																unique.push(current);
-															}
-															return unique;
-														}, [] as ToolCallInfo[])
-														// Then sort by start time to ensure consistent order
-														.sort((a, b) => a.startTime - b.startTime)
-														.map((tool, index) => (
-															<motion.div
-																key={tool.id}
-																className={`flex items-center gap-2 p-2 rounded-md ${
-																	tool.status === "completed"
-																		? "bg-green-500/10 border border-green-500/20"
-																		: tool.status === "error"
-																			? "bg-red-500/10 border border-red-500/20"
-																			: "bg-primary/5 border border-primary/10"
-																}`}
-																initial={{ opacity: 0, x: -5 }}
-																animate={{ opacity: 1, x: 0 }}
-																transition={{ delay: index * 0.1 }}
-															>
-																{tool.status === "completed" ? (
-																	<div className="h-5 w-5 rounded-full bg-green-500/20 flex items-center justify-center">
-																		<svg
-																			xmlns="http://www.w3.org/2000/svg"
-																			className="h-3 w-3 text-green-500"
-																			viewBox="0 0 20 20"
-																			fill="currentColor"
-																		>
-																			<path
-																				fillRule="evenodd"
-																				d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-																				clipRule="evenodd"
-																			/>
-																		</svg>
-																	</div>
-																) : tool.status === "error" ? (
-																	<div className="h-5 w-5 rounded-full bg-red-500/20 flex items-center justify-center">
-																		<svg
-																			xmlns="http://www.w3.org/2000/svg"
-																			className="h-3 w-3 text-red-500"
-																			viewBox="0 0 20 20"
-																			fill="currentColor"
-																		>
-																			<path
-																				fillRule="evenodd"
-																				d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-																				clipRule="evenodd"
-																			/>
-																		</svg>
-																	</div>
-																) : (
-																	<Loader2 className="h-4 w-4 text-primary animate-spin" />
-																)}
+									{/* Welcome Text */}
+									<motion.div
+										className="text-center space-y-3 max-w-md"
+										initial={{ y: 20, opacity: 0 }}
+										animate={{ y: 0, opacity: 1 }}
+										transition={{ delay: 0.4 }}
+									>
+										<h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+											Welcome to Pulsy!
+										</h1>
+										<p className="text-sm text-muted-foreground leading-relaxed">
+											Your intelligent EventPulse assistant is here to help you
+											manage events, contacts, and discover what&apos;s
+											happening in your world.
+										</p>
+									</motion.div>
+
+									{/* Capabilities Grid */}
+									<motion.div
+										className="w-full max-w-lg"
+										initial={{ y: 20, opacity: 0 }}
+										animate={{ y: 0, opacity: 1 }}
+										transition={{ delay: 0.6 }}
+									>
+										<p className="text-sm font-medium text-center text-primary mb-4">
+											What I can help you with
+										</p>
+										<div className="grid grid-cols-2 gap-3">
+											{capabilities.map((capability, index) => (
+												<motion.div
+													key={index}
+													initial={{ opacity: 0, y: 20 }}
+													animate={{ opacity: 1, y: 0 }}
+													transition={{ delay: 0.7 + index * 0.1 }}
+													whileHover={{
+														y: -4,
+														transition: { type: "spring", stiffness: 400 },
+													}}
+												>
+													<Card
+														className="bg-gradient-to-br from-primary/5 to-secondary/5 border-primary/10 hover:border-primary/30 transition-all duration-200 cursor-pointer group"
+														isPressable
+													>
+														<CardBody className="p-4">
+															<div className="flex items-start gap-3">
+																<div className="p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+																	{capability.icon}
+																</div>
 																<div className="flex-1">
-																	<p className="text-xs font-medium">
-																		{tool.name}
-																		{/* Show parameters for all tools in a cleaner format */}
-																		{Object.keys(tool.parameters || {}).length >
-																			0 && (
-																			<span className="text-xs font-normal text-muted-foreground ml-1">
-																				{formatToolParameters(tool.parameters)}
-																			</span>
-																		)}
+																	<h3 className="font-semibold text-sm text-foreground">
+																		{capability.title}
+																	</h3>
+																	<p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+																		{capability.description}
 																	</p>
 																</div>
-															</motion.div>
-														))}
-												</div>
-											</motion.div>
-										</motion.div>
-									)}
-							</AnimatePresence>
-							{/* Invisible element to scroll to */}
-							<div ref={messagesEndRef} />
-						</AnimatePresence>
-					</>
-				)}
-			</div>
+															</div>
+														</CardBody>
+													</Card>
+												</motion.div>
+											))}
+										</div>
+									</motion.div>
 
-			{/* Input Form */}
-			<div className="border-t border-divider bg-background/40 p-3">
-				<motion.form
-					onSubmit={handleFormSubmit}
-					className="flex gap-2"
-					initial={{ y: 20, opacity: 0 }}
-					animate={{ y: 0, opacity: 1 }}
-					transition={{ delay: 0.2 }}
-				>
-					<Input
-						value={input}
-						onChange={handleInputChange}
-						placeholder="Ask Pulsy something..."
-						className="flex-1 bg-background/60"
-						size="sm"
-						disabled={status === "submitted"}
-						endContent={
-							<Button
-								type="submit"
-								isIconOnly
-								color="primary"
-								size="sm"
-								variant="light"
-								isDisabled={!input.trim() || status === "submitted"}
-								className="px-0"
-							>
-								<Send className="h-3.5 w-3.5" />
-							</Button>
-						}
-					/>
-				</motion.form>
-			</div>
+									{/* Getting Started */}
+									<motion.div
+										className="text-center"
+										initial={{ opacity: 0 }}
+										animate={{ opacity: 1 }}
+										transition={{ delay: 1.2 }}
+									>
+										<Chip
+											variant="flat"
+											color="primary"
+											size="sm"
+											className="text-xs"
+										>
+											💡 Try asking: &quot;What events do I have coming
+											up?&quot;
+										</Chip>
+									</motion.div>
+								</motion.div>
+							) : (
+								<>
+									{/* Messages */}
+									<div className="space-y-4">
+										<AnimatePresence>
+											{messages.map((message) => (
+												<motion.div
+													key={message.id}
+													className={`flex gap-3 ${
+														message.role === "user"
+															? "flex-row-reverse"
+															: "flex-row"
+													}`}
+													initial={{ opacity: 0, y: 20, scale: 0.95 }}
+													animate={{ opacity: 1, y: 0, scale: 1 }}
+													transition={{
+														type: "spring",
+														stiffness: 300,
+														damping: 25,
+													}}
+												>
+													{/* Avatar */}
+													<Avatar
+														src=""
+														icon={
+															message.role === "user" ? (
+																<User className="h-4 w-4" />
+															) : (
+																<Bot className="h-4 w-4" />
+															)
+														}
+														className={
+															message.role === "user"
+																? "bg-primary"
+																: "bg-gradient-to-br from-secondary to-primary"
+														}
+														size="sm"
+													/>
+
+													{/* Message Bubble */}
+													<div
+														className={`flex-1 max-w-[75%] ${
+															message.role === "user"
+																? "text-right"
+																: "text-left"
+														}`}
+													>
+														<Card
+															className={`inline-block ${
+																message.role === "user"
+																	? "bg-primary text-primary-foreground ml-auto"
+																	: "bg-default-100 border-divider/50"
+															}`}
+														>
+															<CardBody className="px-4 py-3">
+																{message.role === "user" ? (
+																	<p className="text-sm whitespace-pre-wrap">
+																		{message.content}
+																	</p>
+																) : (
+																	<div className="prose prose-sm dark:prose-invert max-w-none">
+																		<ReactMarkdown>
+																			{message.content}
+																		</ReactMarkdown>
+																	</div>
+																)}
+															</CardBody>
+														</Card>
+
+														{/* Timestamp */}
+														<p
+															className={`text-xs text-muted-foreground mt-1 ${
+																message.role === "user"
+																	? "text-right"
+																	: "text-left"
+															}`}
+														>
+															{new Date().toLocaleTimeString([], {
+																hour: "2-digit",
+																minute: "2-digit",
+															})}
+														</p>
+													</div>
+												</motion.div>
+											))}
+
+											{/* Tool History */}
+											{messages.length > 0 &&
+												toolHistory.length > 0 &&
+												!hasShownToolHistory && (
+													<motion.div
+														key="tool-history"
+														className="flex gap-3"
+														initial={{ opacity: 0, y: 20 }}
+														animate={{ opacity: 1, y: 0 }}
+														exit={{ opacity: 0, y: -10 }}
+													>
+														<Avatar
+															src=""
+															icon={<Bot className="h-4 w-4" />}
+															className="bg-gradient-to-br from-secondary to-primary"
+															size="sm"
+														/>
+
+														<div className="flex-1 max-w-[75%]">
+															<Card className="bg-default-50 border-primary/20">
+																<CardBody className="p-4">
+																	<div className="flex items-center gap-2 mb-3">
+																		<Loader2 className="h-4 w-4 text-primary animate-spin" />
+																		<p className="text-sm font-medium text-primary">
+																			{currentTool
+																				? "Processing your request..."
+																				: "Task completed"}
+																		</p>
+																	</div>
+
+																	<div className="space-y-2">
+																		{toolHistory
+																			.reduce((unique, current) => {
+																				const existingTool = unique.find(
+																					(tool) => tool.name === current.name
+																				);
+																				if (
+																					!existingTool ||
+																					existingTool.startTime <
+																						current.startTime
+																				) {
+																					if (existingTool) {
+																						unique = unique.filter(
+																							(tool) =>
+																								tool.name !== current.name
+																						);
+																					}
+																					unique.push(current);
+																				}
+																				return unique;
+																			}, [] as ToolCallInfo[])
+																			.sort((a, b) => a.startTime - b.startTime)
+																			.map((tool, index) => (
+																				<motion.div
+																					key={tool.id}
+																					className="flex items-center gap-3 p-2 rounded-lg bg-background/50"
+																					initial={{ opacity: 0, x: -10 }}
+																					animate={{ opacity: 1, x: 0 }}
+																					transition={{ delay: index * 0.1 }}
+																				>
+																					{tool.status === "completed" ? (
+																						<CheckCircle className="h-4 w-4 text-success" />
+																					) : tool.status === "error" ? (
+																						<AlertCircle className="h-4 w-4 text-danger" />
+																					) : (
+																						<Loader2 className="h-4 w-4 text-primary animate-spin" />
+																					)}
+
+																					<div className="flex-1">
+																						<p className="text-xs font-medium">
+																							{tool.name}
+																						</p>
+																						{Object.keys(tool.parameters || {})
+																							.length > 0 && (
+																							<p className="text-xs text-muted-foreground">
+																								{formatToolParameters(
+																									tool.parameters
+																								)}
+																							</p>
+																						)}
+																					</div>
+
+																					<Chip
+																						size="sm"
+																						variant="flat"
+																						color={
+																							tool.status === "completed"
+																								? "success"
+																								: tool.status === "error"
+																									? "danger"
+																									: "primary"
+																						}
+																					>
+																						{tool.status}
+																					</Chip>
+																				</motion.div>
+																			))}
+																	</div>
+																</CardBody>
+															</Card>
+														</div>
+													</motion.div>
+												)}
+										</AnimatePresence>
+									</div>
+									<div ref={messagesEndRef} />
+								</>
+							)}
+						</div>
+					</ScrollShadow>
+				</CardBody>
+
+				{/* Modern Input Section */}
+				<div className="border-t border-divider/50 bg-background/60 backdrop-blur-sm p-4">
+					<motion.form
+						onSubmit={handleFormSubmit}
+						className="flex gap-3 items-end"
+						initial={{ y: 20, opacity: 0 }}
+						animate={{ y: 0, opacity: 1 }}
+						transition={{ delay: 0.3 }}
+					>
+						<div className="flex-1">
+							<Input
+								value={input}
+								onChange={handleInputChange}
+								placeholder="Type your message..."
+								className="bg-default-100"
+								variant="flat"
+								size="lg"
+								disabled={status === "submitted"}
+								classNames={{
+									input: "text-sm",
+									inputWrapper:
+										"border-divider/50 hover:border-primary/50 focus-within:!border-primary",
+								}}
+							/>
+						</div>
+
+						<Button
+							type="submit"
+							color="primary"
+							isIconOnly
+							size="lg"
+							isDisabled={!input.trim() || status === "submitted"}
+							className="h-14 w-14 rounded-xl shadow-lg"
+							isLoading={status === "submitted"}
+						>
+							{status === "submitted" ? (
+								<Loader2 className="h-5 w-5 animate-spin" />
+							) : (
+								<Send className="h-5 w-5" />
+							)}
+						</Button>
+					</motion.form>
+
+					{/* Quick Actions */}
+					<div className="flex gap-2 mt-3 flex-wrap">
+						{messages.length === 0 && (
+							<>
+								<Chip
+									size="sm"
+									variant="flat"
+									className="cursor-pointer hover:bg-primary/10 transition-colors"
+									onClick={() => {
+										handleInputChange({
+											target: { value: "What events do I have coming up?" },
+										} as React.ChangeEvent<HTMLInputElement>);
+									}}
+								>
+									📅 Upcoming events
+								</Chip>
+								<Chip
+									size="sm"
+									variant="flat"
+									className="cursor-pointer hover:bg-primary/10 transition-colors"
+									onClick={() => {
+										handleInputChange({
+											target: { value: "Show me my contacts" },
+										} as React.ChangeEvent<HTMLInputElement>);
+									}}
+								>
+									👥 My contacts
+								</Chip>
+								<Chip
+									size="sm"
+									variant="flat"
+									className="cursor-pointer hover:bg-primary/10 transition-colors"
+									onClick={() => {
+										handleInputChange({
+											target: { value: "Help me create an event" },
+										} as React.ChangeEvent<HTMLInputElement>);
+									}}
+								>
+									✨ Create event
+								</Chip>
+							</>
+						)}
+					</div>
+				</div>
+			</Card>
 		</div>
 	);
 }

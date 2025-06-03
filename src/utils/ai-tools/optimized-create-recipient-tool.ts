@@ -53,51 +53,95 @@ const validateYear = (year: number): boolean => {
 	return year >= 1900 && year <= currentYear;
 };
 
-const parseBirthdayWithValidation = (birthday: string): number => {
+// Dedicated birthday parsing function that ensures UTC dates to prevent timezone shifts
+const parseBirthdayToUTC = (birthday: string): number => {
 	const cleanBirthday = sanitizeInput(birthday);
 
-	try {
-		// First try parseDate utility
-		const timestamp = parseDate(cleanBirthday);
-		const date = new Date(timestamp);
+	// Try MM/DD/YYYY format first (most common for birthdays)
+	const mmddyyyy = cleanBirthday.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+	if (mmddyyyy) {
+		const [, month, day, year] = mmddyyyy;
+		const monthNum = parseInt(month) - 1; // 0-based months
+		const dayNum = parseInt(day);
+		const yearNum = parseInt(year);
 
-		if (!validateYear(date.getFullYear())) {
+		// Use Date.UTC to create date in UTC timezone to avoid local timezone shifts
+		const date = new Date(Date.UTC(yearNum, monthNum, dayNum));
+
+		// Validate the date components using UTC methods
+		if (
+			date.getUTCMonth() !== monthNum ||
+			date.getUTCDate() !== dayNum ||
+			date.getUTCFullYear() !== yearNum
+		) {
+			throw new DateParsingError("Invalid date values", cleanBirthday);
+		}
+
+		if (!validateYear(yearNum)) {
 			throw new DateParsingError(
-				`The year ${date.getFullYear()} seems invalid. Please use a year between 1900 and ${new Date().getFullYear()}.`,
+				`The year ${yearNum} seems invalid. Please use a year between 1900 and ${new Date().getFullYear()}.`,
 				cleanBirthday
 			);
 		}
 
-		return timestamp;
-	} catch {
-		// Try manual parsing for common formats
-		const mmddyyyy = cleanBirthday.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-		if (mmddyyyy) {
-			const [, month, day, year] = mmddyyyy;
-			const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+		return date.getTime();
+	}
 
-			if (
-				date.getMonth() !== parseInt(month) - 1 ||
-				date.getDate() !== parseInt(day) ||
-				date.getFullYear() !== parseInt(year)
-			) {
-				throw new DateParsingError("Invalid date values", cleanBirthday);
-			}
+	// Try to parse natural language dates (like "April 20, 1969")
+	const parsedDate = new Date(cleanBirthday);
+	if (!isNaN(parsedDate.getTime())) {
+		// Convert to UTC to prevent timezone shifts
+		const utcDate = new Date(
+			Date.UTC(
+				parsedDate.getFullYear(),
+				parsedDate.getMonth(),
+				parsedDate.getDate()
+			)
+		);
 
-			if (!validateYear(parseInt(year))) {
+		if (!validateYear(utcDate.getUTCFullYear())) {
+			throw new DateParsingError(
+				`The year ${utcDate.getUTCFullYear()} seems invalid. Please use a year between 1900 and ${new Date().getFullYear()}.`,
+				cleanBirthday
+			);
+		}
+
+		return utcDate.getTime();
+	}
+
+	throw new DateParsingError(
+		"Could not parse date. Please use MM/DD/YYYY format or natural language like 'April 20, 1969'",
+		cleanBirthday
+	);
+};
+
+const parseBirthdayWithValidation = (birthday: string): number => {
+	const cleanBirthday = sanitizeInput(birthday);
+
+	try {
+		return parseBirthdayToUTC(cleanBirthday);
+	} catch (error) {
+		// If our dedicated parser fails, try the general parseDate as fallback but convert to UTC
+		try {
+			const timestamp = parseDate(cleanBirthday);
+			const date = new Date(timestamp);
+
+			if (!validateYear(date.getFullYear())) {
 				throw new DateParsingError(
-					`The year ${year} seems invalid. Please use a year between 1900 and ${new Date().getFullYear()}.`,
+					`The year ${date.getFullYear()} seems invalid. Please use a year between 1900 and ${new Date().getFullYear()}.`,
 					cleanBirthday
 				);
 			}
 
-			return date.getTime();
+			// Convert to UTC to prevent timezone shifts for birthdays
+			const utcDate = new Date(
+				Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
+			);
+			return utcDate.getTime();
+		} catch {
+			// Re-throw the original error from our dedicated parser
+			throw error;
 		}
-
-		throw new DateParsingError(
-			"Could not parse date. Please use MM/DD/YYYY format or natural language like 'April 20, 1969'",
-			cleanBirthday
-		);
 	}
 };
 
