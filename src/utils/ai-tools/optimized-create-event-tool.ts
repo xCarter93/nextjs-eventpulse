@@ -472,10 +472,26 @@ export const optimizedCreateEventTool = tool({
 								{
 									timestamp: dateTimestamp,
 									date: new Date(dateTimestamp).toISOString(),
+									localDate: new Date(dateTimestamp).toLocaleDateString(),
+									utcDate: new Date(dateTimestamp).toUTCString(),
 								}
 							);
 						} else {
 							dateTimestamp = parseEventDateWithValidation(sanitizedDate);
+							logAI(
+								LogLevel.DEBUG,
+								LogCategory.DATE_PARSING,
+								"parsed_event_date",
+								{
+									input: sanitizedDate,
+									timestamp: dateTimestamp,
+									date: new Date(dateTimestamp).toISOString(),
+									localDate: new Date(dateTimestamp).toLocaleDateString(),
+									utcDate: new Date(dateTimestamp).toUTCString(),
+									dayOfWeek: new Date(dateTimestamp).getDay(),
+									expectedThursdayIndex: 4,
+								}
+							);
 						}
 
 						// Create the event
@@ -483,6 +499,15 @@ export const optimizedCreateEventTool = tool({
 							name: sanitizedName,
 							date: dateTimestamp,
 							isRecurring,
+							formattedDate: formatEventDate(dateTimestamp),
+							dateBreakdown: {
+								timestamp: dateTimestamp,
+								isoString: new Date(dateTimestamp).toISOString(),
+								localDateString: new Date(dateTimestamp).toLocaleDateString(),
+								utcString: new Date(dateTimestamp).toUTCString(),
+								dayOfWeek: new Date(dateTimestamp).getDay(),
+								timezoneOffset: new Date(dateTimestamp).getTimezoneOffset(),
+							},
 						});
 
 						const result = await createEvent(convex, {
