@@ -6,7 +6,7 @@ import { optimizedCreateRecipientTool } from "@/utils/ai-tools/optimized-create-
 import { optimizedSearchRecipientsTool } from "@/utils/ai-tools/optimized-search-recipients-tool";
 import { getRecipientsTool } from "@/utils/ai-tools/get-recipients-tool";
 import { getUpcomingEventsTool } from "@/utils/ai-tools/get-upcoming-events-tool";
-import { createEventTool } from "@/utils/ai-tools/create-event-tool";
+import { optimizedCreateEventTool } from "@/utils/ai-tools/optimized-create-event-tool";
 import { activeToolFlows } from "@/utils/ai-tools/state";
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
@@ -51,7 +51,7 @@ export async function POST(req: Request) {
 				searchRecipients: optimizedSearchRecipientsTool,
 				getRecipients: getRecipientsTool,
 				getUpcomingEvents: getUpcomingEventsTool,
-				createEvent: createEventTool,
+				createEvent: optimizedCreateEventTool,
 			};
 
 			// Log the tools for debugging
