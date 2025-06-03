@@ -4,6 +4,7 @@ import { type Message as AIMessage } from "ai";
 import { createSystemPrompt } from "@/utils/ai-context";
 import { optimizedCreateRecipientTool } from "@/utils/ai-tools/optimized-create-recipient-tool";
 import { optimizedSearchRecipientsTool } from "@/utils/ai-tools/optimized-search-recipients-tool";
+import { getRecipientsTool } from "@/utils/ai-tools/get-recipients-tool";
 import { getUpcomingEventsTool } from "@/utils/ai-tools/get-upcoming-events-tool";
 import { createEventTool } from "@/utils/ai-tools/create-event-tool";
 import { activeToolFlows } from "@/utils/ai-tools/state";
@@ -48,6 +49,7 @@ export async function POST(req: Request) {
 			const tools = {
 				createRecipient: optimizedCreateRecipientTool,
 				searchRecipients: optimizedSearchRecipientsTool,
+				getRecipients: getRecipientsTool,
 				getUpcomingEvents: getUpcomingEventsTool,
 				createEvent: createEventTool,
 			};
@@ -60,6 +62,7 @@ export async function POST(req: Request) {
 					{
 						createRecipient: tools.createRecipient.description,
 						searchRecipients: tools.searchRecipients.description,
+						getRecipients: tools.getRecipients.description,
 						getUpcomingEvents: tools.getUpcomingEvents.description,
 						createEvent: tools.createEvent.description,
 					},
