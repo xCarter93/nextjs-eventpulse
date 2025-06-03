@@ -276,7 +276,7 @@ export async function getUpcomingEvents(
 		// Default to current date if no start date is provided
 		if (!dateParams.startDate) {
 			const now = new Date();
-			now.setHours(0, 0, 0, 0);
+			now.setHours(12, 0, 0, 0);
 			startTimestamp = now.getTime();
 		} else {
 			startTimestamp = parseDate(dateParams.startDate);
@@ -450,7 +450,7 @@ export function parseDate(date: Date | number | string): number {
 		// Try to parse relative dates
 		const lowerDate = date.toLowerCase();
 		const now = new Date();
-		now.setHours(0, 0, 0, 0);
+		now.setHours(12, 0, 0, 0); // Set to noon to avoid timezone shift issues
 
 		// Handle "today", "tomorrow", "yesterday"
 		if (lowerDate === "today") {
@@ -460,12 +460,14 @@ export function parseDate(date: Date | number | string): number {
 		if (lowerDate === "tomorrow") {
 			const tomorrow = new Date(now);
 			tomorrow.setDate(tomorrow.getDate() + 1);
+			tomorrow.setHours(12, 0, 0, 0);
 			console.log(`Parsed "tomorrow" as ${tomorrow.toISOString()}`);
 			return tomorrow.getTime();
 		}
 		if (lowerDate === "yesterday") {
 			const yesterday = new Date(now);
 			yesterday.setDate(yesterday.getDate() - 1);
+			yesterday.setHours(12, 0, 0, 0);
 			console.log(`Parsed "yesterday" as ${yesterday.toISOString()}`);
 			return yesterday.getTime();
 		}
@@ -496,6 +498,8 @@ export function parseDate(date: Date | number | string): number {
 
 			const targetDate = new Date(now);
 			targetDate.setDate(targetDate.getDate() + daysUntil);
+			// Set time to noon to avoid timezone shift issues
+			targetDate.setHours(12, 0, 0, 0);
 			console.log(
 				`Parsed "this ${targetDayName}" as ${targetDate.toISOString()}`
 			);
@@ -528,6 +532,8 @@ export function parseDate(date: Date | number | string): number {
 
 			const targetDate = new Date(now);
 			targetDate.setDate(targetDate.getDate() + daysUntil);
+			// Set time to noon to avoid timezone shift issues
+			targetDate.setHours(12, 0, 0, 0);
 			console.log(
 				`Parsed "next ${targetDayName}" as ${targetDate.toISOString()}`
 			);
@@ -538,18 +544,21 @@ export function parseDate(date: Date | number | string): number {
 		if (lowerDate === "next week") {
 			const nextWeek = new Date(now);
 			nextWeek.setDate(nextWeek.getDate() + 7);
+			nextWeek.setHours(12, 0, 0, 0);
 			console.log(`Parsed "next week" as ${nextWeek.toISOString()}`);
 			return nextWeek.getTime();
 		}
 		if (lowerDate === "next month") {
 			const nextMonth = new Date(now);
 			nextMonth.setMonth(nextMonth.getMonth() + 1);
+			nextMonth.setHours(12, 0, 0, 0);
 			console.log(`Parsed "next month" as ${nextMonth.toISOString()}`);
 			return nextMonth.getTime();
 		}
 		if (lowerDate === "next year") {
 			const nextYear = new Date(now);
 			nextYear.setFullYear(nextYear.getFullYear() + 1);
+			nextYear.setHours(12, 0, 0, 0);
 			console.log(`Parsed "next year" as ${nextYear.toISOString()}`);
 			return nextYear.getTime();
 		}
@@ -576,6 +585,7 @@ export function parseDate(date: Date | number | string): number {
 				future.setFullYear(future.getFullYear() + amount);
 			}
 
+			future.setHours(12, 0, 0, 0); // Set to noon
 			console.log(`Parsed "${lowerDate}" as ${future.toISOString()}`);
 			return future.getTime();
 		}
@@ -600,6 +610,7 @@ export function parseDate(date: Date | number | string): number {
 				future.setFullYear(future.getFullYear() + amount);
 			}
 
+			future.setHours(12, 0, 0, 0); // Set to noon
 			console.log(`Parsed "${lowerDate}" as ${future.toISOString()}`);
 			return future.getTime();
 		}
@@ -615,7 +626,7 @@ export function parseDate(date: Date | number | string): number {
 					: new Date().getFullYear();
 
 			if (!isNaN(month) && !isNaN(day) && !isNaN(year)) {
-				const parsedDate = new Date(year, month, day);
+				const parsedDate = new Date(year, month, day, 12, 0, 0, 0); // Set to noon
 				console.log(`Parsed MM/DD/YYYY format as ${parsedDate.toISOString()}`);
 				return parsedDate.getTime();
 			}
@@ -624,6 +635,8 @@ export function parseDate(date: Date | number | string): number {
 		// Try standard date parsing as fallback
 		const parsedDate = new Date(date);
 		if (!isNaN(parsedDate.getTime())) {
+			// Set to noon to avoid timezone issues
+			parsedDate.setHours(12, 0, 0, 0);
 			console.log(
 				`Parsed with standard Date constructor as ${parsedDate.toISOString()}`
 			);
@@ -678,15 +691,19 @@ export function parseDate(date: Date | number | string): number {
 			if (lowerDate.includes("week")) {
 				console.log(`Adding ${amount} weeks (${amount * 7} days)`);
 				future.setDate(future.getDate() + amount * 7);
+				future.setHours(12, 0, 0, 0);
 			} else if (lowerDate.includes("month")) {
 				console.log(`Adding ${amount} months`);
 				future.setMonth(future.getMonth() + amount);
+				future.setHours(12, 0, 0, 0);
 			} else if (lowerDate.includes("year")) {
 				console.log(`Adding ${amount} years`);
 				future.setFullYear(future.getFullYear() + amount);
+				future.setHours(12, 0, 0, 0);
 			} else if (lowerDate.includes("day")) {
 				console.log(`Adding ${amount} days`);
 				future.setDate(future.getDate() + amount);
+				future.setHours(12, 0, 0, 0);
 			}
 
 			console.log(`Current date: ${now.toISOString()}`);
