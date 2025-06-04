@@ -1,35 +1,17 @@
 "use client";
 
-import { type ChangeEvent, useState, useRef } from "react";
+import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
-import { Upload } from "lucide-react";
 import Link from "next/link";
 import { Id } from "../../../convex/_generated/dataModel";
 import { motion } from "framer-motion";
+import { FileUpload } from "@/components/ui/file-upload";
 
 interface CustomAnimationUploaderProps {
 	onSuccess?: () => void;
 }
-
-const mainVariant = {
-	initial: {
-		scale: 1,
-	},
-	hover: {
-		scale: 1.02,
-	},
-};
-
-const iconVariant = {
-	initial: {
-		y: 0,
-	},
-	hover: {
-		y: -5,
-	},
-};
 
 export function CustomAnimationUploader({
 	onSuccess,
@@ -39,11 +21,9 @@ export function CustomAnimationUploader({
 	const user = useQuery(api.users.getUser);
 	const [isUploading, setIsUploading] = useState(false);
 	const [selectedFile, setSelectedFile] = useState<File | null>(null);
-	const fileInputRef = useRef<HTMLInputElement>(null);
 
-	const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
-		e.stopPropagation();
-		const file = e.target.files?.[0];
+	const handleFileUpload = async (files: File[]) => {
+		const file = files[0];
 		if (!file) return;
 
 		// Verify file is an accepted image type
@@ -98,52 +78,31 @@ export function CustomAnimationUploader({
 		}
 	};
 
-	const handleClick = () => {
-		fileInputRef.current?.click();
-	};
-
 	return (
 		<div className="w-full p-6">
-			<motion.div
-				initial="initial"
-				whileHover="hover"
-				variants={mainVariant}
-				onClick={handleClick}
-				className="relative p-10 group cursor-pointer w-full overflow-hidden rounded-lg bg-gray-50 dark:bg-neutral-900"
-			>
+			<div className="relative w-full overflow-hidden rounded-lg bg-gray-50 dark:bg-neutral-900">
 				<div className="absolute inset-0 [mask-image:radial-gradient(ellipse_at_center,white,transparent)] bg-gradient-to-br from-purple-500/20 to-transparent" />
 
-				<div className="flex flex-col items-center justify-center relative z-10">
-					<motion.div
-						variants={iconVariant}
-						className="p-4 rounded-full bg-purple-100 dark:bg-purple-900/30 mb-4"
-					>
-						<Upload
-							className={`w-8 h-8 text-purple-500 dark:text-purple-400 ${
-								isUploading ? "animate-bounce" : ""
-							}`}
-						/>
-					</motion.div>
-					<p className="font-medium text-foreground">
-						{isUploading ? "Uploading..." : "Upload Animation"}
-					</p>
-					<p className="text-sm text-muted-foreground mt-2 text-center">
-						Click to upload your custom GIF, JPG, or PNG
-					</p>
+				<div className="relative z-10">
+					<FileUpload onChange={handleFileUpload} />
 
-					<input
-						ref={fileInputRef}
-						type="file"
-						accept=".gif,.jpg,.jpeg,.png"
-						onChange={handleFileChange}
-						className="hidden"
-					/>
-
-					{selectedFile && (
+					{isUploading && (
 						<motion.div
 							initial={{ opacity: 0, y: 20 }}
 							animate={{ opacity: 1, y: 0 }}
-							className="mt-6 w-full max-w-md bg-white dark:bg-neutral-800 rounded-lg p-4 shadow-sm"
+							className="mt-4 text-center"
+						>
+							<p className="text-sm text-purple-600 dark:text-purple-400 font-medium">
+								Uploading animation...
+							</p>
+						</motion.div>
+					)}
+
+					{selectedFile && !isUploading && (
+						<motion.div
+							initial={{ opacity: 0, y: 20 }}
+							animate={{ opacity: 1, y: 0 }}
+							className="mt-6 mx-auto max-w-md bg-white dark:bg-neutral-800 rounded-lg p-4 shadow-sm"
 						>
 							<div className="flex justify-between items-center gap-4">
 								<p className="text-sm text-foreground truncate">
@@ -157,7 +116,7 @@ export function CustomAnimationUploader({
 					)}
 
 					{user?.subscription.tier === "free" && (
-						<div className="mt-6 text-center">
+						<div className="mt-6 text-center px-4">
 							<p className="text-xs text-yellow-600 dark:text-yellow-500">
 								Note: On the free plan, custom animations are automatically
 								deleted after 10 days.{" "}
@@ -171,18 +130,18 @@ export function CustomAnimationUploader({
 						</div>
 					)}
 
-					<div className="mt-4">
+					<div className="mt-4 text-center">
 						<a
 							href="https://lottiefiles.com/featured-free-animations"
 							target="_blank"
 							rel="noopener noreferrer"
-							className="text-xs text-primary hover:underline block text-center"
+							className="text-xs text-primary hover:underline"
 						>
 							Browse free animations at LottieFiles
 						</a>
 					</div>
 				</div>
-			</motion.div>
+			</div>
 		</div>
 	);
 }
