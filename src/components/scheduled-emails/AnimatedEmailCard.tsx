@@ -10,6 +10,12 @@ import {
 	CardBody,
 	Tooltip,
 	Chip,
+	Button,
+	Modal,
+	ModalContent,
+	ModalHeader,
+	ModalBody,
+	useDisclosure,
 } from "@heroui/react";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -18,14 +24,15 @@ import {
 	XCircle,
 	Mail,
 	UserRound,
-	Zap,
 	Clock,
+	Eye,
 } from "lucide-react";
-import { Button } from "@heroui/react";
 import { toast } from "sonner";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
+import { type EmailComponent } from "../../types/email-components";
+import { getCustomEmailHtml } from "../../email-templates/CustomEmailTemplate";
 
 interface ScheduledEmail {
 	_id: Id<"_scheduled_functions">;
@@ -39,6 +46,14 @@ interface ScheduledEmail {
 	subject: string;
 	isAutomated: boolean;
 	error?: string;
+	// New fields for preview
+	components?: EmailComponent[];
+	colorScheme?: {
+		primary: string;
+		secondary: string;
+		accent: string;
+		background: string;
+	};
 }
 
 interface AnimatedEmailCardProps {
@@ -52,6 +67,7 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 	const toRef = useRef<HTMLDivElement>(null);
 	const user = useQuery(api.users.getUser);
 	const cancelEmail = useMutation(api.scheduledEmails.cancelScheduledEmail);
+	const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
 	const getAvatarColor = () => {
 		switch (status) {
@@ -92,6 +108,17 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 		}
 	};
 
+	// Generate preview HTML if components are available
+	const getPreviewHtml = () => {
+		if (email.components) {
+			return getCustomEmailHtml({
+				components: email.components,
+				colorScheme: email.colorScheme,
+			});
+		}
+		return null;
+	};
+
 	const renderUserAvatar = () => (
 		<div className="relative group">
 			<Avatar
@@ -101,23 +128,25 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 				showFallback
 				isBordered
 				color={getAvatarColor()}
-				className="w-14 h-14 ring-2 ring-background/50 group-hover:ring-primary/30 transition-all duration-300 group-hover:scale-110"
+				className="w-12 h-12 ring-2 ring-background/50 group-hover:ring-primary/30 transition-all duration-300 group-hover:scale-110"
 				fallback={
 					<UserRound
-						className="animate-pulse w-7 h-7 text-default-500"
-						size={28}
+						className="animate-pulse w-6 h-6 text-default-500"
+						size={24}
 					/>
 				}
 				classNames={{
-					base: "w-14 h-14 shadow-lg",
+					base: "w-12 h-12 shadow-lg",
 					img: "object-cover opacity-100",
-					fallback: "w-14 h-14",
+					fallback: "w-12 h-12",
 				}}
 			/>
 			{/* Floating animation ring */}
 			<div className="absolute inset-0 rounded-full bg-gradient-to-r from-primary/20 to-secondary/20 animate-pulse opacity-50 group-hover:opacity-75 transition-opacity duration-300" />
 		</div>
 	);
+
+	const previewHtml = getPreviewHtml();
 
 	return (
 		<div className="relative group">
@@ -132,9 +161,9 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 				shadow="lg"
 				isBlurred
 			>
-				<CardBody className="relative p-6">
-					{/* Status chip and type indicator */}
-					<div className="flex items-center justify-between mb-4">
+				<CardBody className="relative p-4">
+					{/* Status chip and preview button */}
+					<div className="flex items-center justify-between mb-3">
 						<Chip
 							color={
 								status === "pending"
@@ -163,25 +192,28 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 									: "Canceled"}
 						</Chip>
 
-						<Chip
-							color="primary"
-							variant="dot"
-							size="sm"
-							startContent={
-								email.isAutomated ? <Zap size={12} /> : <Mail size={12} />
-							}
-							className="text-xs"
-						>
-							{email.isAutomated ? "Auto" : "Custom"}
-						</Chip>
+						{/* Preview button */}
+						{previewHtml && (
+							<Button
+								isIconOnly
+								color="primary"
+								variant="flat"
+								size="sm"
+								className="backdrop-blur-md bg-primary-50/80 hover:bg-primary-100 border border-primary-200/50 hover:border-primary-300 hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-xl"
+								onPress={onOpen}
+							>
+								<Eye className="h-4 w-4" />
+								<span className="sr-only">Preview email</span>
+							</Button>
+						)}
 					</div>
 
 					{/* Email subject with enhanced typography */}
-					<div className="text-center mb-6 space-y-2">
-						<h3 className="text-lg font-semibold text-foreground leading-tight tracking-tight line-clamp-2">
+					<div className="text-center mb-4 space-y-1">
+						<h3 className="text-base font-semibold text-foreground leading-tight tracking-tight line-clamp-2">
 							{email.subject}
 						</h3>
-						<div className="space-y-1">
+						<div className="space-y-0.5">
 							<p className="text-sm text-muted-foreground font-medium">
 								Scheduled for{" "}
 								{formatDistanceToNow(email.scheduledTime, { addSuffix: true })}
@@ -200,7 +232,7 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 					{/* Enhanced Animation Container */}
 					<div
 						ref={containerRef}
-						className="relative w-[80%] mx-auto h-20 my-6"
+						className="relative w-[80%] mx-auto h-16 my-4"
 					>
 						<div className="flex h-full w-full items-center justify-between">
 							{/* Enhanced From (User) Avatar */}
@@ -222,7 +254,7 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 										<Badge
 											isOneChar
 											color="warning"
-											content={<Mail size={14} className="animate-bounce" />}
+											content={<Mail size={12} className="animate-bounce" />}
 											placement="top-right"
 											className="[&>span]:bg-orange-500 [&>span]:shadow-lg"
 										>
@@ -238,11 +270,11 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 							<div ref={toRef} className="z-10">
 								<AvatarGroup
 									max={3}
-									size="lg"
+									size="md"
 									radius="full"
 									color={getAvatarColor()}
 									isBordered
-									className="gap-2"
+									className="gap-1"
 								>
 									{email.recipients.map((recipient, index) => (
 										<Tooltip
@@ -265,20 +297,20 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 												showFallback
 												isBordered
 												color={getAvatarColor()}
-												className="w-14 h-14 ring-2 ring-background/50 hover:ring-primary/30 transition-all duration-300 hover:scale-110 shadow-lg"
+												className="w-12 h-12 ring-2 ring-background/50 hover:ring-primary/30 transition-all duration-300 hover:scale-110 shadow-lg"
 												style={{
 													animationDelay: `${index * 0.1}s`,
 												}}
 												fallback={
 													<UserRound
-														className="animate-pulse w-7 h-7 text-default-500"
-														size={28}
+														className="animate-pulse w-6 h-6 text-default-500"
+														size={24}
 													/>
 												}
 												classNames={{
-													base: "w-14 h-14 shadow-lg",
+													base: "w-12 h-12 shadow-lg",
 													img: "object-cover opacity-100",
-													fallback: "w-14 h-14",
+													fallback: "w-12 h-12",
 												}}
 											/>
 										</Tooltip>
@@ -311,9 +343,9 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 								<div className="relative">
 									<div className="absolute inset-0 rounded-full bg-background blur-sm" />
 									{status === "completed" ? (
-										<CheckCircle2 className="relative w-8 h-8 text-green-500 drop-shadow-lg animate-pulse" />
+										<CheckCircle2 className="relative w-6 h-6 text-green-500 drop-shadow-lg animate-pulse" />
 									) : (
-										<XCircle className="relative w-8 h-8 text-red-500 drop-shadow-lg animate-pulse" />
+										<XCircle className="relative w-6 h-6 text-red-500 drop-shadow-lg animate-pulse" />
 									)}
 								</div>
 							</div>
@@ -321,7 +353,7 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 					</div>
 
 					{/* Enhanced Recipients count */}
-					<div className="text-center mt-4">
+					<div className="text-center mt-3">
 						<p className="text-sm text-muted-foreground font-medium">
 							{email.recipients.length}{" "}
 							{email.recipients.length === 1 ? "recipient" : "recipients"}
@@ -335,7 +367,7 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 							color="danger"
 							variant="flat"
 							size="sm"
-							className="absolute top-4 right-4 backdrop-blur-md bg-danger-50/80 hover:bg-danger-100 border border-danger-200/50 hover:border-danger-300 hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-xl"
+							className="absolute top-3 right-3 backdrop-blur-md bg-danger-50/80 hover:bg-danger-100 border border-danger-200/50 hover:border-danger-300 hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-xl"
 							onPress={() => {
 								toast.promise(cancelEmail({ scheduledEmailId: email._id }), {
 									loading: "Canceling email...",
@@ -351,7 +383,7 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 
 					{/* Error message for failed emails */}
 					{email.error && status === "canceled" && (
-						<div className="mt-4 p-3 bg-danger-50/50 border border-danger-200/50 rounded-lg">
+						<div className="mt-3 p-2 bg-danger-50/50 border border-danger-200/50 rounded-lg">
 							<p className="text-xs text-danger-600 font-medium">
 								Error: {email.error}
 							</p>
@@ -359,6 +391,52 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 					)}
 				</CardBody>
 			</Card>
+
+			{/* Email Preview Modal */}
+			<Modal
+				isOpen={isOpen}
+				onOpenChange={onOpenChange}
+				size="4xl"
+				scrollBehavior="inside"
+				classNames={{
+					base: "bg-background/95 backdrop-blur-xl",
+					header: "border-b border-border/50",
+					body: "py-6",
+				}}
+			>
+				<ModalContent>
+					{() => (
+						<>
+							<ModalHeader className="flex flex-col gap-1">
+								<h2 className="text-lg font-semibold">Email Preview</h2>
+								<p className="text-sm text-muted-foreground">{email.subject}</p>
+							</ModalHeader>
+							<ModalBody>
+								{previewHtml ? (
+									<div
+										className="w-full h-[600px] border border-border/50 rounded-lg overflow-hidden"
+										style={{
+											background:
+												"linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
+										}}
+									>
+										<iframe
+											srcDoc={previewHtml}
+											className="w-full h-full"
+											title="Email Preview"
+											sandbox="allow-same-origin"
+										/>
+									</div>
+								) : (
+									<div className="flex items-center justify-center h-[400px] text-muted-foreground">
+										<p>Preview not available for this email</p>
+									</div>
+								)}
+							</ModalBody>
+						</>
+					)}
+				</ModalContent>
+			</Modal>
 		</div>
 	);
 }
