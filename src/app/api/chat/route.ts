@@ -7,7 +7,7 @@ import { optimizedSearchRecipientsTool } from "@/utils/ai-tools/optimized-search
 import { getRecipientsTool } from "@/utils/ai-tools/get-recipients-tool";
 import { getUpcomingEventsTool } from "@/utils/ai-tools/get-upcoming-events-tool";
 import { optimizedCreateEventTool } from "@/utils/ai-tools/optimized-create-event-tool";
-import { activeToolFlows } from "@/utils/ai-tools/state";
+import { toolFlowManager } from "@/utils/ai-tools/enhanced-state";
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { parseUserMessage } from "@/utils/structured-data-parser";
@@ -100,11 +100,18 @@ export async function POST(req: Request) {
 						activeSessionId = lastToolInvocation.result.sessionId;
 						console.log("Found active session ID:", activeSessionId);
 
-						// Check if this session is in the activeToolFlows map
-						if (activeToolFlows.has(activeSessionId)) {
-							activeFlow = activeToolFlows.get(activeSessionId);
+						// Check if this session has an active flow
+						const enhancedFlow = toolFlowManager.getFlow(activeSessionId);
+						if (enhancedFlow) {
+							// Convert enhanced flow to compatible format
+							activeFlow = {
+								toolName: enhancedFlow.toolName,
+								currentStep: enhancedFlow.currentStep,
+								data: enhancedFlow.data,
+								sessionId: enhancedFlow.sessionId,
+							};
 							console.log(
-								"Found active tool flow:",
+								"Found active enhanced flow:",
 								JSON.stringify(activeFlow)
 							);
 							break;

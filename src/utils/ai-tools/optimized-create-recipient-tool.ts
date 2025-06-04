@@ -3,6 +3,7 @@ import { tool } from "ai";
 import { createRecipient, parseDate } from "../server-actions";
 import { ConvexHttpClient } from "convex/browser";
 import { logError, logToolCall, LogCategory } from "../logging";
+import { toolFlowManager } from "./enhanced-state";
 
 // Enhanced validation schemas
 const StepEnum = z.enum([
@@ -152,13 +153,16 @@ export const optimizedCreateRecipientTool = tool({
 		),
 	}),
 	execute: async ({ step, name, email, birthday, sessionId }) => {
+		// Generate a session ID if not provided - moved to top level for consistent access
+		const flowSessionId = sessionId || `recipient_flow_${Date.now()}`;
+
 		try {
 			logToolCall("optimizedCreateRecipientTool", "execute", {
 				step,
 				name: name ? `[${name.length} chars]` : "empty",
 				email: email ? `[${email.length} chars]` : "empty",
 				birthday: birthday ? `[${birthday.length} chars]` : "empty",
-				sessionId,
+				flowSessionId,
 			});
 
 			// Sanitize all inputs
@@ -166,13 +170,35 @@ export const optimizedCreateRecipientTool = tool({
 			const sanitizedEmail = sanitizeInput(email);
 			const sanitizedBirthday = sanitizeInput(birthday);
 
+			// Start or update the enhanced flow state
+			let existingFlow = toolFlowManager.getFlow(flowSessionId);
+			if (!existingFlow) {
+				// Start new flow
+				existingFlow = toolFlowManager.startFlow(
+					flowSessionId,
+					"createRecipient"
+				);
+			}
+
+			// Update current step with data
+			toolFlowManager.updateStep(
+				flowSessionId,
+				step,
+				{
+					name: sanitizedName,
+					email: sanitizedEmail,
+					birthday: sanitizedBirthday,
+				},
+				"in_progress"
+			);
+
 			switch (step) {
 				case "start":
 					return {
 						status: "in_progress",
 						message: "I'll help you create a new recipient. What's their name?",
 						nextStep: "collect-name",
-						sessionId,
+						sessionId: flowSessionId,
 					};
 
 				case "collect-name":
@@ -183,7 +209,7 @@ export const optimizedCreateRecipientTool = tool({
 							message: `Great! Now, what's ${sanitizedName}'s email address?`,
 							nextStep: "collect-email",
 							name: sanitizedName,
-							sessionId,
+							sessionId: flowSessionId,
 						};
 					} catch (error) {
 						if (error instanceof z.ZodError) {
@@ -213,7 +239,7 @@ export const optimizedCreateRecipientTool = tool({
 							nextStep: "collect-birthday",
 							name: sanitizedName,
 							email: sanitizedEmail,
-							sessionId,
+							sessionId: flowSessionId,
 						};
 					} catch (error) {
 						if (error instanceof z.ZodError) {
@@ -249,7 +275,7 @@ export const optimizedCreateRecipientTool = tool({
 							name: sanitizedName,
 							email: sanitizedEmail,
 							birthday: birthdayTimestamp.toString(),
-							sessionId,
+							sessionId: flowSessionId,
 						};
 					} catch (error) {
 						if (error instanceof DateParsingError) {
@@ -274,7 +300,7 @@ export const optimizedCreateRecipientTool = tool({
 						name: sanitizedName,
 						email: sanitizedEmail,
 						birthday: sanitizedBirthday,
-						sessionId,
+						sessionId: flowSessionId,
 					};
 
 				case "submit":
@@ -313,6 +339,13 @@ export const optimizedCreateRecipientTool = tool({
 						});
 
 						if (!result.success) {
+							// Mark step as error in flow
+							toolFlowManager.markStepError(
+								flowSessionId,
+								"submit",
+								result.error || "Create recipient failed"
+							);
+
 							if (
 								result.error?.includes("authentication") ||
 								result.error?.includes("logged in")
@@ -324,6 +357,9 @@ export const optimizedCreateRecipientTool = tool({
 							throw new Error(result.error || "Failed to create recipient");
 						}
 
+						// Complete the flow successfully
+						toolFlowManager.completeFlow(flowSessionId);
+
 						return {
 							status: "success",
 							message: `✅ Successfully created recipient **${sanitizedName}**! They've been added to your contact list.`,
@@ -333,7 +369,7 @@ export const optimizedCreateRecipientTool = tool({
 								email: sanitizedEmail,
 								birthday: new Date(birthdayTimestamp).toLocaleDateString(),
 							},
-							sessionId,
+							sessionId: flowSessionId,
 						};
 					} catch (error) {
 						logError(
@@ -381,24 +417,34 @@ export const optimizedCreateRecipientTool = tool({
 				error
 			);
 
+			// Mark flow as error and handle retry logic
+			const errorMessage =
+				error instanceof Error ? error.message : "An unexpected error occurred";
+			const { flow, shouldRetry } = toolFlowManager.markStepError(
+				flowSessionId,
+				step || "unknown",
+				errorMessage
+			);
+
 			if (error instanceof ToolValidationError) {
 				return {
 					status: "error",
 					message: error.message,
 					nextStep: error.step,
 					field: error.field,
-					sessionId,
+					sessionId: flowSessionId,
+					retryCount: flow?.retryCount || 0,
+					canRetry: shouldRetry,
 				};
 			}
 
 			return {
 				status: "error",
-				message:
-					error instanceof Error
-						? error.message
-						: "An unexpected error occurred",
+				message: errorMessage,
 				nextStep: "start",
-				sessionId,
+				sessionId: flowSessionId,
+				retryCount: flow?.retryCount || 0,
+				canRetry: shouldRetry,
 			};
 		}
 	},

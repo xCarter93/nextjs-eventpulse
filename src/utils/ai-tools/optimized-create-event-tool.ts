@@ -9,7 +9,7 @@ import {
 	LogLevel,
 	LogCategory,
 } from "../logging";
-import { activeToolFlows } from "./state";
+import { toolFlowManager } from "./enhanced-state";
 
 // Enhanced validation schemas
 const StepEnum = z.enum([
@@ -243,10 +243,10 @@ export const optimizedCreateEventTool = tool({
 		),
 	}),
 	execute: async ({ step, name, date, isRecurring, sessionId }) => {
-		try {
-			// Generate a session ID if not provided
-			const flowSessionId = sessionId || `event_flow_${Date.now()}`;
+		// Generate a session ID if not provided - moved to top level for consistent access
+		const flowSessionId = sessionId || `event_flow_${Date.now()}`;
 
+		try {
 			logToolCall("optimizedCreateEventTool", "execute", {
 				step,
 				name: name ? `[${name.length} chars]` : "empty",
@@ -259,13 +259,24 @@ export const optimizedCreateEventTool = tool({
 			const sanitizedName = sanitizeInput(name);
 			const sanitizedDate = sanitizeInput(date);
 
-			// Update the active flow state
-			activeToolFlows.set(flowSessionId, {
-				toolName: "createEvent",
-				currentStep: step,
-				data: { name: sanitizedName, date: sanitizedDate, isRecurring },
-				sessionId: flowSessionId,
-			});
+			// Start or update the enhanced flow state
+			let existingFlow = toolFlowManager.getFlow(flowSessionId);
+			if (!existingFlow) {
+				// Start new flow
+				existingFlow = toolFlowManager.startFlow(flowSessionId, "createEvent");
+			}
+
+			// Update current step with data
+			toolFlowManager.updateStep(
+				flowSessionId,
+				step,
+				{
+					name: sanitizedName,
+					date: sanitizedDate,
+					isRecurring,
+				},
+				"in_progress"
+			);
 
 			switch (step) {
 				case "start":
@@ -521,6 +532,13 @@ export const optimizedCreateEventTool = tool({
 								error: result.error,
 							});
 
+							// Mark step as error in flow
+							toolFlowManager.markStepError(
+								flowSessionId,
+								"submit",
+								result.error || "Create event failed"
+							);
+
 							if (
 								result.error &&
 								(result.error.includes("authentication") ||
@@ -537,6 +555,9 @@ export const optimizedCreateEventTool = tool({
 
 							throw new Error(result.error || "Unknown error creating event");
 						}
+
+						// Complete the flow successfully
+						toolFlowManager.completeFlow(flowSessionId);
 
 						return {
 							status: "success",
@@ -591,24 +612,34 @@ export const optimizedCreateEventTool = tool({
 		} catch (error) {
 			logError(LogCategory.TOOL_CALL, "optimized_create_event_error", error);
 
+			// Mark flow as error and handle retry logic
+			const errorMessage =
+				error instanceof Error ? error.message : "An unexpected error occurred";
+			const { flow, shouldRetry } = toolFlowManager.markStepError(
+				flowSessionId,
+				step || "unknown",
+				errorMessage
+			);
+
 			if (error instanceof ToolValidationError) {
 				return {
 					status: "error",
 					message: error.message,
 					nextStep: error.step,
 					field: error.field,
-					sessionId: sessionId,
+					sessionId: flowSessionId,
+					retryCount: flow?.retryCount || 0,
+					canRetry: shouldRetry,
 				};
 			}
 
 			return {
 				status: "error",
-				message:
-					error instanceof Error
-						? error.message
-						: "An unexpected error occurred",
+				message: errorMessage,
 				nextStep: "start",
-				sessionId: sessionId,
+				sessionId: flowSessionId,
+				retryCount: flow?.retryCount || 0,
+				canRetry: shouldRetry,
 			};
 		}
 	},
