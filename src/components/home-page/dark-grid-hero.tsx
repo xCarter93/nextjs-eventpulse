@@ -139,7 +139,7 @@ const Content = ({ isSignedIn, onDashboardClick }: ContentProps) => {
 						<CardBody className="p-0 flex items-center justify-center">
 							<div className="w-full max-w-md mx-auto aspect-square">
 								<DotLottieReact
-									src="https://lottie.host/1f5b2a77-f3b0-4d02-a48f-940fe94bc7b2/pnU3lr9UGa.lottie"
+									src="https://lottie.host/d96064a8-9005-41e2-b3c4-a36bda872ed3/MS8eMYfiqG.lottie"
 									loop
 									autoplay
 									className="w-full h-full object-contain"
