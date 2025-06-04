@@ -15,7 +15,15 @@ interface Event {
 	isRecurring?: boolean;
 }
 
-export function UpcomingEvents() {
+interface UpcomingEventsProps {
+	selectedKeys?: string[];
+	onSelectionChange?: (keys: string[]) => void;
+}
+
+export function UpcomingEvents({
+	selectedKeys = [],
+	onSelectionChange,
+}: UpcomingEventsProps = {}) {
 	const recipients = useQuery(api.recipients.getRecipients);
 	const customEvents = useQuery(api.events.getEvents);
 	const user = useQuery(api.users.getUser);
@@ -58,9 +66,25 @@ export function UpcomingEvents() {
 		.sort((a, b) => a.daysUntil - b.daysUntil)
 		.slice(0, maxEvents);
 
+	const handleSelectionChange = (keys: "all" | Set<React.Key>) => {
+		if (onSelectionChange) {
+			if (keys === "all") {
+				onSelectionChange(["upcoming-events"]);
+			} else {
+				onSelectionChange(Array.from(keys).map(String));
+			}
+		}
+	};
+
 	return (
 		<div className="w-full upcoming-events">
-			<Accordion variant="shadow" selectionMode="multiple" className="w-full">
+			<Accordion
+				variant="shadow"
+				selectionMode="multiple"
+				className="w-full"
+				selectedKeys={selectedKeys}
+				onSelectionChange={handleSelectionChange}
+			>
 				<AccordionItem
 					key="upcoming-events"
 					aria-label="Upcoming Events"
