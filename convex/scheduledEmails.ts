@@ -225,6 +225,8 @@ export const listScheduledEmails = query({
 					subject: args.subject,
 					isAutomated: false,
 					error: email.state.kind === "failed" ? email.state.error : undefined,
+					components: args.components, // Include components for preview generation
+					colorScheme: args.colorScheme, // Include color scheme
 				};
 
 				return enrichedEmail;
