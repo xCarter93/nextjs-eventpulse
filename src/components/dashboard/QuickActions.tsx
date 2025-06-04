@@ -37,7 +37,15 @@ interface QuickAction {
 	isImage?: boolean;
 }
 
-export function QuickActions() {
+interface QuickActionsProps {
+	selectedKeys?: string[];
+	onSelectionChange?: (keys: string[]) => void;
+}
+
+export function QuickActions({
+	selectedKeys = [],
+	onSelectionChange,
+}: QuickActionsProps = {}) {
 	const subscriptionLevel = useQuery(
 		api.subscriptions.getUserSubscriptionLevel
 	);
@@ -125,10 +133,26 @@ export function QuickActions() {
 		},
 	];
 
+	const handleSelectionChange = (keys: "all" | Set<React.Key>) => {
+		if (onSelectionChange) {
+			if (keys === "all") {
+				onSelectionChange(["quick-actions"]);
+			} else {
+				onSelectionChange(Array.from(keys).map(String));
+			}
+		}
+	};
+
 	return (
 		<>
 			<div className="w-full quick-actions">
-				<Accordion variant="shadow" selectionMode="multiple" className="w-full">
+				<Accordion
+					variant="shadow"
+					selectionMode="multiple"
+					className="w-full"
+					selectedKeys={selectedKeys}
+					onSelectionChange={handleSelectionChange}
+				>
 					<AccordionItem
 						key="quick-actions"
 						aria-label="Quick Actions"

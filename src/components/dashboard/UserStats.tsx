@@ -6,7 +6,15 @@ import { getSubscriptionLimits } from "@/lib/subscriptions";
 import { Users, Film, Calendar, Bell, BarChart2 } from "lucide-react";
 import { Accordion, AccordionItem } from "@heroui/react";
 
-export function UserStats() {
+interface UserStatsProps {
+	selectedKeys?: string[];
+	onSelectionChange?: (keys: string[]) => void;
+}
+
+export function UserStats({
+	selectedKeys = [],
+	onSelectionChange,
+}: UserStatsProps = {}) {
 	const recipients = useQuery(api.recipients.getRecipients);
 	const subscriptionLevel = useQuery(
 		api.subscriptions.getUserSubscriptionLevel
@@ -45,9 +53,25 @@ export function UserStats() {
 		},
 	];
 
+	const handleSelectionChange = (keys: "all" | Set<React.Key>) => {
+		if (onSelectionChange) {
+			if (keys === "all") {
+				onSelectionChange(["plan-status"]);
+			} else {
+				onSelectionChange(Array.from(keys).map(String));
+			}
+		}
+	};
+
 	return (
 		<div className="w-full user-stats">
-			<Accordion variant="shadow" selectionMode="multiple" className="w-full">
+			<Accordion
+				variant="shadow"
+				selectionMode="multiple"
+				className="w-full"
+				selectedKeys={selectedKeys}
+				onSelectionChange={handleSelectionChange}
+			>
 				<AccordionItem
 					key="plan-status"
 					aria-label="Plan Status"

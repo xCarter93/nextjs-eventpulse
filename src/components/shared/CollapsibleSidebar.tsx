@@ -8,6 +8,7 @@ import { useState } from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody } from "@heroui/react";
 import { UpcomingEvents } from "@/components/dashboard/UpcomingEvents";
 import { QuickActions } from "@/components/dashboard/QuickActions";
+import { useSidebarAccordionState } from "@/hooks/useSidebarAccordionState";
 
 interface CollapsibleSidebarProps {
 	isOpen: boolean;
@@ -22,6 +23,8 @@ export function CollapsibleSidebar({
 }: CollapsibleSidebarProps) {
 	const [activeContent, setActiveContent] = useState<ActiveContent>(null);
 	const [isModalOpen, setIsModalOpen] = useState(false);
+	const { updateAccordionState, getAccordionState, isLoaded } =
+		useSidebarAccordionState();
 
 	const handleIconClick = (content: ActiveContent) => {
 		setActiveContent(content);
@@ -52,11 +55,32 @@ export function CollapsibleSidebar({
 	const getModalContent = () => {
 		switch (activeContent) {
 			case "stats":
-				return <UserStats />;
+				return (
+					<UserStats
+						selectedKeys={getAccordionState("userStats")}
+						onSelectionChange={(keys) =>
+							updateAccordionState("userStats", keys)
+						}
+					/>
+				);
 			case "events":
-				return <UpcomingEvents />;
+				return (
+					<UpcomingEvents
+						selectedKeys={getAccordionState("upcomingEvents")}
+						onSelectionChange={(keys) =>
+							updateAccordionState("upcomingEvents", keys)
+						}
+					/>
+				);
 			case "actions":
-				return <QuickActions />;
+				return (
+					<QuickActions
+						selectedKeys={getAccordionState("quickActions")}
+						onSelectionChange={(keys) =>
+							updateAccordionState("quickActions", keys)
+						}
+					/>
+				);
 			default:
 				return null;
 		}
@@ -71,11 +95,37 @@ export function CollapsibleSidebar({
 			);
 		}
 
+		// Don't render the accordion components until the state is loaded
+		if (!isLoaded) {
+			return (
+				<div className="space-y-6">
+					<div className="animate-pulse space-y-4">
+						<div className="h-16 bg-gray-200 dark:bg-gray-700 rounded-lg" />
+						<div className="h-16 bg-gray-200 dark:bg-gray-700 rounded-lg" />
+						<div className="h-16 bg-gray-200 dark:bg-gray-700 rounded-lg" />
+					</div>
+				</div>
+			);
+		}
+
 		return (
 			<div className="space-y-6">
-				<UserStats />
-				<UpcomingEvents />
-				<QuickActions />
+				<UserStats
+					selectedKeys={getAccordionState("userStats")}
+					onSelectionChange={(keys) => updateAccordionState("userStats", keys)}
+				/>
+				<UpcomingEvents
+					selectedKeys={getAccordionState("upcomingEvents")}
+					onSelectionChange={(keys) =>
+						updateAccordionState("upcomingEvents", keys)
+					}
+				/>
+				<QuickActions
+					selectedKeys={getAccordionState("quickActions")}
+					onSelectionChange={(keys) =>
+						updateAccordionState("quickActions", keys)
+					}
+				/>
 			</div>
 		);
 	};
