@@ -27,7 +27,7 @@ import {
 	Button,
 } from "@heroui/react";
 import { useState } from "react";
-import EventPulseLogo from "./EventPulseLogo";
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 
 const routes = [
 	{
@@ -82,10 +82,24 @@ export function Navbar() {
 					</NavbarContent>
 
 					<NavbarContent className="lg:flex gap-4" justify="start">
-						<NavbarBrand as={Link} href="/" className="gap-2 hidden lg:block">
-							<div className="scale-[0.35] origin-left">
-								<EventPulseLogo />
+						<NavbarBrand
+							as={Link}
+							href="/"
+							className="gap-3 hidden lg:flex items-center"
+						>
+							{/* Lottie Animation Logo */}
+							<div className="w-10 h-10 flex items-center justify-center">
+								<DotLottieReact
+									src="https://lottie.host/a0a904c3-c064-40b9-84da-b763949e2b56/J0dJJbNOgN.lottie"
+									loop
+									autoplay
+									className="w-full h-full object-contain"
+								/>
 							</div>
+							{/* Brand Text */}
+							<span className="text-xl font-bold text-foreground">
+								EventPulse
+							</span>
 						</NavbarBrand>
 					</NavbarContent>
 
