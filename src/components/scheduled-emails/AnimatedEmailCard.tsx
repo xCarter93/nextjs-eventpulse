@@ -162,7 +162,7 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 				isBlurred
 			>
 				<CardBody className="relative p-4">
-					{/* Status chip and preview button */}
+					{/* Status chip and action buttons */}
 					<div className="flex items-center justify-between mb-3">
 						<Chip
 							color={
@@ -192,20 +192,47 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 									: "Canceled"}
 						</Chip>
 
-						{/* Preview button */}
-						{previewHtml && (
-							<Button
-								isIconOnly
-								color="primary"
-								variant="flat"
-								size="sm"
-								className="backdrop-blur-md bg-primary-50/80 hover:bg-primary-100 border border-primary-200/50 hover:border-primary-300 hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-xl"
-								onPress={onOpen}
-							>
-								<Eye className="h-4 w-4" />
-								<span className="sr-only">Preview email</span>
-							</Button>
-						)}
+						{/* Action buttons container */}
+						<div className="flex items-center gap-2">
+							{/* Preview button */}
+							{previewHtml && (
+								<Button
+									isIconOnly
+									color="primary"
+									variant="flat"
+									size="sm"
+									className="backdrop-blur-md bg-primary-50/80 hover:bg-primary-100 border border-primary-200/50 hover:border-primary-300 hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-xl"
+									onPress={onOpen}
+								>
+									<Eye className="h-4 w-4" />
+									<span className="sr-only">Preview email</span>
+								</Button>
+							)}
+
+							{/* Cancel button (for pending emails) */}
+							{status === "pending" && (
+								<Button
+									isIconOnly
+									color="danger"
+									variant="flat"
+									size="sm"
+									className="backdrop-blur-md bg-danger-50/80 hover:bg-danger-100 border border-danger-200/50 hover:border-danger-300 hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-xl"
+									onPress={() => {
+										toast.promise(
+											cancelEmail({ scheduledEmailId: email._id }),
+											{
+												loading: "Canceling email...",
+												success: "Email canceled successfully",
+												error: "Failed to cancel email",
+											}
+										);
+									}}
+								>
+									<Trash2 className="h-4 w-4" />
+									<span className="sr-only">Cancel email</span>
+								</Button>
+							)}
+						</div>
 					</div>
 
 					{/* Email subject with enhanced typography */}
@@ -359,27 +386,6 @@ export function AnimatedEmailCard({ email, status }: AnimatedEmailCardProps) {
 							{email.recipients.length === 1 ? "recipient" : "recipients"}
 						</p>
 					</div>
-
-					{/* Enhanced Cancel Button (for pending emails) */}
-					{status === "pending" && (
-						<Button
-							isIconOnly
-							color="danger"
-							variant="flat"
-							size="sm"
-							className="absolute top-3 right-3 backdrop-blur-md bg-danger-50/80 hover:bg-danger-100 border border-danger-200/50 hover:border-danger-300 hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-xl"
-							onPress={() => {
-								toast.promise(cancelEmail({ scheduledEmailId: email._id }), {
-									loading: "Canceling email...",
-									success: "Email canceled successfully",
-									error: "Failed to cancel email",
-								});
-							}}
-						>
-							<Trash2 className="h-4 w-4" />
-							<span className="sr-only">Cancel email</span>
-						</Button>
-					)}
 
 					{/* Error message for failed emails */}
 					{email.error && status === "canceled" && (
