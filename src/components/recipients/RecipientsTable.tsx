@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -17,12 +16,11 @@ import {
 	Input,
 	Pagination,
 	User,
-	Tooltip,
 	Select,
 	SelectItem,
+	Chip,
 } from "@heroui/react";
 import { SortDescriptor } from "@heroui/react";
-import { Eye, Trash2 } from "lucide-react";
 
 interface Recipient {
 	_id: Id<"recipients">;
@@ -31,9 +29,16 @@ interface Recipient {
 	email: string;
 	birthday: number;
 	userId: Id<"users">;
+	groupIds?: Id<"groups">[];
 	metadata?: {
 		relation?: "friend" | "parent" | "spouse" | "sibling";
 	};
+}
+
+interface Group {
+	_id: Id<"groups"> | string;
+	name: string;
+	color?: string;
 }
 
 const relationOptions = [
@@ -51,8 +56,11 @@ interface Column {
 	className?: string;
 }
 
-export function RecipientsTable() {
-	const router = useRouter();
+interface RecipientsTableProps {
+	onRecipientSelect?: (recipientId: Id<"recipients">) => void;
+}
+
+export function RecipientsTable({ onRecipientSelect }: RecipientsTableProps) {
 	const [page, setPage] = useState(1);
 	const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
 		column: "name",
@@ -63,21 +71,11 @@ export function RecipientsTable() {
 	const rowsPerPage = 5;
 
 	const recipients = useQuery(api.recipients.getRecipients);
+	const groupsData = useQuery(api.groups.getGroupsWithCounts);
 	const updateRecipient = useMutation(api.recipients.updateRecipient);
 	const updateRecipientMetadata = useMutation(
 		api.recipients.updateRecipientMetadata
 	);
-	const deleteRecipient = useMutation(api.recipients.deleteRecipient);
-
-	const handleDelete = async (id: Id<"recipients">) => {
-		try {
-			await deleteRecipient({ id });
-			toast.success("Recipient deleted successfully");
-		} catch (error) {
-			toast.error("Failed to delete recipient");
-			console.error(error);
-		}
-	};
 
 	const handleUpdate = async (
 		id: Id<"recipients">,
@@ -123,6 +121,12 @@ export function RecipientsTable() {
 		}
 	};
 
+	const handleRowClick = (recipientId: Id<"recipients">) => {
+		if (onRecipientSelect) {
+			onRecipientSelect(recipientId);
+		}
+	};
+
 	const sortedRecipients = useMemo(() => {
 		if (!recipients) return [];
 
@@ -164,9 +168,8 @@ export function RecipientsTable() {
 				className: "hidden md:table-cell",
 			},
 			{
-				key: "actions",
-				label: "Actions",
-				align: "center",
+				key: "groups",
+				label: "Groups",
 			},
 		];
 	}, []);
@@ -218,25 +221,48 @@ export function RecipientsTable() {
 						/>
 					</div>
 				);
-			case "actions":
+			case "groups":
+				const recipientGroups =
+					groupsData && "groups" in groupsData
+						? groupsData.groups.filter((group: Group) =>
+								recipient.groupIds?.includes(group._id as Id<"groups">)
+							)
+						: [];
+
 				return (
-					<div className="relative flex items-center justify-center gap-2">
-						<Tooltip content="View Details">
-							<span
-								className="text-lg text-default-400 cursor-pointer active:opacity-50"
-								onClick={() => router.push(`/recipients/${recipient._id}`)}
+					<div className="flex flex-wrap gap-1">
+						{recipientGroups.length > 0 ? (
+							recipientGroups.slice(0, 2).map((group: Group) => (
+								<Chip
+									key={group._id}
+									size="sm"
+									variant="flat"
+									style={{
+										backgroundColor: group.color
+											? `${group.color}15`
+											: undefined,
+										color: group.color || "#6b7280",
+										border: group.color
+											? `1px solid ${group.color}40`
+											: undefined,
+									}}
+									className="text-xs min-w-0"
+								>
+									<span className="truncate max-w-16">{group.name}</span>
+								</Chip>
+							))
+						) : (
+							<span className="text-xs text-default-400">No groups</span>
+						)}
+						{recipientGroups.length > 2 && (
+							<Chip
+								size="sm"
+								variant="flat"
+								className="text-xs text-default-500 bg-default-100"
 							>
-								<Eye className="h-5 w-5" />
-							</span>
-						</Tooltip>
-						<Tooltip color="danger" content="Delete Recipient">
-							<span
-								className="text-lg text-danger cursor-pointer active:opacity-50"
-								onClick={() => handleDelete(recipient._id)}
-							>
-								<Trash2 className="h-5 w-5" />
-							</span>
-						</Tooltip>
+								+{recipientGroups.length - 2}
+							</Chip>
+						)}
 					</div>
 				);
 			default:
@@ -249,7 +275,7 @@ export function RecipientsTable() {
 	}
 
 	return (
-		<div className="h-[500px]">
+		<div className="w-full">
 			<Table
 				aria-label="Recipients table"
 				sortDescriptor={sortDescriptor}
@@ -283,7 +309,19 @@ export function RecipientsTable() {
 				</TableHeader>
 				<TableBody items={items} emptyContent="No recipients found">
 					{(item) => (
-						<TableRow key={item._id}>
+						<TableRow
+							key={item._id}
+							className="cursor-pointer hover:bg-default-50 transition-colors"
+							onClick={(e) => {
+								// Prevent row click if interacting with form elements
+								if (
+									(e.target as HTMLElement).closest("input, select, button")
+								) {
+									return;
+								}
+								handleRowClick(item._id);
+							}}
+						>
 							{(columnKey) => (
 								<TableCell
 									className={
