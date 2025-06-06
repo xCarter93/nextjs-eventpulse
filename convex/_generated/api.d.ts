@@ -14,6 +14,7 @@ import type * as clerk from "../clerk.js";
 import type * as crons from "../crons.js";
 import type * as emails from "../emails.js";
 import type * as events from "../events.js";
+import type * as groups from "../groups.js";
 import type * as holidays from "../holidays.js";
 import type * as http from "../http.js";
 import type * as migrations from "../migrations.js";
@@ -42,6 +43,7 @@ declare const fullApi: ApiFromModules<{
   crons: typeof crons;
   emails: typeof emails;
   events: typeof events;
+  groups: typeof groups;
   holidays: typeof holidays;
   http: typeof http;
   migrations: typeof migrations;
