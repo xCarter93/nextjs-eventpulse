@@ -215,7 +215,11 @@ export default function RecipientsPage() {
 
 	return (
 		<PageWithStats>
-			<div className="space-y-6">
+			<div
+				className={`space-y-6 transition-all duration-300 ${
+					!selectedRecipientId ? "lg:mr-[-200px] lg:pr-[200px]" : ""
+				}`}
+			>
 				{/* Header */}
 				<div className="flex items-center justify-between">
 					<div>
@@ -277,13 +281,13 @@ export default function RecipientsPage() {
 				</div>
 
 				{/* Main Content */}
-				<div className="flex gap-6">
-					{/* Sidebar - Large screens */}
-					<div className="hidden lg:block">
+				<div className="flex gap-4">
+					{/* Sidebar - Large screens - More compact */}
+					<div className="hidden lg:block flex-shrink-0">
 						<GroupsSidebar
 							selectedGroupId={selectedGroupId}
 							onGroupSelect={setSelectedGroupId}
-							className="w-64 sticky top-6"
+							className="w-56 sticky top-6"
 						/>
 					</div>
 
@@ -296,18 +300,22 @@ export default function RecipientsPage() {
 						/>
 					</div>
 
-					{/* Main Content Area */}
+					{/* Main Content Area - Uses all available space */}
 					<div className="flex-1 min-w-0">
 						{viewMode === "table" ? (
-							<Card>
-								<CardBody className="p-0">
-									<RecipientsTable />
-								</CardBody>
-							</Card>
+							<div className="bg-white rounded-lg border border-default-200 overflow-hidden">
+								<RecipientsTable onRecipientSelect={handleRecipientSelect} />
+							</div>
 						) : (
 							<div className="space-y-4">
-								{/* Cards Grid */}
-								<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+								{/* Cards Grid - Responsive based on available space */}
+								<div
+									className={`grid gap-3 ${
+										selectedRecipientId
+											? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+											: "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+									}`}
+								>
 									{paginatedRecipients.map((recipient) => (
 										<ContactCard
 											key={recipient._id}
@@ -363,9 +371,9 @@ export default function RecipientsPage() {
 						)}
 					</div>
 
-					{/* Details Panel - Large screens only */}
+					{/* Details Panel - Only show when contact is selected */}
 					{selectedRecipientId && (
-						<div className="hidden lg:block">
+						<div className="hidden lg:block flex-shrink-0">
 							<RecipientDetailsPanel
 								recipientId={selectedRecipientId}
 								onClose={handleCloseDetailsPanel}
