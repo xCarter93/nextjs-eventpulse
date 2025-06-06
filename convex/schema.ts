@@ -66,11 +66,18 @@ export default defineSchema({
 		isBaseAnimation: v.optional(v.boolean()),
 		expirationDate: v.optional(v.number()),
 	}).index("by_expiration", ["expirationDate"]),
+	groups: defineTable({
+		userId: v.id("users"),
+		name: v.string(),
+		color: v.optional(v.string()),
+		description: v.optional(v.string()),
+	}).index("by_userId", ["userId"]),
 	recipients: defineTable({
 		userId: v.id("users"),
 		name: v.string(),
 		email: v.string(),
 		birthday: v.number(),
+		groupIds: v.optional(v.array(v.id("groups"))),
 		metadata: v.optional(
 			v.object({
 				relation: v.optional(
