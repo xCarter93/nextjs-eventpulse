@@ -58,9 +58,13 @@ interface Column {
 
 interface RecipientsTableProps {
 	onRecipientSelect?: (recipientId: Id<"recipients">) => void;
+	filteredRecipients?: Recipient[];
 }
 
-export function RecipientsTable({ onRecipientSelect }: RecipientsTableProps) {
+export function RecipientsTable({
+	onRecipientSelect,
+	filteredRecipients,
+}: RecipientsTableProps) {
 	const [page, setPage] = useState(1);
 	const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
 		column: "name",
@@ -128,9 +132,11 @@ export function RecipientsTable({ onRecipientSelect }: RecipientsTableProps) {
 	};
 
 	const sortedRecipients = useMemo(() => {
-		if (!recipients) return [];
+		// Use filtered recipients if provided, otherwise fall back to all recipients
+		const recipientsToSort = filteredRecipients || recipients;
+		if (!recipientsToSort) return [];
 
-		return [...recipients].sort((a, b) => {
+		return [...recipientsToSort].sort((a, b) => {
 			const column = sortDescriptor.column as keyof Recipient;
 			const direction = sortDescriptor.direction === "ascending" ? 1 : -1;
 
@@ -140,7 +146,7 @@ export function RecipientsTable({ onRecipientSelect }: RecipientsTableProps) {
 
 			return String(a[column]).localeCompare(String(b[column])) * direction;
 		});
-	}, [recipients, sortDescriptor]);
+	}, [filteredRecipients, recipients, sortDescriptor]);
 
 	// Calculate pagination
 	const pages = Math.ceil((sortedRecipients?.length || 0) / rowsPerPage);
@@ -293,7 +299,7 @@ export function RecipientsTable({ onRecipientSelect }: RecipientsTableProps) {
 						/>
 					</div>
 				}
-				className="recipients-table"
+				className="recipients-table border border-default-200"
 			>
 				<TableHeader>
 					{columns.map((column) => (
