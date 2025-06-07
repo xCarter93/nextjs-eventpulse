@@ -217,7 +217,7 @@ export default function RecipientsPage() {
 		<PageWithStats>
 			<div
 				className={`space-y-6 transition-all duration-300 ${
-					!selectedRecipientId ? "lg:mr-[-200px] lg:pr-[200px]" : ""
+					!selectedRecipientId ? "lg:mr-[-200px] lg:pr-[100px]" : ""
 				}`}
 			>
 				{/* Header */}
@@ -303,7 +303,7 @@ export default function RecipientsPage() {
 					{/* Main Content Area - Uses all available space */}
 					<div className="flex-1 min-w-0">
 						{viewMode === "table" ? (
-							<div className="bg-white rounded-lg border border-default-200 overflow-hidden">
+							<div className="bg-white rounded-lg overflow-hidden">
 								<RecipientsTable onRecipientSelect={handleRecipientSelect} />
 							</div>
 						) : (

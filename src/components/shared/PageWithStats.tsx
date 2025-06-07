@@ -29,7 +29,7 @@ export function PageWithStats({ children }: PageWithStatsProps) {
 			<div
 				className={`
 					flex-1 transition-all duration-300 ease-in-out pb-16
-					${isSidebarOpen ? "lg:pr-[200px]" : "lg:pr-[60px]"}
+					${isSidebarOpen ? "lg:pr-[450px]" : "lg:pr-[60px]"}
 					lg:pb-0
 				`}
 			>

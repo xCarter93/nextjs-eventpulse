@@ -139,7 +139,7 @@ export function CollapsibleSidebar({
 					bg-background
 					transition-all duration-300 ease-in-out
 					hidden lg:block
-					${isOpen ? "w-[450px] mr-8" : "w-[60px]"}
+					${isOpen ? "w-[350px] mr-2" : "w-[60px]"}
 				`}
 			>
 				<Button
@@ -155,7 +155,7 @@ export function CollapsibleSidebar({
 					)}
 				</Button>
 
-				<div className="h-full overflow-y-auto p-4">{getSidebarContent()}</div>
+				<div className="h-full overflow-y-auto p-2">{getSidebarContent()}</div>
 			</div>
 
 			{/* Mobile Footer Bar */}
