@@ -1,7 +1,7 @@
 "use client";
 
-import { Card, CardBody, Avatar, Chip, Button } from "@heroui/react";
-import { Phone, MapPin, Calendar, Eye } from "lucide-react";
+import { Card, CardBody, Avatar, Chip } from "@heroui/react";
+import { Phone, MapPin, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { Id } from "../../../convex/_generated/dataModel";
 
@@ -51,101 +51,101 @@ export function ContactCard({
 
 	return (
 		<Card
-			className="w-full hover:shadow-md transition-shadow cursor-pointer"
+			className="w-full hover:shadow-lg transition-all duration-200 cursor-pointer h-full"
 			isPressable
 			onPress={handleCardClick}
 		>
-			<CardBody className="p-4">
-				<div className="flex items-start gap-3">
-					<Avatar
-						src=""
-						name={recipient.name}
-						size="md"
-						className="flex-shrink-0"
-					/>
-					<div className="flex-1 min-w-0">
-						<div className="flex items-start justify-between mb-2">
-							<div className="flex-1 min-w-0">
-								<h3 className="font-semibold text-base truncate">
-									{recipient.name}
-								</h3>
-								<p className="text-sm text-default-500 truncate">
-									{recipient.email}
-								</p>
-							</div>
-							<Button
-								isIconOnly
-								size="sm"
-								variant="light"
-								className="flex-shrink-0"
-								onPress={() => handleCardClick()}
-							>
-								<Eye className="h-4 w-4" />
-							</Button>
-						</div>
-
-						<div className="space-y-2 text-sm">
-							<div className="flex items-center gap-2 text-default-600">
-								<Calendar className="h-3 w-3 flex-shrink-0" />
-								<span className="truncate">
-									{format(new Date(recipient.birthday), "MMM d, yyyy")}
-								</span>
-							</div>
-
+			<CardBody className="p-6">
+				<div className="flex flex-col gap-4 h-full">
+					{/* Header with Avatar and Name */}
+					<div className="flex items-start gap-4">
+						<Avatar
+							src=""
+							name={recipient.name}
+							size="lg"
+							className="flex-shrink-0"
+						/>
+						<div className="flex-1 min-w-0">
+							<h3 className="font-semibold text-lg truncate mb-1">
+								{recipient.name}
+							</h3>
+							<p className="text-sm text-default-500 truncate">
+								{recipient.email}
+							</p>
 							{recipient.metadata?.relation && (
-								<div className="flex items-center gap-2">
-									<Chip size="sm" variant="flat" color="default">
+								<div className="mt-2">
+									<Chip size="sm" variant="flat" color="primary">
 										{recipient.metadata.relation}
 									</Chip>
 								</div>
 							)}
+						</div>
+					</div>
 
-							{recipient.metadata?.phoneNumber && (
-								<div className="flex items-center gap-2 text-default-600">
-									<Phone className="h-3 w-3 flex-shrink-0" />
-									<span className="text-xs truncate">
-										{recipient.metadata.phoneNumber}
-									</span>
+					{/* Details Section */}
+					<div className="space-y-3 flex-1">
+						<div className="flex items-center gap-3 text-default-600">
+							<Calendar className="h-4 w-4 flex-shrink-0" />
+							<span className="text-sm">
+								{format(new Date(recipient.birthday), "MMM d, yyyy")}
+							</span>
+						</div>
+
+						{recipient.metadata?.phoneNumber && (
+							<div className="flex items-center gap-3 text-default-600">
+								<Phone className="h-4 w-4 flex-shrink-0" />
+								<span className="text-sm">
+									{recipient.metadata.phoneNumber}
+								</span>
+							</div>
+						)}
+
+						{recipient.metadata?.address && (
+							<div className="flex items-center gap-3 text-default-600">
+								<MapPin className="h-4 w-4 flex-shrink-0" />
+								<span className="text-sm">
+									{recipient.metadata.address.city},{" "}
+									{recipient.metadata.address.country}
+								</span>
+							</div>
+						)}
+
+						{recipient.metadata?.notes && (
+							<div className="mt-3">
+								<p className="text-xs text-default-500 mb-1">Notes:</p>
+								<p className="text-sm text-default-700 bg-default-50 p-2 rounded text-ellipsis overflow-hidden">
+									{recipient.metadata.notes.length > 100
+										? `${recipient.metadata.notes.substring(0, 100)}...`
+										: recipient.metadata.notes}
+								</p>
+							</div>
+						)}
+					</div>
+
+					{/* Groups Section */}
+					{recipientGroups.length > 0 && (
+						<div className="flex flex-wrap gap-2 pt-2 border-t border-default-100">
+							{recipientGroups.slice(0, 4).map((group) => (
+								<div
+									key={group._id}
+									className="flex items-center gap-2 px-3 py-1.5 bg-default-100 rounded-full"
+								>
+									<div
+										className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+										style={{ backgroundColor: group.color || "#6b7280" }}
+									/>
+									<span className="text-xs font-medium">{group.name}</span>
 								</div>
-							)}
-
-							{recipient.metadata?.address && (
-								<div className="flex items-center gap-2 text-default-600">
-									<MapPin className="h-3 w-3 flex-shrink-0" />
-									<span className="text-xs truncate">
-										{recipient.metadata.address.city},{" "}
-										{recipient.metadata.address.country}
+							))}
+							{recipientGroups.length > 4 && (
+								<div className="flex items-center px-3 py-1.5 bg-default-100 rounded-full">
+									<span className="text-xs text-default-500">
+										+{recipientGroups.length - 4} more
 									</span>
 								</div>
 							)}
 						</div>
-
-						{recipientGroups.length > 0 && (
-							<div className="flex flex-wrap gap-1 mt-3">
-								{recipientGroups.slice(0, 3).map((group) => (
-									<div
-										key={group._id}
-										className="flex items-center gap-1 px-2 py-1 bg-default-100 rounded-full"
-									>
-										<div
-											className="w-2 h-2 rounded-full flex-shrink-0"
-											style={{ backgroundColor: group.color || "#6b7280" }}
-										/>
-										<span className="text-xs font-medium truncate max-w-16">
-											{group.name}
-										</span>
-									</div>
-								))}
-								{recipientGroups.length > 3 && (
-									<div className="flex items-center px-2 py-1 bg-default-100 rounded-full">
-										<span className="text-xs text-default-500">
-											+{recipientGroups.length - 3}
-										</span>
-									</div>
-								)}
-							</div>
-						)}
-					</div>
+					)}
 				</div>
 			</CardBody>
 		</Card>
