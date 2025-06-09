@@ -25,20 +25,41 @@ export function PageWithStats({ children }: PageWithStatsProps) {
 	};
 
 	return (
-		<div className="relative flex w-full">
+		<div className="relative w-full h-full">
+			{/* Desktop Grid Layout */}
 			<div
 				className={`
-					flex-1 transition-all duration-300 ease-in-out pb-16
-					${isSidebarOpen ? "lg:pr-[450px]" : "lg:pr-[60px]"}
-					lg:pb-0
+					hidden md:grid w-full min-h-full
+					transition-all duration-300 ease-in-out
+					${
+						isSidebarOpen
+							? "md:grid-cols-[1fr_320px] lg:grid-cols-[1fr_400px] gap-4 lg:gap-6"
+							: "md:grid-cols-[1fr_70px] gap-3"
+					}
 				`}
+				style={{
+					gridTemplateAreas: '"main sidebar"',
+				}}
 			>
-				{children}
+				<div className="overflow-hidden pr-2" style={{ gridArea: "main" }}>
+					{children}
+				</div>
+				<div className="flex-shrink-0" style={{ gridArea: "sidebar" }}>
+					<CollapsibleSidebar
+						isOpen={isSidebarOpen}
+						onToggle={handleSidebarToggle}
+					/>
+				</div>
 			</div>
-			<CollapsibleSidebar
-				isOpen={isSidebarOpen}
-				onToggle={handleSidebarToggle}
-			/>
+
+			{/* Mobile Layout */}
+			<div className="md:hidden w-full pb-16">
+				{children}
+				<CollapsibleSidebar
+					isOpen={isSidebarOpen}
+					onToggle={handleSidebarToggle}
+				/>
+			</div>
 		</div>
 	);
 }

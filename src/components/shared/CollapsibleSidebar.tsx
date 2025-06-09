@@ -29,8 +29,8 @@ export function CollapsibleSidebar({
 	const handleIconClick = (content: ActiveContent) => {
 		setActiveContent(content);
 
-		// For desktop, expand the sidebar
-		if (window.innerWidth >= 1024) {
+		// For desktop/tablet, expand the sidebar
+		if (window.innerWidth >= 768) {
 			onToggle(true);
 			return;
 		}
@@ -89,7 +89,7 @@ export function CollapsibleSidebar({
 	const getSidebarContent = () => {
 		if (!isOpen) {
 			return (
-				<div className="flex flex-col items-center space-y-6 pt-12">
+				<div className="flex flex-col items-center space-y-8 pt-8">
 					<SidebarIcons onIconClick={handleIconClick} />
 				</div>
 			);
@@ -98,18 +98,18 @@ export function CollapsibleSidebar({
 		// Don't render the accordion components until the state is loaded
 		if (!isLoaded) {
 			return (
-				<div className="space-y-6">
+				<div className="space-y-6 mt-4">
 					<div className="animate-pulse space-y-4">
-						<div className="h-16 bg-gray-200 dark:bg-gray-700 rounded-lg" />
-						<div className="h-16 bg-gray-200 dark:bg-gray-700 rounded-lg" />
-						<div className="h-16 bg-gray-200 dark:bg-gray-700 rounded-lg" />
+						<div className="h-20 bg-gray-200 dark:bg-gray-700 rounded-lg" />
+						<div className="h-20 bg-gray-200 dark:bg-gray-700 rounded-lg" />
+						<div className="h-20 bg-gray-200 dark:bg-gray-700 rounded-lg" />
 					</div>
 				</div>
 			);
 		}
 
 		return (
-			<div className="space-y-6">
+			<div className="space-y-6 mt-4">
 				<UserStats
 					selectedKeys={getAccordionState("userStats")}
 					onSelectionChange={(keys) => updateAccordionState("userStats", keys)}
@@ -132,21 +132,20 @@ export function CollapsibleSidebar({
 
 	return (
 		<>
-			{/* Desktop Sidebar */}
+			{/* Desktop Sidebar - Now uses relative positioning within grid */}
 			<div
 				className={`
-					fixed right-0 top-[65px] bottom-0 
-					bg-background
+					h-full bg-background shadow-sm
 					transition-all duration-300 ease-in-out
-					hidden lg:block
-					${isOpen ? "w-[350px] mr-2" : "w-[60px]"}
+					hidden md:flex md:flex-col
+					relative ml-2
 				`}
 			>
 				<Button
 					isIconOnly
 					variant="light"
-					className="absolute -left-4 top-4 z-10"
-					onClick={() => onToggle(!isOpen)}
+					className="absolute -left-3 top-2 z-10 bg-background border border-divider shadow-sm"
+					onPress={() => onToggle(!isOpen)}
 				>
 					{isOpen ? (
 						<ChevronRight className="h-4 w-4" />
@@ -155,12 +154,14 @@ export function CollapsibleSidebar({
 					)}
 				</Button>
 
-				<div className="h-full overflow-y-auto p-2">{getSidebarContent()}</div>
+				<div className="flex-1 overflow-y-auto px-4 pb-4">
+					{getSidebarContent()}
+				</div>
 			</div>
 
 			{/* Mobile Footer Bar */}
-			<div className="fixed bottom-0 left-0 right-0 lg:hidden bg-background border-t border-divider">
-				<div className="flex justify-around items-center py-2">
+			<div className="fixed bottom-0 left-0 right-0 md:hidden bg-background/95 backdrop-blur-sm border-t border-divider z-50">
+				<div className="flex justify-around items-center py-2 px-4 safe-area-pb">
 					<SidebarIcons onIconClick={handleIconClick} />
 				</div>
 			</div>
@@ -173,14 +174,13 @@ export function CollapsibleSidebar({
 					setActiveContent(null);
 				}}
 				size="2xl"
+				scrollBehavior="inside"
 			>
 				<ModalContent>
 					<ModalHeader>
 						<h3 className="text-lg font-semibold">{getModalTitle()}</h3>
 					</ModalHeader>
-					<ModalBody>
-						<div className="p-4">{getModalContent()}</div>
-					</ModalBody>
+					<ModalBody className="pb-6">{getModalContent()}</ModalBody>
 				</ModalContent>
 			</Modal>
 		</>

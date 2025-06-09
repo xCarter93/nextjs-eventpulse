@@ -98,11 +98,7 @@ export default function RecipientsPage() {
 
 	return (
 		<PageWithStats>
-			<div
-				className={`space-y-6 transition-all duration-300 ${
-					!selectedRecipientId ? "lg:mr-[-200px] lg:pr-[100px]" : ""
-				}`}
-			>
+			<div className="space-y-6">
 				{/* Header */}
 				<div className="flex items-center justify-between">
 					<div>
