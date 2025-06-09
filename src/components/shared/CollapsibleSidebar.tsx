@@ -135,16 +135,16 @@ export function CollapsibleSidebar({
 			{/* Desktop Sidebar - Now uses relative positioning within grid */}
 			<div
 				className={`
-					h-full bg-background shadow-sm
+					h-full
 					transition-all duration-300 ease-in-out
 					hidden md:flex md:flex-col
-					relative ml-2
+					relative
 				`}
 			>
 				<Button
 					isIconOnly
-					variant="light"
-					className="absolute -left-3 top-2 z-10 bg-background border border-divider shadow-sm"
+					variant="flat"
+					className="absolute -left-4 top-2 z-10 bg-background/80 backdrop-blur-sm border border-border/50 shadow-lg hover:shadow-xl transition-all duration-200"
 					onPress={() => onToggle(!isOpen)}
 				>
 					{isOpen ? (
@@ -154,7 +154,7 @@ export function CollapsibleSidebar({
 					)}
 				</Button>
 
-				<div className="flex-1 overflow-y-auto px-4 pb-4">
+				<div className="flex-1 overflow-y-auto px-2 pb-4">
 					{getSidebarContent()}
 				</div>
 			</div>

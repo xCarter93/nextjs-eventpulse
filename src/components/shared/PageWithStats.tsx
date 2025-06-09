@@ -33,15 +33,15 @@ export function PageWithStats({ children }: PageWithStatsProps) {
 					transition-all duration-300 ease-in-out
 					${
 						isSidebarOpen
-							? "md:grid-cols-[1fr_320px] lg:grid-cols-[1fr_400px] gap-4 lg:gap-6"
-							: "md:grid-cols-[1fr_70px] gap-3"
+							? "md:grid-cols-[1fr_280px] lg:grid-cols-[1fr_320px] gap-8 lg:gap-12"
+							: "md:grid-cols-[1fr_70px] gap-6"
 					}
 				`}
 				style={{
 					gridTemplateAreas: '"main sidebar"',
 				}}
 			>
-				<div className="overflow-hidden pr-2" style={{ gridArea: "main" }}>
+				<div className="pr-4 px-2 py-4" style={{ gridArea: "main" }}>
 					{children}
 				</div>
 				<div className="flex-shrink-0" style={{ gridArea: "sidebar" }}>
@@ -53,7 +53,7 @@ export function PageWithStats({ children }: PageWithStatsProps) {
 			</div>
 
 			{/* Mobile Layout */}
-			<div className="md:hidden w-full pb-16">
+			<div className="md:hidden w-full pb-16 px-2 py-4">
 				{children}
 				<CollapsibleSidebar
 					isOpen={isSidebarOpen}

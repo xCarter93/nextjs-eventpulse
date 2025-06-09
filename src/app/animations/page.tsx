@@ -25,7 +25,7 @@ function EmptyState() {
 	const animationIcons = icons.slice(0, 3); // Use first 3 for main display
 
 	return (
-		<div className="col-span-full relative overflow-hidden">
+		<div className="col-span-full relative">
 			{/* Background gradient overlay */}
 			<div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 via-pink-500/20 to-blue-500/20 opacity-50 blur-3xl" />
 
@@ -187,7 +187,7 @@ export default function AnimationsPage() {
 					</div>
 
 					<TabsContent value="gallery" className="space-y-4">
-						<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 animations-grid">
+						<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 animations-grid p-2">
 							{currentTemplates.length > 0 ? (
 								currentTemplates.map((template) => (
 									<TemplateCard
