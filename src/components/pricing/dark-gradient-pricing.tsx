@@ -340,7 +340,7 @@ const Card = ({ className, children, style = {} }: CardProps) => {
 			}}
 			style={style}
 			className={twMerge(
-				"relative h-full w-full overflow-hidden rounded-xl border border-border bg-background shadow-sm p-6 hover:shadow-md transition-shadow duration-300",
+				"relative h-full w-full rounded-xl border border-border bg-background shadow-sm p-6 hover:shadow-md transition-shadow duration-300",
 				className
 			)}
 		>

@@ -178,7 +178,7 @@ export default function RecipientsPage() {
 					{/* Main Content Area - Uses all available space */}
 					<div className="flex-1 min-w-0">
 						{viewMode === "table" ? (
-							<div className="bg-white border-default-200 rounded-lg overflow-hidden">
+							<div className="bg-white border-default-200 rounded-lg overflow-x-auto">
 								<RecipientsTable
 									onRecipientSelect={handleRecipientSelect}
 									filteredRecipients={filteredRecipients}
@@ -187,7 +187,7 @@ export default function RecipientsPage() {
 						) : (
 							<div className="space-y-4">
 								{/* Cards Grid - Responsive based on available space */}
-								<div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+								<div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 p-2">
 									{paginatedRecipients.map((recipient) => (
 										<ContactCard
 											key={recipient._id}
