@@ -78,10 +78,8 @@ export default function RecipientsPage() {
 	);
 
 	const handleRecipientSelect = (recipientId: Id<"recipients">) => {
-		// Only set selected recipient in table mode
-		if (viewMode === "table") {
-			setSelectedRecipientId(recipientId);
-		}
+		// Set selected recipient for both table and card modes
+		setSelectedRecipientId(recipientId);
 	};
 
 	const handleCloseDetailsPanel = () => {
@@ -131,7 +129,8 @@ export default function RecipientsPage() {
 						>
 							Add Recipient
 						</Button>
-						<div className="flex items-center gap-2">
+						{/* View mode toggle - only show on larger screens */}
+						<div className="hidden lg:flex items-center gap-2">
 							<Button
 								isIconOnly
 								variant={viewMode === "table" ? "solid" : "light"}
@@ -155,10 +154,10 @@ export default function RecipientsPage() {
 					</div>
 				</div>
 
-				{/* Main Content */}
-				<div className="flex gap-4">
-					{/* Sidebar - Large screens - More compact */}
-					<div className="hidden lg:block flex-shrink-0">
+				{/* Large Screen Layout */}
+				<div className="hidden lg:flex gap-4">
+					{/* Sidebar - Large screens */}
+					<div className="flex-shrink-0">
 						<GroupsSidebar
 							selectedGroupId={selectedGroupId}
 							onGroupSelect={setSelectedGroupId}
@@ -166,16 +165,7 @@ export default function RecipientsPage() {
 						/>
 					</div>
 
-					{/* Mobile Groups - Small screens */}
-					<div className="lg:hidden w-full mb-4">
-						<GroupsSidebar
-							selectedGroupId={selectedGroupId}
-							onGroupSelect={setSelectedGroupId}
-							className="w-full"
-						/>
-					</div>
-
-					{/* Main Content Area - Uses all available space */}
+					{/* Main Content Area */}
 					<div className="flex-1 min-w-0">
 						{viewMode === "table" ? (
 							<div className="bg-white border-default-200 rounded-lg overflow-x-auto">
@@ -186,7 +176,7 @@ export default function RecipientsPage() {
 							</div>
 						) : (
 							<div className="space-y-4">
-								{/* Cards Grid - Responsive based on available space */}
+								{/* Cards Grid */}
 								<div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 p-2">
 									{paginatedRecipients.map((recipient) => (
 										<ContactCard
@@ -256,6 +246,82 @@ export default function RecipientsPage() {
 					{/* Details Panel - Right side on xl screens and above */}
 					{selectedRecipientId && (
 						<div className="hidden xl:block flex-shrink-0">
+							<RecipientDetailsPanel
+								recipientId={selectedRecipientId}
+								onClose={handleCloseDetailsPanel}
+							/>
+						</div>
+					)}
+				</div>
+
+				{/* Small Screen Layout */}
+				<div className="lg:hidden space-y-6">
+					{/* Groups */}
+					<GroupsSidebar
+						selectedGroupId={selectedGroupId}
+						onGroupSelect={setSelectedGroupId}
+						className="w-full"
+					/>
+
+					{/* Cards Grid - Always cards on mobile */}
+					<div className="space-y-4">
+						<div className="grid gap-4 grid-cols-1 sm:grid-cols-2 p-2">
+							{paginatedRecipients.map((recipient) => (
+								<ContactCard
+									key={recipient._id}
+									recipient={recipient}
+									groups={
+										groupsData && "groups" in groupsData
+											? groupsData.groups
+											: []
+									}
+									onSelect={handleRecipientSelect}
+								/>
+							))}
+						</div>
+
+						{/* Pagination */}
+						{totalPages > 1 && (
+							<div className="flex justify-center">
+								<Pagination
+									total={totalPages}
+									page={currentPage}
+									onChange={setCurrentPage}
+									showControls
+									showShadow
+									color="primary"
+								/>
+							</div>
+						)}
+
+						{/* Empty State */}
+						{filteredRecipients.length === 0 && (
+							<Card>
+								<CardBody className="text-center py-12">
+									<Users className="h-12 w-12 text-default-300 mx-auto mb-4" />
+									<h3 className="text-lg font-semibold mb-2">
+										No recipients found
+									</h3>
+									<p className="text-default-500 mb-4">
+										{searchQuery
+											? "Try adjusting your search or filters"
+											: "Get started by adding your first recipient"}
+									</p>
+									<Button
+										color="primary"
+										startContent={<Plus className="h-4 w-4" />}
+										onPress={handleAddRecipient}
+									>
+										Add Recipient
+									</Button>
+								</CardBody>
+							</Card>
+						)}
+					</div>
+
+					{/* Details Panel - Below cards on mobile */}
+					{selectedRecipientId && (
+						<div className="mt-6">
 							<RecipientDetailsPanel
 								recipientId={selectedRecipientId}
 								onClose={handleCloseDetailsPanel}

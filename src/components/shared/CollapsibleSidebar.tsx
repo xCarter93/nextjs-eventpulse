@@ -30,7 +30,7 @@ export function CollapsibleSidebar({
 		setActiveContent(content);
 
 		// For desktop/tablet, expand the sidebar
-		if (window.innerWidth >= 768) {
+		if (window.innerWidth >= 1024) {
 			onToggle(true);
 			return;
 		}
@@ -137,7 +137,7 @@ export function CollapsibleSidebar({
 				className={`
 					h-full
 					transition-all duration-300 ease-in-out
-					hidden md:flex md:flex-col
+					hidden lg:flex lg:flex-col
 					relative
 				`}
 			>
@@ -160,7 +160,7 @@ export function CollapsibleSidebar({
 			</div>
 
 			{/* Mobile Footer Bar */}
-			<div className="fixed bottom-0 left-0 right-0 md:hidden bg-background/95 backdrop-blur-sm border-t border-divider z-50">
+			<div className="fixed bottom-0 left-0 right-0 lg:hidden bg-background/95 backdrop-blur-sm border-t border-divider z-50">
 				<div className="flex justify-around items-center py-2 px-4 safe-area-pb">
 					<SidebarIcons onIconClick={handleIconClick} />
 				</div>
