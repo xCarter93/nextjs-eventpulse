@@ -29,12 +29,12 @@ export function PageWithStats({ children }: PageWithStatsProps) {
 			{/* Desktop Grid Layout */}
 			<div
 				className={`
-					hidden md:grid w-full min-h-full
+					hidden lg:grid w-full min-h-full
 					transition-all duration-300 ease-in-out
 					${
 						isSidebarOpen
-							? "md:grid-cols-[1fr_280px] lg:grid-cols-[1fr_320px] gap-8 lg:gap-12"
-							: "md:grid-cols-[1fr_70px] gap-6"
+							? "lg:grid-cols-[1fr_280px] xl:grid-cols-[1fr_320px] gap-8 xl:gap-12"
+							: "lg:grid-cols-[1fr_70px] gap-6"
 					}
 				`}
 				style={{
@@ -53,7 +53,7 @@ export function PageWithStats({ children }: PageWithStatsProps) {
 			</div>
 
 			{/* Mobile Layout */}
-			<div className="md:hidden w-full pb-16 px-2 py-4">
+			<div className="lg:hidden w-full pb-16 px-2 py-4">
 				{children}
 				<CollapsibleSidebar
 					isOpen={isSidebarOpen}
