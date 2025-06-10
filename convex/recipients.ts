@@ -3,6 +3,8 @@ import { mutation, query, internalQuery } from "./_generated/server";
 import { ConvexError } from "convex/values";
 import { api, internal } from "./_generated/api";
 import { getSubscriptionLimits } from "../src/lib/subscriptions";
+import { authorizeRecipientAccess } from "./lib/auth";
+import { recipientMetadataValidator } from "./lib/validators";
 
 export const getRecipients = query({
 	async handler(ctx) {
@@ -93,27 +95,7 @@ export const updateRecipient = mutation({
 		birthday: v.number(),
 	},
 	async handler(ctx, args) {
-		const identity = await ctx.auth.getUserIdentity();
-
-		if (!identity) {
-			throw new ConvexError("Not authenticated");
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
-
-		if (!user) {
-			throw new ConvexError("User not found");
-		}
-
-		const existing = await ctx.db.get(args.id);
-		if (!existing || existing.userId !== user._id) {
-			throw new ConvexError("Recipient not found or access denied");
-		}
+		await authorizeRecipientAccess(ctx, args.id);
 
 		await ctx.db.patch(args.id, {
 			name: args.name,
@@ -126,32 +108,7 @@ export const updateRecipient = mutation({
 export const updateRecipientMetadata = mutation({
 	args: {
 		id: v.id("recipients"),
-		metadata: v.object({
-			relation: v.optional(
-				v.union(
-					v.literal("friend"),
-					v.literal("parent"),
-					v.literal("spouse"),
-					v.literal("sibling")
-				)
-			),
-			anniversaryDate: v.optional(v.number()),
-			notes: v.optional(v.string()),
-			nickname: v.optional(v.string()),
-			phoneNumber: v.optional(v.string()),
-			address: v.optional(
-				v.object({
-					city: v.optional(v.string()),
-					country: v.optional(v.string()),
-					coordinates: v.optional(
-						v.object({
-							latitude: v.number(),
-							longitude: v.number(),
-						})
-					),
-				})
-			),
-		}),
+		metadata: recipientMetadataValidator,
 	},
 	async handler(ctx, args) {
 		const identity = await ctx.auth.getUserIdentity();

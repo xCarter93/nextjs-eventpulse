@@ -7,24 +7,29 @@ import {
 } from "./_generated/server";
 import { DEFAULT_FREE_FEATURES } from "./subscriptions";
 import { PRO_TIER_LIMITS } from "../src/lib/subscriptions";
+import { getCurrentUser, getCurrentUserOrNull } from "./lib/auth";
+import { userSettingsValidator } from "./lib/validators";
+import { DEFAULT_USER_SETTINGS } from "./lib/constants";
+import { INDEX_NAMES } from "./lib/database";
 
 const DEFAULT_USER_STATE = {
-	lastSignedInDate: Date.now(),
-	hasSeenTour: false,
+	lastSignedInDate: DEFAULT_USER_SETTINGS.LAST_SIGNED_IN_DATE(),
+	hasSeenTour: DEFAULT_USER_SETTINGS.HAS_SEEN_TOUR,
 	settings: {
 		calendar: {
-			showHolidays: true,
+			showHolidays: DEFAULT_USER_SETTINGS.CALENDAR.SHOW_HOLIDAYS,
 		},
 		upcomingEvents: {
-			daysToShow: 30,
-			maxEvents: 10,
+			daysToShow: DEFAULT_USER_SETTINGS.UPCOMING_EVENTS.DAYS_TO_SHOW,
+			maxEvents: DEFAULT_USER_SETTINGS.UPCOMING_EVENTS.MAX_EVENTS,
 		},
 		notifications: {
-			reminderDays: 7,
+			reminderDays: DEFAULT_USER_SETTINGS.NOTIFICATIONS.REMINDER_DAYS,
 			emailReminders: {
-				events: true,
-				birthdays: true,
-				holidays: false,
+				events: DEFAULT_USER_SETTINGS.NOTIFICATIONS.EMAIL_REMINDERS.EVENTS,
+				birthdays:
+					DEFAULT_USER_SETTINGS.NOTIFICATIONS.EMAIL_REMINDERS.BIRTHDAYS,
+				holidays: DEFAULT_USER_SETTINGS.NOTIFICATIONS.EMAIL_REMINDERS.HOLIDAYS,
 			},
 		},
 	},
@@ -41,7 +46,7 @@ export const createUser = internalMutation({
 		// Check if user already exists
 		const existingUser = await ctx.db
 			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
+			.withIndex(INDEX_NAMES.BY_TOKEN_IDENTIFIER, (q) =>
 				q.eq("tokenIdentifier", args.tokenIdentifier)
 			)
 			.first();
@@ -60,18 +65,7 @@ export const createUser = internalMutation({
 
 export const getUser = query({
 	async handler(ctx) {
-		const identity = await ctx.auth.getUserIdentity();
-
-		if (!identity) {
-			return null;
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
+		const user = await getCurrentUserOrNull(ctx);
 
 		if (!user) {
 			return null;
@@ -95,58 +89,10 @@ export const getUser = query({
 
 export const updateSettings = mutation({
 	args: {
-		settings: v.object({
-			address: v.optional(
-				v.object({
-					city: v.string(),
-					country: v.string(),
-					countryCode: v.string(),
-					coordinates: v.object({
-						latitude: v.number(),
-						longitude: v.number(),
-					}),
-				})
-			),
-			calendar: v.optional(
-				v.object({
-					showHolidays: v.boolean(),
-				})
-			),
-			upcomingEvents: v.optional(
-				v.object({
-					daysToShow: v.number(),
-					maxEvents: v.number(),
-				})
-			),
-			notifications: v.optional(
-				v.object({
-					reminderDays: v.number(),
-					emailReminders: v.object({
-						events: v.boolean(),
-						birthdays: v.boolean(),
-						holidays: v.boolean(),
-					}),
-				})
-			),
-		}),
+		settings: userSettingsValidator,
 	},
 	async handler(ctx, args) {
-		const identity = await ctx.auth.getUserIdentity();
-
-		if (!identity) {
-			throw new ConvexError("Not authenticated");
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
-
-		if (!user) {
-			throw new ConvexError("User not found");
-		}
+		const user = await getCurrentUser(ctx);
 
 		// Merge new settings with existing settings
 		const currentSettings = user.settings || {};
@@ -177,7 +123,7 @@ export const updateLastSignIn = internalMutation({
 	handler: async (ctx, args) => {
 		const user = await ctx.db
 			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
+			.withIndex(INDEX_NAMES.BY_TOKEN_IDENTIFIER, (q) =>
 				q.eq("tokenIdentifier", args.tokenIdentifier)
 			)
 			.first();
@@ -198,22 +144,7 @@ export const updateHasSeenTour = mutation({
 		hasSeenTour: v.boolean(),
 	},
 	async handler(ctx, args) {
-		const identity = await ctx.auth.getUserIdentity();
-
-		if (!identity) {
-			throw new ConvexError("Not authenticated");
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
-
-		if (!user) {
-			throw new ConvexError("User not found");
-		}
+		const user = await getCurrentUser(ctx);
 
 		await ctx.db.patch(user._id, {
 			hasSeenTour: args.hasSeenTour,

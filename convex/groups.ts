@@ -1,21 +1,16 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { ConvexError } from "convex/values";
+import {
+	getCurrentUser,
+	getCurrentUserOrNull,
+	authorizeGroupAccess,
+} from "./lib/auth";
+import { INDEX_NAMES } from "./lib/database";
 
 export const getGroups = query({
 	async handler(ctx) {
-		const identity = await ctx.auth.getUserIdentity();
-
-		if (!identity) {
-			return [];
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
+		const user = await getCurrentUserOrNull(ctx);
 
 		if (!user) {
 			return [];
@@ -23,7 +18,7 @@ export const getGroups = query({
 
 		const groups = await ctx.db
 			.query("groups")
-			.withIndex("by_userId", (q) => q.eq("userId", user._id))
+			.withIndex(INDEX_NAMES.BY_USER_ID, (q) => q.eq("userId", user._id))
 			.collect();
 
 		return groups;
@@ -37,22 +32,7 @@ export const createGroup = mutation({
 		description: v.optional(v.string()),
 	},
 	async handler(ctx, args) {
-		const identity = await ctx.auth.getUserIdentity();
-
-		if (!identity) {
-			throw new ConvexError("Not authenticated");
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
-
-		if (!user) {
-			throw new ConvexError("User not found");
-		}
+		const user = await getCurrentUser(ctx);
 
 		const groupId = await ctx.db.insert("groups", {
 			userId: user._id,
@@ -73,22 +53,7 @@ export const updateGroup = mutation({
 		description: v.optional(v.string()),
 	},
 	async handler(ctx, args) {
-		const identity = await ctx.auth.getUserIdentity();
-
-		if (!identity) {
-			throw new ConvexError("Not authenticated");
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
-
-		if (!user) {
-			throw new ConvexError("User not found");
-		}
+		const user = await getCurrentUser(ctx);
 
 		const existing = await ctx.db.get(args.id);
 		if (!existing || existing.userId !== user._id) {
@@ -114,27 +79,7 @@ export const deleteGroup = mutation({
 		id: v.id("groups"),
 	},
 	async handler(ctx, args) {
-		const identity = await ctx.auth.getUserIdentity();
-
-		if (!identity) {
-			throw new ConvexError("Not authenticated");
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
-
-		if (!user) {
-			throw new ConvexError("User not found");
-		}
-
-		const existing = await ctx.db.get(args.id);
-		if (!existing || existing.userId !== user._id) {
-			throw new ConvexError("Group not found or access denied");
-		}
+		const { user } = await authorizeGroupAccess(ctx, args.id);
 
 		// Remove this group from all recipients
 		const recipients = await ctx.db

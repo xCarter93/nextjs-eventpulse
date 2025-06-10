@@ -1,5 +1,9 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import {
+	userSettingsValidator,
+	recipientMetadataValidator,
+} from "./lib/validators";
 
 export default defineSchema({
 	users: defineTable({
@@ -10,42 +14,7 @@ export default defineSchema({
 		lastSignedInDate: v.optional(v.number()),
 		hasSeenTour: v.optional(v.boolean()),
 		lastGoogleCalendarSync: v.optional(v.number()),
-		settings: v.optional(
-			v.object({
-				address: v.optional(
-					v.object({
-						city: v.string(),
-						country: v.string(),
-						countryCode: v.string(),
-						coordinates: v.object({
-							latitude: v.number(),
-							longitude: v.number(),
-						}),
-					})
-				),
-				calendar: v.optional(
-					v.object({
-						showHolidays: v.boolean(),
-					})
-				),
-				upcomingEvents: v.optional(
-					v.object({
-						daysToShow: v.number(),
-						maxEvents: v.number(),
-					})
-				),
-				notifications: v.optional(
-					v.object({
-						reminderDays: v.number(),
-						emailReminders: v.object({
-							events: v.boolean(),
-							birthdays: v.boolean(),
-							holidays: v.boolean(),
-						}),
-					})
-				),
-			})
-		),
+		settings: v.optional(userSettingsValidator),
 	}).index("by_tokenIdentifier", ["tokenIdentifier"]),
 	subscriptions: defineTable({
 		userId: v.id("users"),
@@ -78,34 +47,7 @@ export default defineSchema({
 		email: v.string(),
 		birthday: v.number(),
 		groupIds: v.optional(v.array(v.id("groups"))),
-		metadata: v.optional(
-			v.object({
-				relation: v.optional(
-					v.union(
-						v.literal("friend"),
-						v.literal("parent"),
-						v.literal("spouse"),
-						v.literal("sibling")
-					)
-				),
-				anniversaryDate: v.optional(v.number()),
-				notes: v.optional(v.string()),
-				nickname: v.optional(v.string()),
-				phoneNumber: v.optional(v.string()),
-				address: v.optional(
-					v.object({
-						city: v.optional(v.string()),
-						country: v.optional(v.string()),
-						coordinates: v.optional(
-							v.object({
-								latitude: v.number(),
-								longitude: v.number(),
-							})
-						),
-					})
-				),
-			})
-		),
+		metadata: v.optional(recipientMetadataValidator),
 	}).index("by_userId", ["userId"]),
 	customEvents: defineTable({
 		userId: v.id("users"),
