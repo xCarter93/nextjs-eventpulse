@@ -131,10 +131,12 @@ const formatEventDate = (timestamp: number): string => {
  */
 export const createEventTool = tool({
 	description:
-		"Create a new event with name, date, and optional recurrence. If any information is missing, ask the user for it.",
+		"Create a new event ONLY when you have explicitly confirmed the event name, date, and recurrence preference with the user. Do NOT call this tool if any required information is missing - ask the user for the missing details first.",
 	parameters: z.object({
-		name: z.string().describe("The event name"),
-		date: z.string().describe("The event date in any format"),
+		name: z.string().describe("The event name (must be provided by user)"),
+		date: z
+			.string()
+			.describe("The event date in any format (must be provided by user)"),
 		isRecurring: z
 			.boolean()
 			.optional()
