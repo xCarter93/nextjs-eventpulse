@@ -73,7 +73,7 @@ const parseBirthday = (birthday: string): number => {
  */
 export const createRecipientTool = tool({
 	description:
-		"Create a new recipient/contact with name, email, and optional birthday. If any required information is missing, ask the user for it.",
+		"Create a new recipient/contact with name, email, and optional birthday. Ask the user for required information if missing.",
 	parameters: z.object({
 		name: z.string().describe("The recipient's name"),
 		email: z.string().describe("The recipient's email address"),
