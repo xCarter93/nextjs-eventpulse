@@ -78,8 +78,10 @@ export default function RecipientsPage() {
 	);
 
 	const handleRecipientSelect = (recipientId: Id<"recipients">) => {
-		// Set selected recipient for both table and card modes
-		setSelectedRecipientId(recipientId);
+		// Only set selected recipient in table view mode
+		if (viewMode === "table") {
+			setSelectedRecipientId(recipientId);
+		}
 	};
 
 	const handleCloseDetailsPanel = () => {
