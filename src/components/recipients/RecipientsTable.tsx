@@ -165,13 +165,13 @@ export function RecipientsTable({
 			{
 				key: "relation",
 				label: "Relationship",
-				className: "hidden lg:table-cell",
+				className: "hidden min-[1330px]:table-cell",
 			},
 			{
 				key: "birthday",
 				label: "Birthday",
 				allowsSorting: true,
-				className: "hidden lg:table-cell",
+				className: "hidden min-[1330px]:table-cell",
 			},
 			{
 				key: "groups",
@@ -196,7 +196,7 @@ export function RecipientsTable({
 				);
 			case "relation":
 				return (
-					<div className="hidden lg:block">
+					<div className="hidden min-[1330px]:block">
 						<Select
 							defaultSelectedKeys={[recipient.metadata?.relation || ""]}
 							onChange={(e) =>
@@ -214,7 +214,7 @@ export function RecipientsTable({
 				);
 			case "birthday":
 				return (
-					<div className="hidden lg:block">
+					<div className="hidden min-[1330px]:block">
 						<Input
 							type="date"
 							defaultValue={format(new Date(recipient.birthday), "yyyy-MM-dd")}
