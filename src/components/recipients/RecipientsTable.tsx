@@ -1,9 +1,8 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
-import { toast } from "sonner";
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import {
@@ -13,11 +12,8 @@ import {
 	TableColumn,
 	TableRow,
 	TableCell,
-	Input,
 	Pagination,
 	User,
-	Select,
-	SelectItem,
 	Chip,
 } from "@heroui/react";
 import { SortDescriptor } from "@heroui/react";
@@ -40,13 +36,6 @@ interface Group {
 	name: string;
 	color?: string;
 }
-
-const relationOptions = [
-	{ label: "Friend", value: "friend" },
-	{ label: "Parent", value: "parent" },
-	{ label: "Spouse", value: "spouse" },
-	{ label: "Sibling", value: "sibling" },
-];
 
 interface Column {
 	key: string;
@@ -76,54 +65,6 @@ export function RecipientsTable({
 
 	const recipients = useQuery(api.recipients.getRecipients);
 	const groupsData = useQuery(api.groups.getGroupsWithCounts);
-	const updateRecipient = useMutation(api.recipients.updateRecipient);
-	const updateRecipientMetadata = useMutation(
-		api.recipients.updateRecipientMetadata
-	);
-
-	const handleUpdate = async (
-		id: Id<"recipients">,
-		field: string,
-		value: string | number
-	) => {
-		try {
-			const recipient = recipients?.find((r) => r._id === id);
-			if (!recipient) return;
-
-			await updateRecipient({
-				id,
-				name: field === "name" ? (value as string) : recipient.name,
-				email: field === "email" ? (value as string) : recipient.email,
-				birthday: field === "birthday" ? (value as number) : recipient.birthday,
-			});
-			toast.success("Recipient updated successfully");
-		} catch (error) {
-			toast.error("Failed to update recipient");
-			console.error(error);
-		}
-	};
-
-	const handleUpdateRelation = async (
-		id: Id<"recipients">,
-		relation: string
-	) => {
-		try {
-			const recipient = recipients?.find((r) => r._id === id);
-			if (!recipient) return;
-
-			await updateRecipientMetadata({
-				id,
-				metadata: {
-					...recipient.metadata,
-					relation: relation as "friend" | "parent" | "spouse" | "sibling",
-				},
-			});
-			toast.success("Relationship updated successfully");
-		} catch (error) {
-			toast.error("Failed to update relationship");
-			console.error(error);
-		}
-	};
 
 	const handleRowClick = (recipientId: Id<"recipients">) => {
 		if (onRecipientSelect) {
@@ -163,11 +104,6 @@ export function RecipientsTable({
 				allowsSorting: true,
 			},
 			{
-				key: "relation",
-				label: "Relationship",
-				className: "hidden min-[1330px]:table-cell",
-			},
-			{
 				key: "birthday",
 				label: "Birthday",
 				allowsSorting: true,
@@ -194,37 +130,10 @@ export function RecipientsTable({
 						}}
 					/>
 				);
-			case "relation":
-				return (
-					<div className="hidden min-[1330px]:block">
-						<Select
-							defaultSelectedKeys={[recipient.metadata?.relation || ""]}
-							onChange={(e) =>
-								handleUpdateRelation(recipient._id, e.target.value)
-							}
-							className="max-w-[200px]"
-						>
-							{relationOptions.map((option) => (
-								<SelectItem key={option.value} value={option.value}>
-									{option.label}
-								</SelectItem>
-							))}
-						</Select>
-					</div>
-				);
 			case "birthday":
 				return (
-					<div className="hidden min-[1330px]:block">
-						<Input
-							type="date"
-							defaultValue={format(new Date(recipient.birthday), "yyyy-MM-dd")}
-							onBlur={(e) => {
-								const timestamp = new Date(e.target.value).getTime();
-								if (!isNaN(timestamp)) {
-									handleUpdate(recipient._id, "birthday", timestamp);
-								}
-							}}
-						/>
+					<div className="hidden min-[1330px]:block text-sm text-default-600">
+						{format(new Date(recipient.birthday), "MMM dd, yyyy")}
 					</div>
 				);
 			case "groups":
