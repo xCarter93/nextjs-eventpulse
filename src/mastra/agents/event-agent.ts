@@ -1,6 +1,7 @@
 import { Agent } from "@mastra/core/agent";
 import { openai } from "@ai-sdk/openai";
 import { createEventTool, getUpcomingEventsTool } from "../tools/event-tools";
+import { runEventCreationWorkflowTool } from "../tools/workflow-tools";
 
 export const eventAgent = new Agent({
 	name: "Event Manager",
@@ -24,11 +25,14 @@ export const eventAgent = new Agent({
     - Be direct and efficient - avoid unnecessary confirmation loops
     
     EVENT CREATION PROCESS:
-    1. If user provides name and date: create immediately
-    2. If missing name: ask for name only
-    3. If missing date: ask for date only
-    4. If user mentions recurring/annual: set isRecurring to true
-    5. Create the event without additional confirmation
+    1. For simple event creation: use createEvent tool
+    2. For robust event creation with validation: use runEventCreationWorkflow tool
+    3. The workflow provides multi-step validation, date parsing, and error handling
+    4. If user provides name and date: create immediately
+    5. If missing name: ask for name only
+    6. If missing date: ask for date only
+    7. If user mentions recurring/annual: set isRecurring to true
+    8. Create the event without additional confirmation
     
     RETRIEVING EVENTS:
     1. Use appropriate date ranges based on user requests
@@ -42,5 +46,6 @@ export const eventAgent = new Agent({
 	tools: {
 		createEvent: createEventTool,
 		getUpcomingEvents: getUpcomingEventsTool,
+		runEventCreationWorkflow: runEventCreationWorkflowTool,
 	},
 });
