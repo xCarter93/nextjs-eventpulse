@@ -228,6 +228,9 @@ export default function ChatInterface() {
 				prev.map((tool) => ({ ...tool, status: "completed" as const }))
 			);
 
+			// Clear current tool to stop any remaining spinners
+			setCurrentTool(null);
+
 			// Ensure we've shown the tool history
 			setHasShownToolHistory(true);
 		},
@@ -374,74 +377,161 @@ export default function ChatInterface() {
 			// Set flags to prevent further tool calls
 			setHasReceivedAnswer(true);
 			setHasShownToolHistory(true);
+
+			// Clear current tool to stop any remaining spinners
+			setCurrentTool(null);
 		}
 	}, [messages, finishLogged]);
 
 	return (
 		<div className="flex flex-col h-[calc(100vh-8rem)] max-h-[800px] min-h-[500px] w-full max-w-4xl mx-auto">
 			<Card className="flex-1 flex flex-col shadow-xl border-0 bg-gradient-to-br from-background/95 to-background/80 backdrop-blur-md">
-				{/* Modern Header */}
-				<div className="flex items-center justify-between p-4 border-b border-divider/50 bg-background/60 backdrop-blur-sm">
-					<div className="flex items-center gap-3">
-						<Avatar
-							src=""
-							icon={<Bot className="h-5 w-5" />}
-							className="bg-gradient-to-br from-primary to-secondary"
-							size="sm"
-						/>
-						<div className="flex flex-col">
-							<h2 className="text-sm font-semibold text-foreground">Pulsy</h2>
-							<p className="text-xs text-muted-foreground">
-								{status === "submitted" && currentTool
-									? "Working..."
-									: "EventPulse Assistant"}
-							</p>
+				{/* Header with Pulsy and Tool Status */}
+				<div className="border-b border-divider/50 bg-background/60 backdrop-blur-sm">
+					{/* Top row with avatar, name, and controls */}
+					<div className="flex items-center justify-between p-4">
+						<div className="flex items-center gap-3">
+							<Avatar
+								src=""
+								icon={<Bot className="h-5 w-5" />}
+								className="bg-gradient-to-br from-primary to-secondary"
+								size="sm"
+							/>
+							<div className="flex flex-col">
+								<h2 className="text-sm font-semibold text-foreground">Pulsy</h2>
+								<p className="text-xs text-muted-foreground">
+									EventPulse Assistant
+								</p>
+							</div>
 						</div>
-					</div>
 
-					{/* Status Indicator */}
-					<div className="flex items-center gap-2">
-						{status === "submitted" && currentTool && (
-							<Chip
-								size="sm"
-								variant="flat"
-								color="primary"
-								startContent={<Loader2 className="h-3 w-3 animate-spin" />}
-							>
-								Processing
-							</Chip>
-						)}
-						{error && (
-							<Chip
-								size="sm"
-								variant="flat"
-								color="danger"
-								startContent={<AlertCircle className="h-3 w-3" />}
-							>
-								Error
-							</Chip>
-						)}
-						{messages.length > 0 && (
+						{/* Status Indicator and Controls */}
+						<div className="flex items-center gap-2">
+							{error && (
+								<Chip
+									size="sm"
+									variant="flat"
+									color="danger"
+									startContent={<AlertCircle className="h-3 w-3" />}
+								>
+									Error
+								</Chip>
+							)}
+							{messages.length > 0 && (
+								<Button
+									isIconOnly
+									variant="light"
+									size="sm"
+									className="text-muted-foreground hover:text-danger"
+									onClick={clearChatHistory}
+									title="Clear chat history"
+								>
+									<Trash2 className="h-4 w-4" />
+								</Button>
+							)}
 							<Button
 								isIconOnly
 								variant="light"
 								size="sm"
-								className="text-muted-foreground hover:text-danger"
-								onClick={clearChatHistory}
-								title="Clear chat history"
+								className="text-muted-foreground"
 							>
-								<Trash2 className="h-4 w-4" />
+								<Settings className="h-4 w-4" />
 							</Button>
-						)}
-						<Button
-							isIconOnly
-							variant="light"
-							size="sm"
-							className="text-muted-foreground"
-						>
-							<Settings className="h-4 w-4" />
-						</Button>
+						</div>
 					</div>
+
+					{/* Tool Status Section - Now shown in header */}
+					{(currentTool ||
+						(toolHistory.length > 0 && !hasShownToolHistory)) && (
+						<div className="px-4 pb-4">
+							<Card className="bg-default-50 border-primary/20">
+								<CardBody className="p-3">
+									<div className="flex items-center gap-2 mb-2">
+										{currentTool ? (
+											<>
+												<Loader2 className="h-4 w-4 text-primary animate-spin" />
+												<p className="text-sm font-medium text-primary">
+													Processing your request...
+												</p>
+											</>
+										) : (
+											<>
+												<CheckCircle className="h-4 w-4 text-success" />
+												<p className="text-sm font-medium text-success">
+													Task completed
+												</p>
+											</>
+										)}
+									</div>
+
+									<div className="space-y-2">
+										{toolHistory
+											.reduce((unique, current) => {
+												const existingTool = unique.find(
+													(tool) => tool.name === current.name
+												);
+												if (
+													!existingTool ||
+													existingTool.startTime < current.startTime
+												) {
+													if (existingTool) {
+														unique = unique.filter(
+															(tool) => tool.name !== current.name
+														);
+													}
+													unique.push(current);
+												}
+												return unique;
+											}, [] as ToolCallInfo[])
+											.sort((a, b) => a.startTime - b.startTime)
+											.map((tool, index) => (
+												<motion.div
+													key={tool.id}
+													className="flex items-center gap-3 p-2 rounded-lg bg-background/50"
+													initial={{ opacity: 0, x: -10 }}
+													animate={{ opacity: 1, x: 0 }}
+													transition={{ delay: index * 0.1 }}
+												>
+													{tool.status === "completed" ? (
+														<CheckCircle className="h-3 w-3 text-success" />
+													) : tool.status === "error" ? (
+														<AlertCircle className="h-3 w-3 text-danger" />
+													) : (
+														<Loader2 className="h-3 w-3 text-primary animate-spin" />
+													)}
+
+													<div className="flex-1 min-w-0">
+														<p className="text-xs font-medium truncate">
+															{tool.name}
+														</p>
+														{Object.keys(tool.parameters || {}).length > 0 && (
+															<p className="text-xs text-muted-foreground truncate">
+																{formatToolParameters(tool.parameters)}
+															</p>
+														)}
+													</div>
+
+													<Chip
+														size="sm"
+														variant="flat"
+														color={
+															tool.status === "completed"
+																? "success"
+																: tool.status === "error"
+																	? "danger"
+																	: "primary"
+														}
+														className="text-xs"
+													>
+														{tool.status}
+													</Chip>
+												</motion.div>
+											))}
+									</div>
+								</CardBody>
+							</Card>
+						</div>
+					)}
 				</div>
 
 				{/* Messages Container with ScrollShadow */}
@@ -712,110 +802,6 @@ export default function ChatInterface() {
 													</div>
 												</motion.div>
 											))}
-
-											{/* Tool History */}
-											{messages.length > 0 &&
-												toolHistory.length > 0 &&
-												(currentTool || !hasShownToolHistory) && (
-													<motion.div
-														key="tool-history"
-														className="flex gap-3"
-														initial={{ opacity: 0, y: 20 }}
-														animate={{ opacity: 1, y: 0 }}
-														exit={{ opacity: 0, y: -10 }}
-													>
-														<Avatar
-															src=""
-															icon={<Bot className="h-4 w-4" />}
-															className="bg-gradient-to-br from-secondary to-primary"
-															size="sm"
-														/>
-
-														<div className="flex-1 max-w-[75%]">
-															<Card className="bg-default-50 border-primary/20">
-																<CardBody className="p-4">
-																	<div className="flex items-center gap-2 mb-3">
-																		<Loader2 className="h-4 w-4 text-primary animate-spin" />
-																		<p className="text-sm font-medium text-primary">
-																			{currentTool
-																				? "Processing your request..."
-																				: "Task completed"}
-																		</p>
-																	</div>
-
-																	<div className="space-y-2">
-																		{toolHistory
-																			.reduce((unique, current) => {
-																				const existingTool = unique.find(
-																					(tool) => tool.name === current.name
-																				);
-																				if (
-																					!existingTool ||
-																					existingTool.startTime <
-																						current.startTime
-																				) {
-																					if (existingTool) {
-																						unique = unique.filter(
-																							(tool) =>
-																								tool.name !== current.name
-																						);
-																					}
-																					unique.push(current);
-																				}
-																				return unique;
-																			}, [] as ToolCallInfo[])
-																			.sort((a, b) => a.startTime - b.startTime)
-																			.map((tool, index) => (
-																				<motion.div
-																					key={tool.id}
-																					className="flex items-center gap-3 p-2 rounded-lg bg-background/50"
-																					initial={{ opacity: 0, x: -10 }}
-																					animate={{ opacity: 1, x: 0 }}
-																					transition={{ delay: index * 0.1 }}
-																				>
-																					{tool.status === "completed" ? (
-																						<CheckCircle className="h-4 w-4 text-success" />
-																					) : tool.status === "error" ? (
-																						<AlertCircle className="h-4 w-4 text-danger" />
-																					) : (
-																						<Loader2 className="h-4 w-4 text-primary animate-spin" />
-																					)}
-
-																					<div className="flex-1">
-																						<p className="text-xs font-medium">
-																							{tool.name}
-																						</p>
-																						{Object.keys(tool.parameters || {})
-																							.length > 0 && (
-																							<p className="text-xs text-muted-foreground">
-																								{formatToolParameters(
-																									tool.parameters
-																								)}
-																							</p>
-																						)}
-																					</div>
-
-																					<Chip
-																						size="sm"
-																						variant="flat"
-																						color={
-																							tool.status === "completed"
-																								? "success"
-																								: tool.status === "error"
-																									? "danger"
-																									: "primary"
-																						}
-																					>
-																						{tool.status}
-																					</Chip>
-																				</motion.div>
-																			))}
-																	</div>
-																</CardBody>
-															</Card>
-														</div>
-													</motion.div>
-												)}
 										</AnimatePresence>
 									</div>
 									<div ref={messagesEndRef} />
@@ -839,14 +825,16 @@ export default function ChatInterface() {
 								value={input}
 								onChange={handleInputChange}
 								placeholder="Type your message..."
-								className="bg-default-100"
-								variant="flat"
+								variant="bordered"
 								size="lg"
+								radius="lg"
 								disabled={status === "submitted"}
 								classNames={{
+									base: "w-full",
+									mainWrapper: "h-14",
 									input: "text-sm",
 									inputWrapper:
-										"border-divider/50 hover:border-primary/50 focus-within:!border-primary",
+										"h-14 border-divider hover:border-primary/50 data-[focus=true]:border-primary data-[hover=true]:border-primary/50 group-data-[focus=true]:border-primary",
 								}}
 							/>
 						</div>
@@ -856,8 +844,9 @@ export default function ChatInterface() {
 							color="primary"
 							isIconOnly
 							size="lg"
+							radius="lg"
 							isDisabled={!input.trim() || status === "submitted"}
-							className="h-14 w-14 rounded-xl shadow-lg"
+							className="h-14 w-14 shadow-lg"
 							isLoading={status === "submitted"}
 						>
 							{status === "submitted" ? (
