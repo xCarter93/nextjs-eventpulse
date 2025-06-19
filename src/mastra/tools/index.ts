@@ -3,7 +3,7 @@ import { createEventTool, getUpcomingEventsTool } from "./event-tools";
 import { searchRecipientsTool, getRecipientsTool } from "./contact-tools";
 import {
 	runEventCreationWorkflowTool,
-	runContactCreationWorkflowTool,
+	createContactStepByStepTool,
 } from "./workflow-tools";
 
 // Export event tools
@@ -15,7 +15,7 @@ export { searchRecipientsTool, getRecipientsTool } from "./contact-tools";
 // Export workflow tools
 export {
 	runEventCreationWorkflowTool,
-	runContactCreationWorkflowTool,
+	createContactStepByStepTool,
 } from "./workflow-tools";
 
 // Tool categories for easier management
@@ -28,7 +28,7 @@ export const eventTools = {
 export const contactTools = {
 	searchRecipients: searchRecipientsTool,
 	getRecipients: getRecipientsTool,
-	runContactCreationWorkflow: runContactCreationWorkflowTool,
+	createContactStepByStep: createContactStepByStepTool,
 } as const;
 
 // All tools combined
