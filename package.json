@@ -62,6 +62,7 @@
 		"dotted-map": "^2.2.3",
 		"embla-carousel-react": "^8.5.2",
 		"googleapis": "^144.0.0",
+		"langfuse-vercel": "^3.37.4",
 		"leaflet": "^1.9.4",
 		"lucide-react": "^0.469.0",
 		"mapbox-gl": "^3.9.3",
