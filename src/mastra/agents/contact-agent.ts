@@ -4,7 +4,7 @@ import {
 	searchRecipientsTool,
 	getRecipientsTool,
 } from "../tools/contact-tools";
-import { runContactCreationWorkflowTool } from "../tools/workflow-tools";
+import { createContactStepByStepTool } from "../tools/workflow-tools";
 
 export const contactAgent = new Agent({
 	name: "Contact Manager",
@@ -29,19 +29,21 @@ export const contactAgent = new Agent({
     - Be proactive in identifying data quality issues
     
     When creating contacts:
-    1. **ALWAYS use runContactCreationWorkflow tool for contact creation** - this is the only contact creation method available
-    2. The runContactCreationWorkflow tool starts an interactive step-by-step process that:
-       - First asks for the contact's name
-       - Then asks for their email address
-       - Finally asks for their birthday (optional)
-       - Each step validates the input before proceeding to the next
-    3. This interactive workflow provides the best user experience by:
+    1. **ALWAYS use createContactStepByStep tool for contact creation** - this is the only contact creation method available
+    2. Use this step-by-step process:
+       - First call the tool with action='start' to begin
+       - When user provides name, call with action='provide-name' and value='[name]' 
+       - When user provides email, call with action='provide-email' and value='[email]'
+       - When user provides birthday, call with action='provide-birthday' and value='[birthday]'
+       - If user wants to skip birthday, call with action='skip-birthday'
+       - Always use a unique userId for the conversation (you can use the thread ID or user ID)
+    3. This interactive process provides the best user experience by:
        - Gathering information one piece at a time (not all at once)
        - Validating each piece of information as it's entered
        - Preventing errors through proper validation
        - Making the process conversational and user-friendly
-    4. **Do NOT ask the user for all contact details upfront** - let the workflow handle this step by step
-    5. The workflow will suspend at each step waiting for user input, making it truly interactive
+    4. **Do NOT ask the user for all contact details upfront** - follow the step-by-step process
+    5. Always respond with the tool's message and continue the conversation naturally
     
     When searching contacts:
     1. Use appropriate search criteria based on user requests
@@ -59,6 +61,6 @@ export const contactAgent = new Agent({
 	tools: {
 		searchRecipients: searchRecipientsTool,
 		getRecipients: getRecipientsTool,
-		runContactCreationWorkflow: runContactCreationWorkflowTool,
+		createContactStepByStep: createContactStepByStepTool,
 	},
 });
