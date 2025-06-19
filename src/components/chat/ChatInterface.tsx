@@ -22,6 +22,7 @@ import {
 	CheckCircle,
 	AlertCircle,
 	Settings,
+	Trash2,
 } from "lucide-react";
 import { useChat } from "@ai-sdk/react";
 import ReactMarkdown from "react-markdown";
@@ -77,6 +78,7 @@ export default function ChatInterface() {
 		status,
 		error,
 		id,
+		setMessages,
 	} = useChat({
 		api: "/api/chat",
 		initialMessages: [],
@@ -267,6 +269,37 @@ export default function ChatInterface() {
 		scrollToBottom();
 	}, [messages, lastMessageContent]);
 
+	// Function to clear all chat data
+	const clearChatHistory = () => {
+		setMessages([]);
+		setErrorDetails(null);
+		setErrorType(null);
+		setToolHistory([]);
+		setHasReceivedAnswer(false);
+		setHasShownToolHistory(false);
+		processedToolCallIds.current.clear();
+		setCurrentTool(null);
+		setFinishLogged(false);
+		setCurrentConversationId("");
+	};
+
+	// Clear chat history when component unmounts (chat window closes)
+	useEffect(() => {
+		const processedIds = processedToolCallIds.current;
+		return () => {
+			setMessages([]);
+			setErrorDetails(null);
+			setErrorType(null);
+			setToolHistory([]);
+			setHasReceivedAnswer(false);
+			setHasShownToolHistory(false);
+			processedIds.clear();
+			setCurrentTool(null);
+			setFinishLogged(false);
+			setCurrentConversationId("");
+		};
+	}, [setMessages]);
+
 	// Display any errors
 	useEffect(() => {
 		if (error) {
@@ -280,7 +313,7 @@ export default function ChatInterface() {
 		setErrorDetails(null);
 		setErrorType(null);
 
-		// Clear tool history and reset all flags
+		// Clear tool history and reset all flags for each new user message
 		setToolHistory([]);
 		setHasReceivedAnswer(false);
 		setHasShownToolHistory(false);
@@ -387,6 +420,18 @@ export default function ChatInterface() {
 							>
 								Error
 							</Chip>
+						)}
+						{messages.length > 0 && (
+							<Button
+								isIconOnly
+								variant="light"
+								size="sm"
+								className="text-muted-foreground hover:text-danger"
+								onClick={clearChatHistory}
+								title="Clear chat history"
+							>
+								<Trash2 className="h-4 w-4" />
+							</Button>
 						)}
 						<Button
 							isIconOnly
@@ -671,7 +716,7 @@ export default function ChatInterface() {
 											{/* Tool History */}
 											{messages.length > 0 &&
 												toolHistory.length > 0 &&
-												!hasShownToolHistory && (
+												(currentTool || !hasShownToolHistory) && (
 													<motion.div
 														key="tool-history"
 														className="flex gap-3"

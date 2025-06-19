@@ -15,7 +15,7 @@ import {
 	logAI,
 } from "@/utils/logging";
 
-// Validation schemas
+// Validation schemas - simplified to match actual database schema
 const eventSchema = z.object({
 	name: z
 		.string()
@@ -24,7 +24,7 @@ const eventSchema = z.object({
 	date: z
 		.string()
 		.describe(
-			"Event date in any format (e.g., '03/18/2025', 'March 18, 2025', 'next Tuesday')"
+			"Event date in any format (e.g., '06/25/2025', 'June 25, 2025', 'next Tuesday')"
 		),
 	isRecurring: z
 		.boolean()
@@ -49,6 +49,10 @@ const parseEventDate = (dateInput: string): number => {
 		input: cleanDate,
 	});
 
+	// Get current date for relative date calculations
+	const now = new Date();
+	const currentYear = now.getFullYear();
+
 	// Try parseDate first (handles natural language)
 	try {
 		const timestamp = parseDate(cleanDate);
@@ -59,9 +63,24 @@ const parseEventDate = (dateInput: string): number => {
 		}
 
 		const year = dateObj.getFullYear();
+
+		// If the parsed year is in the past (like 2023), adjust to current year or next year
+		if (year < currentYear) {
+			// Check if this is a relative date that got parsed incorrectly
+			const adjustedDate = new Date(dateObj);
+			adjustedDate.setFullYear(currentYear + 1); // Set to next year
+
+			logAI(LogLevel.DEBUG, LogCategory.DATE_PARSING, "adjusted_past_year", {
+				original: dateObj.toISOString(),
+				adjusted: adjustedDate.toISOString(),
+			});
+
+			return adjustedDate.getTime();
+		}
+
 		if (!validateEventYear(year)) {
 			throw new Error(
-				`The year ${year} seems unusual. Please provide a date between ${new Date().getFullYear()} and ${new Date().getFullYear() + 10}.`
+				`The year ${year} seems unusual. Please provide a date between ${currentYear} and ${currentYear + 10}.`
 			);
 		}
 
@@ -78,7 +97,12 @@ const parseEventDate = (dateInput: string): number => {
 	if (parts.length === 3) {
 		const month = parseInt(parts[0], 10);
 		const day = parseInt(parts[1], 10);
-		const year = parseInt(parts[2], 10);
+		let year = parseInt(parts[2], 10);
+
+		// Handle 2-digit years by assuming they're in the 2000s
+		if (year < 100) {
+			year += 2000;
+		}
 
 		if (!isNaN(month) && !isNaN(day) && !isNaN(year)) {
 			const dateObj = new Date(year, month - 1, day);
@@ -96,8 +120,32 @@ const parseEventDate = (dateInput: string): number => {
 
 			if (!validateEventYear(year)) {
 				throw new Error(
-					`The year ${year} seems unusual. Please provide a date between ${new Date().getFullYear()} and ${new Date().getFullYear() + 10}.`
+					`The year ${year} seems unusual. Please provide a date between ${currentYear} and ${currentYear + 10}.`
 				);
+			}
+
+			return dateObj.getTime();
+		}
+	}
+
+	// Try MM/DD format (assume current year or next year if date has passed)
+	if (parts.length === 2) {
+		const month = parseInt(parts[0], 10);
+		const day = parseInt(parts[1], 10);
+
+		if (!isNaN(month) && !isNaN(day)) {
+			let year = currentYear;
+			const dateObj = new Date(year, month - 1, day);
+
+			// If the date has already passed this year, use next year
+			if (dateObj < now) {
+				year = currentYear + 1;
+				dateObj.setFullYear(year);
+			}
+
+			// Verify the date is valid
+			if (dateObj.getMonth() !== month - 1 || dateObj.getDate() !== day) {
+				throw new Error(`Invalid date: ${month}/${day} does not exist.`);
 			}
 
 			return dateObj.getTime();
@@ -107,17 +155,24 @@ const parseEventDate = (dateInput: string): number => {
 	// Try standard date parsing as fallback
 	const parsedDate = new Date(cleanDate);
 	if (!isNaN(parsedDate.getTime())) {
-		const year = parsedDate.getFullYear();
+		let year = parsedDate.getFullYear();
+
+		// If parsed year is in the past, adjust to current or next year
+		if (year < currentYear) {
+			parsedDate.setFullYear(currentYear + 1);
+			year = currentYear + 1;
+		}
+
 		if (!validateEventYear(year)) {
 			throw new Error(
-				`The year ${year} seems unusual. Please provide a date between ${new Date().getFullYear()} and ${new Date().getFullYear() + 10}.`
+				`The year ${year} seems unusual. Please provide a date between ${currentYear} and ${currentYear + 10}.`
 			);
 		}
 		return parsedDate.getTime();
 	}
 
 	throw new Error(
-		`I couldn't understand the date format. Please provide the date in a clear format like "MM/DD/YYYY" (e.g., 03/18/2025) or a natural description like "March 18, 2025", "next Tuesday", "two weeks from today", or "in 3 months".`
+		`I couldn't understand the date format. Please provide the date in a clear format like "MM/DD/YYYY" (e.g., 06/25/2025) or a natural description like "June 25, 2025", "next Tuesday", "two weeks from today", or "in 3 months".`
 	);
 };
 
@@ -132,20 +187,19 @@ const formatEventDate = (timestamp: number): string => {
 };
 
 /**
- * Create a new event tool
+ * Create a new event tool - simplified to match actual database schema
  */
 export const createEventTool = createTool({
 	id: "create-event",
 	description:
-		"Create a new event ONLY when you have explicitly confirmed the event name, date, and recurrence preference with the user. Do NOT call this tool if any required information is missing - ask the user for the missing details first.",
+		"Create a new event. Only requires event name and date. Do not ask for location or description as these are not stored.",
 	inputSchema: z.object({
-		name: z.string().describe("The event name (must be provided by user)"),
-		date: z
-			.string()
-			.describe("The event date in any format (must be provided by user)"),
+		name: z.string().describe("The event name"),
+		date: z.string().describe("The event date in any format"),
 		isRecurring: z
 			.boolean()
 			.optional()
+			.default(false)
 			.describe(
 				"Whether the event recurs annually (optional, defaults to false)"
 			),
