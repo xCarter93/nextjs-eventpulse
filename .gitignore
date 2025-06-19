@@ -40,6 +40,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# mastra
+.mastra
+
 .codegpt
 .cursor/rules
 CLAUDE.md
+AGENT_MIGRATION.md
