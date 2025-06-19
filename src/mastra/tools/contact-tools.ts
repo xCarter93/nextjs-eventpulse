@@ -2,6 +2,8 @@ import { createTool } from "@mastra/core/tools";
 import { z } from "zod";
 import { createRecipient } from "@/utils/server-actions";
 import { ConvexHttpClient } from "convex/browser";
+import { api } from "../../../convex/_generated/api";
+import { auth } from "@clerk/nextjs/server";
 import { logError, logToolCall, LogCategory } from "@/utils/logging";
 
 // Validation schemas
@@ -256,31 +258,66 @@ export const searchRecipientsTool = createTool({
 				limit,
 			});
 
-			// Setup Convex client
+			// Get the authentication token from Clerk
+			const session = await auth();
+			const token = await session.getToken({ template: "convex" });
+
+			if (!token) {
+				throw new Error(
+					"Authentication required. Please log in to search recipients."
+				);
+			}
+
+			// Setup Convex client with authentication
 			const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
 			if (!convexUrl) {
 				throw new Error("Convex configuration error");
 			}
 
-			// For now, we'll implement a simple search
-			// You would replace this with your actual search server action
-			const searchResults: {
-				id?: string;
-				name: string;
-				email: string;
-				birthday?: number;
-			}[] = []; // Placeholder
+			const convex = new ConvexHttpClient(convexUrl);
+			convex.setAuth(token);
 
-			const recipients = searchResults
-				.slice(0, limit)
-				.map((recipient, index) => ({
-					id: recipient.id || `recipient-${index}`,
+			// Get all recipients and filter them locally
+			const allRecipients = await convex.query(api.recipients.getRecipients);
+
+			if (!allRecipients) {
+				throw new Error("Failed to fetch recipients");
+			}
+
+			// Filter recipients based on the search query
+			const filteredRecipients = allRecipients.filter(
+				(recipient: {
+					_id: string;
+					name: string;
+					email: string;
+					birthday?: number;
+				}) => {
+					const searchText = query.toLowerCase();
+					return (
+						recipient.name.toLowerCase().includes(searchText) ||
+						recipient.email.toLowerCase().includes(searchText)
+					);
+				}
+			);
+
+			// Apply limit
+			const searchResults = filteredRecipients.slice(0, limit);
+
+			const recipients = searchResults.map(
+				(recipient: {
+					_id: string;
+					name: string;
+					email: string;
+					birthday?: number;
+				}) => ({
+					id: recipient._id,
 					name: recipient.name,
 					email: recipient.email,
 					birthday: recipient.birthday
 						? new Date(recipient.birthday).toLocaleDateString()
 						: undefined,
-				}));
+				})
+			);
 
 			const summary = `Found ${recipients.length} recipients matching "${query}"`;
 
@@ -305,7 +342,7 @@ export const searchRecipientsTool = createTool({
  */
 export const getRecipientsTool = createTool({
 	id: "get-recipients",
-	description: "Get a list of all recipients/contacts",
+	description: "Get a list of all recipients/contacts and their count",
 	inputSchema: z.object({
 		limit: z
 			.number()
@@ -317,6 +354,11 @@ export const getRecipientsTool = createTool({
 			.optional()
 			.default(0)
 			.describe("Number of recipients to skip"),
+		showDetails: z
+			.boolean()
+			.optional()
+			.default(false)
+			.describe("Whether to show detailed information for each recipient"),
 	}),
 	outputSchema: z.object({
 		success: z.boolean(),
@@ -332,42 +374,86 @@ export const getRecipientsTool = createTool({
 		summary: z.string(),
 	}),
 	execute: async ({ context }) => {
-		const { limit, offset } = context;
+		const { limit, offset, showDetails } = context;
 
 		try {
 			logToolCall("getRecipientsTool", "execute", {
 				limit,
 				offset,
+				showDetails,
 			});
 
-			// Setup Convex client
+			// Get the authentication token from Clerk
+			const session = await auth();
+			const token = await session.getToken({ template: "convex" });
+
+			if (!token) {
+				throw new Error(
+					"Authentication required. Please log in to view your recipients."
+				);
+			}
+
+			// Setup Convex client with authentication
 			const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
 			if (!convexUrl) {
 				throw new Error("Convex configuration error");
 			}
 
-			// For now, we'll return a placeholder result
-			// You would replace this with your actual get recipients server action
-			const allRecipients: {
-				id?: string;
-				name: string;
-				email: string;
-				birthday?: number;
-			}[] = []; // Placeholder
+			const convex = new ConvexHttpClient(convexUrl);
+			convex.setAuth(token);
+
+			// Get all recipients using the Convex API
+			const allRecipients = await convex.query(api.recipients.getRecipients);
+
+			if (!allRecipients) {
+				throw new Error("Failed to fetch recipients");
+			}
+
 			const total = allRecipients.length;
 
+			// Apply offset and limit
 			const recipients = allRecipients
 				.slice(offset, offset + limit)
-				.map((recipient, index) => ({
-					id: recipient.id || `recipient-${index}`,
-					name: recipient.name,
-					email: recipient.email,
-					birthday: recipient.birthday
-						? new Date(recipient.birthday).toLocaleDateString()
-						: undefined,
-				}));
+				.map(
+					(recipient: {
+						_id: string;
+						name: string;
+						email: string;
+						birthday?: number;
+					}) => ({
+						id: recipient._id,
+						name: recipient.name,
+						email: recipient.email,
+						birthday: recipient.birthday
+							? new Date(recipient.birthday).toLocaleDateString()
+							: undefined,
+					})
+				);
 
-			const summary = `Retrieved ${recipients.length} of ${total} total recipients`;
+			// Create summary message
+			let summary: string;
+			if (total === 0) {
+				summary =
+					"You don't have any recipients yet. You can add new recipients to get started!";
+			} else if (total === 1) {
+				summary = "You have **1 recipient** in your contact list.";
+			} else {
+				summary = `You have **${total} recipients** in your contact list.`;
+			}
+
+			// Add detailed list if requested
+			if (showDetails && recipients.length > 0) {
+				const detailsList = recipients
+					.map((recipient, index) => {
+						const birthdayText = recipient.birthday
+							? `\n   🎂 ${recipient.birthday}`
+							: "";
+						return `${index + 1}. **${recipient.name}**\n   📧 ${recipient.email}${birthdayText}`;
+					})
+					.join("\n\n");
+
+				summary += `\n\n${detailsList}`;
+			}
 
 			return {
 				success: true,
@@ -380,6 +466,13 @@ export const getRecipientsTool = createTool({
 
 			const errorMessage =
 				error instanceof Error ? error.message : "An unexpected error occurred";
+
+			// Provide helpful error responses
+			if (errorMessage.includes("authentication")) {
+				throw new Error(
+					"You need to be logged in to view your recipients. Please log in and try again."
+				);
+			}
 
 			throw new Error(`Failed to get recipients: ${errorMessage}`);
 		}

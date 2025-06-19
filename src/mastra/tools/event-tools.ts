@@ -6,6 +6,7 @@ import {
 	getUpcomingEvents,
 } from "@/utils/server-actions";
 import { ConvexHttpClient } from "convex/browser";
+import { auth } from "@clerk/nextjs/server";
 import {
 	logError,
 	logToolCall,
@@ -201,13 +202,24 @@ export const createEventTool = createTool({
 			// Parse and validate date
 			const dateTimestamp = parseEventDate(sanitizedDate);
 
-			// Setup Convex client
+			// Get the authentication token from Clerk
+			const session = await auth();
+			const token = await session.getToken({ template: "convex" });
+
+			if (!token) {
+				throw new Error(
+					"Authentication required. Please log in to create events."
+				);
+			}
+
+			// Setup Convex client with authentication
 			const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
 			if (!convexUrl) {
 				throw new Error("Convex configuration error");
 			}
 
 			const convex = new ConvexHttpClient(convexUrl);
+			convex.setAuth(token);
 
 			// Create the event
 			logAI(LogLevel.INFO, LogCategory.EVENT, "calling_create_event", {
@@ -327,13 +339,24 @@ export const getUpcomingEventsTool = createTool({
 				includeRecurring,
 			});
 
-			// Setup Convex client
+			// Get the authentication token from Clerk
+			const session = await auth();
+			const token = await session.getToken({ template: "convex" });
+
+			if (!token) {
+				throw new Error(
+					"Authentication required. Please log in to view upcoming events."
+				);
+			}
+
+			// Setup Convex client with authentication
 			const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
 			if (!convexUrl) {
 				throw new Error("Convex configuration error");
 			}
 
 			const convex = new ConvexHttpClient(convexUrl);
+			convex.setAuth(token);
 
 			// Calculate date range based on timeframe
 			const startDate = new Date().toISOString().split("T")[0];
@@ -378,17 +401,30 @@ export const getUpcomingEventsTool = createTool({
 				throw new Error(result.error || "Failed to fetch upcoming events");
 			}
 
-			const events = (result.events || [])
-				.filter((event) => {
-					// Apply search term filtering if provided
-					if (searchTerm) {
-						const searchLower = searchTerm.toLowerCase();
-						return event.name.toLowerCase().includes(searchLower);
-					}
-					return true;
-				})
-				.slice(0, limit)
-				.map((event, index) => ({
+			let events = result.events || [];
+
+			// Apply search term filtering if provided
+			if (searchTerm && searchTerm.trim() !== "") {
+				const searchLower = searchTerm.toLowerCase();
+				events = events.filter((event: { name: string; person?: string }) => {
+					return (
+						event.name.toLowerCase().includes(searchLower) ||
+						(event.person && event.person.toLowerCase().includes(searchLower))
+					);
+				});
+			}
+
+			// Apply limit and format events
+			const formattedEvents = events.slice(0, limit).map(
+				(
+					event: {
+						timestamp: number;
+						name: string;
+						type?: string;
+						person?: string;
+					},
+					index: number
+				) => ({
 					id: `event-${index}`,
 					name: event.name,
 					date: new Date(event.timestamp).toISOString(),
@@ -397,13 +433,19 @@ export const getUpcomingEventsTool = createTool({
 					daysUntil: Math.ceil(
 						(event.timestamp - Date.now()) / (1000 * 60 * 60 * 24)
 					),
-				}));
+				})
+			);
 
-			const summary = `Found ${events.length} upcoming events in the next ${timeframe}${searchTerm ? ` matching "${searchTerm}"` : ""}`;
+			// Sort events by date
+			formattedEvents.sort(
+				(a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+			);
+
+			const summary = `Found ${formattedEvents.length} upcoming events in the next ${timeframe}${searchTerm ? ` matching "${searchTerm}"` : ""}`;
 
 			return {
 				success: true,
-				events,
+				events: formattedEvents,
 				summary,
 			};
 		} catch (error) {
@@ -411,6 +453,13 @@ export const getUpcomingEventsTool = createTool({
 
 			const errorMessage =
 				error instanceof Error ? error.message : "An unexpected error occurred";
+
+			// Provide helpful error responses
+			if (errorMessage.includes("authentication")) {
+				throw new Error(
+					"You need to be logged in to view upcoming events. Please log in and try again."
+				);
+			}
 
 			throw new Error(`Failed to fetch upcoming events: ${errorMessage}`);
 		}
