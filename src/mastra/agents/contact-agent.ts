@@ -5,6 +5,7 @@ import {
 	searchRecipientsTool,
 	getRecipientsTool,
 } from "../tools/contact-tools";
+import { runContactCreationWorkflowTool } from "../tools/workflow-tools";
 
 export const contactAgent = new Agent({
 	name: "Contact Manager",
@@ -29,11 +30,14 @@ export const contactAgent = new Agent({
     - Be proactive in identifying data quality issues
     
     When creating contacts:
-    1. Ensure you have the contact name and email address
-    2. Validate email format and check for reasonableness
-    3. Parse birthday information carefully if provided
-    4. Check for potential duplicates in existing contacts
-    5. Confirm details with the user before creation
+    1. For simple contact creation: use createRecipient tool
+    2. For robust contact creation with validation: use runContactCreationWorkflow tool
+    3. The workflow provides multi-step validation, birthday parsing, and error handling
+    4. Ensure you have the contact name and email address
+    5. Validate email format and check for reasonableness
+    6. Parse birthday information carefully if provided
+    7. Check for potential duplicates in existing contacts
+    8. Confirm details with the user before creation
     
     When searching contacts:
     1. Use appropriate search criteria based on user requests
@@ -52,5 +56,6 @@ export const contactAgent = new Agent({
 		createRecipient: createRecipientTool,
 		searchRecipients: searchRecipientsTool,
 		getRecipients: getRecipientsTool,
+		runContactCreationWorkflow: runContactCreationWorkflowTool,
 	},
 });
