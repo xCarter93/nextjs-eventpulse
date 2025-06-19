@@ -72,6 +72,10 @@ const parseBirthday = (birthday: string): number => {
 
 /**
  * Create a new recipient/contact tool
+ *
+ * @deprecated This tool is kept for compatibility with the old AI tools system.
+ * For new Mastra agents, use runContactCreationWorkflowTool instead for a better
+ * step-by-step interactive experience.
  */
 export const createRecipientTool = createTool({
 	id: "create-recipient",

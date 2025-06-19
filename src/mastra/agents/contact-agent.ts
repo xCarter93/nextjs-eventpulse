@@ -1,7 +1,6 @@
 import { Agent } from "@mastra/core/agent";
 import { openai } from "@ai-sdk/openai";
 import {
-	createRecipientTool,
 	searchRecipientsTool,
 	getRecipientsTool,
 } from "../tools/contact-tools";
@@ -30,18 +29,19 @@ export const contactAgent = new Agent({
     - Be proactive in identifying data quality issues
     
     When creating contacts:
-    1. For simple contact creation: use createRecipient tool if you have all required information
-    2. For interactive contact creation: use runContactCreationWorkflow tool
-    3. The runContactCreationWorkflow tool starts an interactive step-by-step process that:
+    1. **ALWAYS use runContactCreationWorkflow tool for contact creation** - this is the only contact creation method available
+    2. The runContactCreationWorkflow tool starts an interactive step-by-step process that:
        - First asks for the contact's name
        - Then asks for their email address
        - Finally asks for their birthday (optional)
-       - Each step validates the input before proceeding
-    4. This interactive workflow is perfect when the user wants to create a contact but hasn't provided all details
-    5. The workflow will suspend at each step waiting for user input, making it conversational
-    6. Always inform the user what information will be requested in the workflow
-    7. Check for potential duplicates when possible
-    8. Encourage using the interactive workflow for better data quality
+       - Each step validates the input before proceeding to the next
+    3. This interactive workflow provides the best user experience by:
+       - Gathering information one piece at a time (not all at once)
+       - Validating each piece of information as it's entered
+       - Preventing errors through proper validation
+       - Making the process conversational and user-friendly
+    4. **Do NOT ask the user for all contact details upfront** - let the workflow handle this step by step
+    5. The workflow will suspend at each step waiting for user input, making it truly interactive
     
     When searching contacts:
     1. Use appropriate search criteria based on user requests
@@ -57,7 +57,6 @@ export const contactAgent = new Agent({
   `,
 	model: openai("gpt-4o-mini"),
 	tools: {
-		createRecipient: createRecipientTool,
 		searchRecipients: searchRecipientsTool,
 		getRecipients: getRecipientsTool,
 		runContactCreationWorkflow: runContactCreationWorkflowTool,
