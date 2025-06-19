@@ -7,7 +7,9 @@
 		"build": "next build",
 		"start": "next start",
 		"lint": "next lint",
-		"update-ai-docs": "tsx scripts/update-ai-docs.ts"
+		"update-ai-docs": "tsx scripts/update-ai-docs.ts",
+		"dev:mastra": "mastra dev --dir src/mastra",
+		"build:mastra": "mastra build --dir src/mastra"
 	},
 	"dependencies": {
 		"@ai-sdk/openai": "^1.1.13",
