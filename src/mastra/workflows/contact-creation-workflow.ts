@@ -3,162 +3,221 @@ import { z } from "zod";
 import { ConvexHttpClient } from "convex/browser";
 import { createRecipient } from "../../utils/server-actions";
 
-// Workflow input schema
+// Initial workflow input schema - just to start the workflow
 const contactCreationInputSchema = z.object({
-	name: z.string().min(1, "Name is required"),
-	email: z.string().email("Please provide a valid email address"),
-	birthday: z.string().optional().describe("Birthday in any format (optional)"),
-	additionalInfo: z
-		.string()
-		.optional()
-		.describe("Additional context about the contact"),
+	start: z
+		.boolean()
+		.default(true)
+		.describe("Start the contact creation process"),
 });
 
-// Step 1: Validate and sanitize contact data
-const validateContactDataStep = createStep({
-	id: "validate-contact-data",
-	description: "Validates and sanitizes contact input data",
-	inputSchema: contactCreationInputSchema,
-	outputSchema: z.object({
-		sanitizedName: z.string(),
-		sanitizedEmail: z.string(),
-		birthday: z.string().optional(),
-		additionalInfo: z.string().optional(),
+// Step 1: Ask for Name
+const askForNameStep = createStep({
+	id: "ask-for-name",
+	description: "Ask the user for the contact's name",
+	inputSchema: z.object({
+		start: z.boolean().default(true),
 	}),
-	execute: async ({ inputData }) => {
-		const { name, email, birthday, additionalInfo } = inputData;
-
-		const sanitizeInput = (input: string): string => {
-			return input.trim().replace(/[<>"'&]/g, "");
-		};
-
-		// Validate required fields
-		if (!name || !name.trim()) {
-			throw new Error(
-				"Recipient name is required. Please provide the recipient's name."
-			);
+	resumeSchema: z.object({
+		name: z.string().min(1, "Name is required"),
+	}),
+	outputSchema: z.object({
+		name: z.string(),
+		message: z.string(),
+	}),
+	execute: async ({ resumeData, suspend }) => {
+		// If we don't have resume data with the name, suspend and ask for it
+		if (!resumeData?.name) {
+			await suspend({
+				message: "What is the contact's name?",
+				field: "name",
+				required: true,
+			});
+			// This return won't be reached, but TypeScript needs it
+			return {
+				name: "",
+				message: "Waiting for name input...",
+			};
 		}
 
-		if (!email || !email.trim()) {
-			throw new Error(
-				"Email address is required. Please provide the recipient's email address."
-			);
-		}
+		// Validate and sanitize the name
+		const name = resumeData.name.trim().replace(/[<>"'&]/g, "");
 
-		// Sanitize inputs
-		const sanitizedName = sanitizeInput(name);
-		const sanitizedEmail = sanitizeInput(email);
-		const sanitizedBirthday = birthday ? sanitizeInput(birthday) : undefined;
-
-		// Basic validation
-		if (!sanitizedName) {
+		if (!name) {
 			throw new Error("Contact name cannot be empty after sanitization");
 		}
 
-		if (sanitizedName.length > 100) {
+		if (name.length > 100) {
 			throw new Error("Contact name is too long (max 100 characters)");
 		}
 
-		// Basic email validation
-		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-		if (!emailRegex.test(sanitizedEmail)) {
-			throw new Error("Please provide a valid email address");
-		}
-
 		return {
-			sanitizedName,
-			sanitizedEmail,
-			birthday: sanitizedBirthday,
-			additionalInfo,
+			name,
+			message: `Great! The contact's name is: **${name}**`,
 		};
 	},
 });
 
-// Step 2: Parse and validate birthday (if provided)
-const parseBirthdayStep = createStep({
-	id: "parse-birthday",
-	description: "Parses and validates the birthday if provided",
+// Step 2: Ask for Email
+const askForEmailStep = createStep({
+	id: "ask-for-email",
+	description: "Ask the user for the contact's email address",
 	inputSchema: z.object({
-		sanitizedName: z.string(),
-		sanitizedEmail: z.string(),
-		birthday: z.string().optional(),
-		additionalInfo: z.string().optional(),
+		name: z.string(),
+		message: z.string(),
+	}),
+	resumeSchema: z.object({
+		email: z.string().email("Please provide a valid email address"),
 	}),
 	outputSchema: z.object({
-		sanitizedName: z.string(),
-		sanitizedEmail: z.string(),
-		birthdayTimestamp: z.number().optional(),
-		formattedBirthday: z.string().optional(),
-		additionalInfo: z.string().optional(),
+		name: z.string(),
+		email: z.string(),
+		message: z.string(),
 	}),
-	execute: async ({ inputData }) => {
-		const { sanitizedName, sanitizedEmail, birthday, additionalInfo } =
-			inputData;
-
-		if (!birthday || !birthday.trim()) {
+	execute: async ({ inputData, resumeData, suspend }) => {
+		// If we don't have resume data with the email, suspend and ask for it
+		if (!resumeData?.email) {
+			await suspend({
+				message: `Now, what is ${inputData.name}'s email address?`,
+				field: "email",
+				required: true,
+			});
+			// This return won't be reached, but TypeScript needs it
 			return {
-				sanitizedName,
-				sanitizedEmail,
-				birthdayTimestamp: undefined,
-				formattedBirthday: undefined,
-				additionalInfo,
+				name: inputData.name,
+				email: "",
+				message: "Waiting for email input...",
 			};
 		}
 
-		const validateYear = (year: number): boolean => {
-			const currentYear = new Date().getFullYear();
-			return year >= 1900 && year <= currentYear;
+		// Validate and sanitize the email
+		const email = resumeData.email.trim().replace(/[<>"'&]/g, "");
+
+		// Basic email validation
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		if (!emailRegex.test(email)) {
+			throw new Error("Please provide a valid email address");
+		}
+
+		return {
+			name: inputData.name,
+			email,
+			message: `Perfect! Email address: **${email}**`,
 		};
+	},
+});
 
-		const parseBirthday = (birthday: string): number => {
-			const cleanBirthday = birthday.trim();
+// Step 3: Ask for Birthday (Optional)
+const askForBirthdayStep = createStep({
+	id: "ask-for-birthday",
+	description: "Ask the user for the contact's birthday (optional)",
+	inputSchema: z.object({
+		name: z.string(),
+		email: z.string(),
+		message: z.string(),
+	}),
+	resumeSchema: z.object({
+		birthday: z
+			.string()
+			.optional()
+			.describe(
+				"Birthday in MM/DD/YYYY format or natural language, or 'skip' to skip"
+			),
+	}),
+	outputSchema: z.object({
+		name: z.string(),
+		email: z.string(),
+		birthday: z.string().optional(),
+		birthdayTimestamp: z.number().optional(),
+		message: z.string(),
+	}),
+	execute: async ({ inputData, resumeData, suspend }) => {
+		// If we don't have resume data with the birthday, suspend and ask for it
+		if (!resumeData?.birthday) {
+			await suspend({
+				message: `Finally, what is ${inputData.name}'s birthday? (You can enter MM/DD/YYYY format, natural language like "April 20, 1985", or type "skip" to skip this field)`,
+				field: "birthday",
+				required: false,
+			});
+			// This return won't be reached, but TypeScript needs it
+			return {
+				name: inputData.name,
+				email: inputData.email,
+				birthday: undefined,
+				birthdayTimestamp: undefined,
+				message: "Waiting for birthday input...",
+			};
+		}
 
-			// Try MM/DD/YYYY format first
-			const mmddyyyy = cleanBirthday.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-			if (mmddyyyy) {
-				const [, month, day, year] = mmddyyyy;
-				const monthNum = parseInt(month) - 1; // 0-based months
-				const dayNum = parseInt(day);
-				const yearNum = parseInt(year);
+		// If user wants to skip birthday
+		if (
+			resumeData.birthday?.toLowerCase().trim() === "skip" ||
+			!resumeData.birthday?.trim()
+		) {
+			return {
+				name: inputData.name,
+				email: inputData.email,
+				birthday: undefined,
+				birthdayTimestamp: undefined,
+				message: "No birthday provided - that's okay!",
+			};
+		}
 
-				const date = new Date(yearNum, monthNum, dayNum);
-
-				// Validate the date components
-				if (
-					date.getMonth() !== monthNum ||
-					date.getDate() !== dayNum ||
-					date.getFullYear() !== yearNum
-				) {
-					throw new Error("Invalid date values");
-				}
-
-				if (!validateYear(yearNum)) {
-					throw new Error(
-						`The year ${yearNum} seems invalid. Please use a year between 1900 and ${new Date().getFullYear()}.`
-					);
-				}
-
-				return date.getTime();
-			}
-
-			// Try natural language parsing
-			const parsedDate = new Date(cleanBirthday);
-			if (!isNaN(parsedDate.getTime())) {
-				if (!validateYear(parsedDate.getFullYear())) {
-					throw new Error(
-						`The year ${parsedDate.getFullYear()} seems invalid. Please use a year between 1900 and ${new Date().getFullYear()}.`
-					);
-				}
-				return parsedDate.getTime();
-			}
-
-			throw new Error(
-				"Could not parse birthday. Please use MM/DD/YYYY format or natural language like 'April 20, 1969'"
-			);
-		};
-
+		// Parse and validate birthday
 		try {
-			const birthdayTimestamp = parseBirthday(birthday);
+			const cleanBirthday = resumeData.birthday.trim();
+
+			const validateYear = (year: number): boolean => {
+				const currentYear = new Date().getFullYear();
+				return year >= 1900 && year <= currentYear;
+			};
+
+			const parseBirthday = (birthday: string): number => {
+				// Try MM/DD/YYYY format first
+				const mmddyyyy = birthday.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+				if (mmddyyyy) {
+					const [, month, day, year] = mmddyyyy;
+					const monthNum = parseInt(month) - 1; // 0-based months
+					const dayNum = parseInt(day);
+					const yearNum = parseInt(year);
+
+					const date = new Date(yearNum, monthNum, dayNum);
+
+					// Validate the date components
+					if (
+						date.getMonth() !== monthNum ||
+						date.getDate() !== dayNum ||
+						date.getFullYear() !== yearNum
+					) {
+						throw new Error("Invalid date values");
+					}
+
+					if (!validateYear(yearNum)) {
+						throw new Error(
+							`The year ${yearNum} seems invalid. Please use a year between 1900 and ${new Date().getFullYear()}.`
+						);
+					}
+
+					return date.getTime();
+				}
+
+				// Try natural language parsing
+				const parsedDate = new Date(birthday);
+				if (!isNaN(parsedDate.getTime())) {
+					if (!validateYear(parsedDate.getFullYear())) {
+						throw new Error(
+							`The year ${parsedDate.getFullYear()} seems invalid. Please use a year between 1900 and ${new Date().getFullYear()}.`
+						);
+					}
+					return parsedDate.getTime();
+				}
+
+				throw new Error(
+					"Could not parse birthday. Please use MM/DD/YYYY format or natural language like 'April 20, 1969'"
+				);
+			};
+
+			const birthdayTimestamp = parseBirthday(cleanBirthday);
 			const formattedBirthday = new Date(birthdayTimestamp).toLocaleDateString(
 				"en-US",
 				{
@@ -169,11 +228,11 @@ const parseBirthdayStep = createStep({
 			);
 
 			return {
-				sanitizedName,
-				sanitizedEmail,
+				name: inputData.name,
+				email: inputData.email,
+				birthday: formattedBirthday,
 				birthdayTimestamp,
-				formattedBirthday,
-				additionalInfo,
+				message: `Excellent! Birthday: **${formattedBirthday}**`,
 			};
 		} catch (error) {
 			throw new Error(
@@ -183,16 +242,16 @@ const parseBirthdayStep = createStep({
 	},
 });
 
-// Step 3: Create the contact
+// Step 4: Create the Contact
 const createContactStep = createStep({
 	id: "create-contact",
 	description: "Creates the contact in the database",
 	inputSchema: z.object({
-		sanitizedName: z.string(),
-		sanitizedEmail: z.string(),
+		name: z.string(),
+		email: z.string(),
+		birthday: z.string().optional(),
 		birthdayTimestamp: z.number().optional(),
-		formattedBirthday: z.string().optional(),
-		additionalInfo: z.string().optional(),
+		message: z.string(),
 	}),
 	outputSchema: z.object({
 		success: z.boolean(),
@@ -205,12 +264,7 @@ const createContactStep = createStep({
 		}),
 	}),
 	execute: async ({ inputData }) => {
-		const {
-			sanitizedName,
-			sanitizedEmail,
-			birthdayTimestamp,
-			formattedBirthday,
-		} = inputData;
+		const { name, email, birthdayTimestamp, birthday } = inputData;
 
 		try {
 			// Setup Convex client
@@ -223,8 +277,8 @@ const createContactStep = createStep({
 
 			// Create the recipient
 			const result = await createRecipient(convex, {
-				name: sanitizedName,
-				email: sanitizedEmail,
+				name,
+				email,
 				birthday: birthdayTimestamp || 0, // Use 0 as default for no birthday
 			});
 
@@ -244,19 +298,17 @@ const createContactStep = createStep({
 				throw new Error(result.error || "Unknown error creating recipient");
 			}
 
-			const birthdayText = formattedBirthday
-				? ` with birthday on ${formattedBirthday}`
-				: "";
-			const message = `✅ Successfully created recipient **${sanitizedName}** (${sanitizedEmail})${birthdayText}! They've been added to your contacts.`;
+			const birthdayText = birthday ? ` with birthday on ${birthday}` : "";
+			const message = `🎉 **Contact Created Successfully!**\n\n✅ **${name}** (${email})${birthdayText}\n\nThey've been added to your contacts and are ready to receive your event notifications!`;
 
 			return {
 				success: true,
 				recipientId: result.recipientId,
 				message,
 				contactDetails: {
-					name: sanitizedName,
-					email: sanitizedEmail,
-					birthday: formattedBirthday,
+					name,
+					email,
+					birthday,
 				},
 			};
 		} catch (error) {
@@ -282,20 +334,20 @@ const createContactStep = createStep({
 				success: false,
 				message: `❌ Failed to create contact: ${errorMessage}`,
 				contactDetails: {
-					name: sanitizedName,
-					email: sanitizedEmail,
-					birthday: formattedBirthday,
+					name,
+					email,
+					birthday,
 				},
 			};
 		}
 	},
 });
 
-// Create the workflow
+// Create the interactive workflow
 export const contactCreationWorkflow = createWorkflow({
 	id: "contact-creation-workflow",
 	description:
-		"Multi-step workflow for creating contacts with validation and error handling",
+		"Interactive step-by-step workflow for creating contacts - asks for name, email, and birthday one at a time",
 	inputSchema: contactCreationInputSchema,
 	outputSchema: z.object({
 		success: z.boolean(),
@@ -308,7 +360,8 @@ export const contactCreationWorkflow = createWorkflow({
 		}),
 	}),
 })
-	.then(validateContactDataStep)
-	.then(parseBirthdayStep)
+	.then(askForNameStep)
+	.then(askForEmailStep)
+	.then(askForBirthdayStep)
 	.then(createContactStep)
 	.commit();

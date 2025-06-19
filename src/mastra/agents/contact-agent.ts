@@ -30,14 +30,18 @@ export const contactAgent = new Agent({
     - Be proactive in identifying data quality issues
     
     When creating contacts:
-    1. For simple contact creation: use createRecipient tool
-    2. For robust contact creation with validation: use runContactCreationWorkflow tool
-    3. The workflow provides multi-step validation, birthday parsing, and error handling
-    4. Ensure you have the contact name and email address
-    5. Validate email format and check for reasonableness
-    6. Parse birthday information carefully if provided
-    7. Check for potential duplicates in existing contacts
-    8. Confirm details with the user before creation
+    1. For simple contact creation: use createRecipient tool if you have all required information
+    2. For interactive contact creation: use runContactCreationWorkflow tool
+    3. The runContactCreationWorkflow tool starts an interactive step-by-step process that:
+       - First asks for the contact's name
+       - Then asks for their email address
+       - Finally asks for their birthday (optional)
+       - Each step validates the input before proceeding
+    4. This interactive workflow is perfect when the user wants to create a contact but hasn't provided all details
+    5. The workflow will suspend at each step waiting for user input, making it conversational
+    6. Always inform the user what information will be requested in the workflow
+    7. Check for potential duplicates when possible
+    8. Encourage using the interactive workflow for better data quality
     
     When searching contacts:
     1. Use appropriate search criteria based on user requests
