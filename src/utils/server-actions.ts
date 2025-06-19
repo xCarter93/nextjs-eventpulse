@@ -620,14 +620,39 @@ export function parseDate(date: Date | number | string): number {
 		if (dateParts.length >= 2) {
 			const month = parseInt(dateParts[0], 10) - 1; // 0-based months
 			const day = parseInt(dateParts[1], 10);
-			const year =
+			let year =
 				dateParts.length > 2
 					? parseInt(dateParts[2], 10)
 					: new Date().getFullYear();
 
 			if (!isNaN(month) && !isNaN(day) && !isNaN(year)) {
-				const parsedDate = new Date(year, month, day, 12, 0, 0, 0); // Set to noon
-				console.log(`Parsed MM/DD/YYYY format as ${parsedDate.toISOString()}`);
+				// Handle 2-digit years by assuming they're in the 2000s
+				if (year < 100) {
+					year += 2000;
+				}
+
+				let parsedDate = new Date(year, month, day, 12, 0, 0, 0); // Set to noon
+
+				// If no year was provided (MM/DD format) and the date has passed this year, use next year
+				if (dateParts.length === 2 && parsedDate < now) {
+					year = now.getFullYear() + 1;
+					parsedDate = new Date(year, month, day, 12, 0, 0, 0);
+					console.log(
+						`Date has passed this year, using next year: ${parsedDate.toISOString()}`
+					);
+				} else if (year < now.getFullYear()) {
+					// If the parsed year is in the past, adjust it
+					year = now.getFullYear() + 1;
+					parsedDate = new Date(year, month, day, 12, 0, 0, 0);
+					console.log(
+						`Detected past year, adjusted to next year: ${parsedDate.toISOString()}`
+					);
+				} else {
+					console.log(
+						`Parsed MM/DD/YYYY format as ${parsedDate.toISOString()}`
+					);
+				}
+
 				return parsedDate.getTime();
 			}
 		}
@@ -637,6 +662,33 @@ export function parseDate(date: Date | number | string): number {
 		if (!isNaN(parsedDate.getTime())) {
 			// Set to noon to avoid timezone issues
 			parsedDate.setHours(12, 0, 0, 0);
+
+			// Check if the parsed year is in the past and adjust if needed
+			const currentYear = now.getFullYear();
+			const parsedYear = parsedDate.getFullYear();
+
+			if (parsedYear < currentYear) {
+				console.log(
+					`Detected past year ${parsedYear}, adjusting to future date`
+				);
+
+				// Create a new date with the current year
+				const adjustedDate = new Date(parsedDate);
+				adjustedDate.setFullYear(currentYear);
+
+				// If this date has already passed this year, use next year instead
+				if (adjustedDate < now) {
+					adjustedDate.setFullYear(currentYear + 1);
+					console.log(
+						`Date has passed this year, using next year: ${adjustedDate.toISOString()}`
+					);
+				} else {
+					console.log(`Using current year: ${adjustedDate.toISOString()}`);
+				}
+
+				return adjustedDate.getTime();
+			}
+
 			console.log(
 				`Parsed with standard Date constructor as ${parsedDate.toISOString()}`
 			);
