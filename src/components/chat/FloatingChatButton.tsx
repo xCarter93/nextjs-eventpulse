@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Bot } from "lucide-react";
 import { Button, Tooltip } from "@heroui/react";
-import { Modal, ModalContent, ModalHeader, ModalBody } from "@heroui/react";
+import { Modal, ModalContent, ModalBody } from "@heroui/react";
 import ChatInterface from "./ChatInterface";
 
 export function FloatingChatButton() {
@@ -18,7 +18,7 @@ export function FloatingChatButton() {
 					color="primary"
 					className="fixed bottom-20 right-6 z-50 rounded-full shadow-lg lg:bottom-8 group"
 					size="lg"
-					onClick={() => setIsOpen(true)}
+					onPress={() => setIsOpen(true)}
 				>
 					<Bot className="h-5 w-5" />
 					{/* Pulse animation rings */}
@@ -33,16 +33,9 @@ export function FloatingChatButton() {
 				onClose={() => setIsOpen(false)}
 				size="3xl"
 				scrollBehavior="inside"
+				backdrop="blur"
 			>
 				<ModalContent>
-					<ModalHeader>
-						<div className="flex items-center gap-2">
-							<div className="p-1.5 rounded-lg bg-primary/10">
-								<Bot className="h-5 w-5 text-primary" />
-							</div>
-							<h3 className="text-lg font-semibold">Chat Assistant</h3>
-						</div>
-					</ModalHeader>
 					<ModalBody className="p-0">
 						<ChatInterface />
 					</ModalBody>
