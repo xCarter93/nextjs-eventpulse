@@ -1,4 +1,5 @@
 import { createTool } from "@mastra/core/tools";
+import { tool } from "ai";
 import { z } from "zod";
 import {
 	createEvent,
@@ -517,5 +518,220 @@ export const getUpcomingEventsTool = createTool({
 
 			throw new Error(`Failed to fetch upcoming events: ${errorMessage}`);
 		}
+	},
+});
+
+/**
+ * Step-by-step event creation tool - simplified approach using AI SDK
+ */
+export const createEventStepByStepTool = tool({
+	description:
+		"Create a new event through a step-by-step process. Ask the user for required information if missing: event name, date, and whether it's recurring.",
+	parameters: z.object({
+		name: z.string().optional().describe("The event name"),
+		date: z.string().optional().describe("The event date in any format"),
+		isRecurring: z
+			.boolean()
+			.optional()
+			.describe("Whether the event recurs annually"),
+	}),
+	execute: async ({ name, date, isRecurring }) => {
+		try {
+			logToolCall("createEventStepByStepTool", "execute", {
+				name: name ? `[${name.length} chars]` : "missing",
+				date: date ? `[${date.length} chars]` : "missing",
+				isRecurring:
+					isRecurring !== undefined ? isRecurring.toString() : "missing",
+			});
+
+			// Check what information we have and what we need
+			const missing = [];
+			if (!name || !name.trim()) {
+				missing.push("event name");
+			}
+			if (!date || !date.trim()) {
+				missing.push("event date");
+			}
+			if (isRecurring === undefined) {
+				missing.push("recurring preference");
+			}
+
+			// If we're missing information, ask for it
+			if (missing.length > 0) {
+				const missingField = missing[0];
+				let message = "";
+				let nextStep = "";
+
+				if (missingField === "event name") {
+					message = "What would you like to name this event?";
+					nextStep = "Waiting for event name";
+				} else if (missingField === "event date") {
+					message = `Great! The event name is **${name}**. When is this event happening? (You can use formats like "MM/DD/YYYY", "next Friday", "December 25", etc.)`;
+					nextStep = "Waiting for event date";
+				} else if (missingField === "recurring preference") {
+					message = `Perfect! Event: **${name}** on **${date}**. Is this a recurring event (happens annually)? Say "yes" for recurring or "no" for one-time event.`;
+					nextStep = "Waiting for recurring preference";
+				}
+
+				return {
+					success: false,
+					message,
+					nextStep,
+					partialInfo: {
+						name: name || undefined,
+						date: date || undefined,
+						isRecurring: isRecurring,
+					},
+					completed: false,
+				};
+			}
+
+			// We have all the information, create the event
+			const sanitizedName = sanitizeInput(name!);
+			const sanitizedDate = sanitizeInput(date!);
+
+			// Validate inputs
+			try {
+				eventSchema.shape.name.parse(sanitizedName);
+				eventSchema.shape.date.parse(sanitizedDate);
+			} catch (error) {
+				if (error instanceof z.ZodError) {
+					throw new Error(error.errors[0]?.message || "Invalid input");
+				}
+				throw error;
+			}
+
+			// Parse the date
+			let eventTimestamp: number;
+			try {
+				eventTimestamp = parseEventDate(sanitizedDate);
+			} catch (error) {
+				throw new Error(
+					`Date parsing error: ${error instanceof Error ? error.message : "Invalid date format"}`
+				);
+			}
+
+			// Get the authentication token from Clerk
+			const session = await auth();
+			const token = await session.getToken({ template: "convex" });
+
+			if (!token) {
+				throw new Error(
+					"Authentication required. Please log in to create events."
+				);
+			}
+
+			// Setup Convex client with authentication
+			const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+			if (!convexUrl) {
+				throw new Error("Convex configuration error");
+			}
+
+			const convex = new ConvexHttpClient(convexUrl);
+			convex.setAuth(token);
+
+			// Create the event
+			const result = await createEvent(convex, {
+				name: sanitizedName,
+				date: eventTimestamp,
+				isRecurring: isRecurring || false,
+			});
+
+			if (!result.success) {
+				if (
+					result.error &&
+					(result.error.includes("authentication") ||
+						result.error.includes("logged in") ||
+						result.error.includes("auth") ||
+						result.error.includes("Not authenticated"))
+				) {
+					throw new Error(
+						"Authentication required. Please log in and try again."
+					);
+				}
+
+				throw new Error(result.error || "Unknown error creating event");
+			}
+
+			const recurringText = isRecurring ? " (recurring annually)" : "";
+			const formattedDate = formatEventDate(eventTimestamp);
+
+			return {
+				success: true,
+				message: `✅ Successfully created event **${sanitizedName}** on **${formattedDate}**${recurringText}! It's been added to your calendar.`,
+				eventDetails: {
+					id: result.eventId,
+					name: sanitizedName,
+					date: formattedDate,
+					isRecurring: isRecurring || false,
+				},
+				completed: true,
+			};
+		} catch (error) {
+			logError(LogCategory.TOOL_CALL, "create_event_step_by_step_error", error);
+
+			const errorMessage =
+				error instanceof Error ? error.message : "An unexpected error occurred";
+
+			// Provide helpful error responses
+			if (errorMessage.includes("authentication")) {
+				throw new Error(
+					"You need to be logged in to create events. Please log in and try again."
+				);
+			}
+
+			if (errorMessage.includes("date")) {
+				throw new Error(`Date parsing error: ${errorMessage}`);
+			}
+
+			throw new Error(errorMessage);
+		}
+	},
+});
+
+/**
+ * Helper tool for asking users for missing event information
+ */
+export const askForEventInfoTool = tool({
+	description:
+		"Ask the user for missing event information when creating an event",
+	parameters: z.object({
+		missingField: z
+			.enum(["name", "date", "recurring"])
+			.describe("Which field is missing"),
+		partialInfo: z
+			.object({
+				name: z.string().optional(),
+				date: z.string().optional(),
+				isRecurring: z.boolean().optional(),
+			})
+			.describe("Any event information already collected"),
+	}),
+	execute: async ({ missingField, partialInfo }) => {
+		const prompts = {
+			name: "What would you like to name this event?",
+			date: "When is this event happening? (You can use any date format like 'MM/DD/YYYY' or 'next Friday')",
+			recurring:
+				"Is this a recurring event (happens annually)? Say 'yes' for recurring or 'no' for one-time event.",
+		};
+
+		let message = prompts[missingField];
+
+		// Add context if we have partial info
+		if (partialInfo.name) {
+			message += `\n\nEvent name: ${partialInfo.name}`;
+		}
+		if (partialInfo.date) {
+			message += `\nEvent date: ${partialInfo.date}`;
+		}
+		if (partialInfo.isRecurring !== undefined) {
+			message += `\nRecurring: ${partialInfo.isRecurring ? "Yes" : "No"}`;
+		}
+
+		return {
+			message,
+			partialInfo,
+			nextStep: missingField,
+		};
 	},
 });

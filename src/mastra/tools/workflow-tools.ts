@@ -5,11 +5,22 @@ import { z } from "zod";
 const conversationStates = new Map<
 	string,
 	{
-		step: "name" | "email" | "birthday" | "create";
+		step:
+			| "name"
+			| "email"
+			| "birthday"
+			| "create"
+			| "event-name"
+			| "event-date"
+			| "event-recurring"
+			| "event-create";
 		data: {
 			name?: string;
 			email?: string;
 			birthday?: string;
+			eventName?: string;
+			eventDate?: string;
+			eventIsRecurring?: boolean;
 		};
 	}
 >();
@@ -66,6 +77,9 @@ export const runEventCreationWorkflowTool = createTool({
 		}
 	},
 });
+
+// Import the simplified step-by-step event creation tool from event-tools
+export { createEventStepByStepTool, askForEventInfoTool } from "./event-tools";
 
 // Simple step-by-step contact creation tool that works with conversational AI
 export const createContactStepByStepTool = createTool({
