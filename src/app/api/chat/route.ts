@@ -1,28 +1,20 @@
-import { openai } from "@ai-sdk/openai";
-import {
-	streamText,
-	ToolExecutionError,
-	InvalidToolArgumentsError,
-	NoSuchToolError,
-} from "ai";
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { createSystemPrompt } from "@/utils/ai-context";
-import { allTools } from "@/utils/ai-tools/simplified-tools-config";
+import { mastra } from "@/mastra";
 import { logAI, LogLevel, LogCategory, logError } from "@/utils/logging";
 
 // Allow streaming responses up to 60 seconds
 export const maxDuration = 60;
 
 /**
- * Modern chat API route using optimized AI tools
+ * Modern chat API route using Mastra orchestrator agent
  *
  * Key improvements:
- * - Uses simplified tools instead of complex step-based ones
- * - Leverages AI SDK's native multi-step capabilities with maxSteps
- * - Comprehensive error handling with proper AI SDK error types
- * - Removed custom state management - AI SDK handles conversation flow
- * - Better TypeScript typing and error messages
+ * - Uses Mastra orchestrator agent for intelligent task delegation
+ * - Specialized agents handle specific domains (events, contacts)
+ * - Multi-step reasoning with conversation memory
+ * - Comprehensive error handling
+ * - Better agent coordination and context management
  */
 export async function POST(req: Request) {
 	try {
@@ -54,7 +46,7 @@ export async function POST(req: Request) {
 			);
 		}
 
-		const { messages } = body;
+		const { messages, threadId } = body;
 
 		// Validate messages format
 		if (!Array.isArray(messages)) {
@@ -73,98 +65,87 @@ export async function POST(req: Request) {
 		logAI(LogLevel.INFO, LogCategory.AI_CHAT, "chat_request_received", {
 			messageCount: messages.length,
 			userId: userId.substring(0, 8) + "...", // Partial user ID for privacy
+			hasThreadId: !!threadId,
 		});
 
-		// Get the system prompt with EventPulse features documentation
-		const systemPrompt = createSystemPrompt();
-
 		try {
-			// Stream text with modern AI SDK configuration
-			const result = streamText({
-				model: openai("gpt-4o"), // Using latest capable model
-				system: systemPrompt,
-				messages,
-				tools: allTools, // Use optimized simplified tools
-				maxSteps: 10, // Allow natural multi-step conversations
-				temperature: 0.1, // Low temperature for consistent responses
-				maxTokens: 2000,
+			// Get the orchestrator agent from Mastra
+			const orchestrator = mastra.getAgent("orchestratorAgent");
 
-				// Handle streaming errors gracefully
-				onError({ error }) {
-					logError(LogCategory.AI_CHAT, "stream_error", error, userId);
-					console.error("AI Stream Error:", error);
+			if (!orchestrator) {
+				logAI(LogLevel.ERROR, LogCategory.AI_CHAT, "orchestrator_not_found", {
+					userId,
+				});
+				throw new Error("Orchestrator agent not available");
+			}
+
+			// Stream response using Mastra agent with memory support
+			const stream = await orchestrator.stream(messages, {
+				memory: {
+					thread: threadId || crypto.randomUUID(),
+					resource: userId, // Use user ID as resource identifier
+				},
+				maxSteps: 10, // Allow multi-step reasoning
+				temperature: 0.1, // Low temperature for consistent responses
+				onStepFinish: ({ text, toolCalls, toolResults }) => {
+					// Log step completion for debugging
+					logAI(LogLevel.DEBUG, LogCategory.AI_CHAT, "step_completed", {
+						userId: userId.substring(0, 8) + "...",
+						hasText: !!text,
+						toolCallsCount: toolCalls?.length || 0,
+						toolResultsCount: toolResults?.length || 0,
+					});
 				},
 			});
 
-			// Return with comprehensive error handling
-			return result.toDataStreamResponse({
-				getErrorMessage: (error) => {
-					// Log the specific error type for debugging
-					logError(LogCategory.AI_CHAT, "response_error", error, userId);
-
-					// Provide user-friendly error messages based on error type
-					if (NoSuchToolError.isInstance(error)) {
-						return "I tried to use a tool that doesn't exist. Please try again or rephrase your request.";
-					} else if (InvalidToolArgumentsError.isInstance(error)) {
-						return "I provided invalid arguments to a tool. Please check your input and try again.";
-					} else if (ToolExecutionError.isInstance(error)) {
-						// Handle specific tool execution errors
-						const toolError = error.cause as Error | undefined;
-
-						if (toolError?.message?.includes("authentication")) {
-							return "Authentication required. Please log in and try again.";
-						} else if (toolError?.message?.includes("date")) {
-							return 'Invalid date format. Please provide a valid date (e.g., "March 15, 2025" or "03/15/2025").';
-						} else if (toolError?.message?.includes("Convex")) {
-							return "Database connection error. Please try again in a moment.";
-						}
-
-						return "An error occurred while processing your request. Please try again.";
-					} else {
-						// Handle any other unknown errors
-						return "An unexpected error occurred. Please try again.";
-					}
+			// Return the stream as a response
+			return new Response(stream.textStream, {
+				headers: {
+					"Content-Type": "text/plain; charset=utf-8",
+					"X-Thread-ID": threadId || "new-thread",
 				},
 			});
 		} catch (streamError) {
-			// Handle errors in streamText setup or execution
-			logError(LogCategory.AI_CHAT, "streamtext_error", streamError, userId);
+			// Handle errors in agent execution
+			logError(LogCategory.AI_CHAT, "agent_stream_error", streamError, userId);
 
-			// Check for specific AI SDK errors
-			if (NoSuchToolError.isInstance(streamError)) {
+			console.error("Mastra Agent Error:", streamError);
+
+			// Provide user-friendly error messages
+			const errorMessage =
+				streamError instanceof Error ? streamError.message : "Unknown error";
+
+			if (errorMessage.includes("authentication")) {
 				return NextResponse.json(
 					{
-						error: "Tool configuration error",
-						details: "Unknown tool referenced",
+						error: "Authentication error",
+						details: "Please log in and try again",
+					},
+					{ status: 401 }
+				);
+			} else if (errorMessage.includes("agent not found")) {
+				return NextResponse.json(
+					{
+						error: "Service configuration error",
+						details: "AI agent not available",
 					},
 					{ status: 500 }
 				);
-			} else if (InvalidToolArgumentsError.isInstance(streamError)) {
-				return NextResponse.json(
-					{
-						error: "Tool argument error",
-						details: "Invalid arguments provided to tool",
-					},
-					{ status: 400 }
-				);
-			} else if (ToolExecutionError.isInstance(streamError)) {
+			} else if (errorMessage.includes("tool")) {
 				return NextResponse.json(
 					{
 						error: "Tool execution error",
-						details: "Tool failed to execute properly",
+						details: "An error occurred while processing your request",
 					},
 					{ status: 500 }
 				);
 			}
 
-			// Generic error response for unknown stream errors
+			// Generic error response
 			return NextResponse.json(
 				{
 					error: "AI service error",
-					details:
-						streamError instanceof Error
-							? streamError.message
-							: "Unknown streaming error",
+					details: errorMessage,
 				},
 				{ status: 500 }
 			);
