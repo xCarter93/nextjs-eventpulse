@@ -15,6 +15,7 @@ export const maxDuration = 60;
  * - Multi-step reasoning with conversation memory
  * - Comprehensive error handling
  * - Better agent coordination and context management
+ * - Proper Vercel AI SDK integration with .toDataStreamResponse()
  */
 export async function POST(req: Request) {
 	try {
@@ -98,13 +99,9 @@ export async function POST(req: Request) {
 				},
 			});
 
-			// Return the stream as a response
-			return new Response(stream.textStream, {
-				headers: {
-					"Content-Type": "text/plain; charset=utf-8",
-					"X-Thread-ID": threadId || "new-thread",
-				},
-			});
+			// Return the stream as a properly formatted DataStreamResponse for Vercel AI SDK
+			// This is the correct way to integrate Mastra agents with useChat hook
+			return stream.toDataStreamResponse();
 		} catch (streamError) {
 			// Handle errors in agent execution
 			logError(LogCategory.AI_CHAT, "agent_stream_error", streamError, userId);
