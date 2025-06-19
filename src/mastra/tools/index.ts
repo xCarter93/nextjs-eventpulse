@@ -1,5 +1,9 @@
 // Import tools first
-import { createEventTool, getUpcomingEventsTool } from "./event-tools";
+import {
+	createEventTool,
+	getUpcomingEventsTool,
+	createEventStepByStepTool,
+} from "./event-tools";
 import { searchRecipientsTool, getRecipientsTool } from "./contact-tools";
 import {
 	runEventCreationWorkflowTool,
@@ -7,7 +11,11 @@ import {
 } from "./workflow-tools";
 
 // Export event tools
-export { createEventTool, getUpcomingEventsTool } from "./event-tools";
+export {
+	createEventTool,
+	getUpcomingEventsTool,
+	createEventStepByStepTool,
+} from "./event-tools";
 
 // Export contact tools
 export { searchRecipientsTool, getRecipientsTool } from "./contact-tools";
@@ -23,6 +31,7 @@ export const eventTools = {
 	createEvent: createEventTool,
 	getUpcomingEvents: getUpcomingEventsTool,
 	runEventCreationWorkflow: runEventCreationWorkflowTool,
+	createEventStepByStep: createEventStepByStepTool,
 } as const;
 
 export const contactTools = {

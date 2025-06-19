@@ -1,6 +1,10 @@
 import { Agent } from "@mastra/core/agent";
 import { openai } from "@ai-sdk/openai";
-import { createEventTool, getUpcomingEventsTool } from "../tools/event-tools";
+import {
+	createEventTool,
+	getUpcomingEventsTool,
+	createEventStepByStepTool,
+} from "../tools/event-tools";
 import { runEventCreationWorkflowTool } from "../tools/workflow-tools";
 
 export const eventAgent = new Agent({
@@ -24,15 +28,22 @@ export const eventAgent = new Agent({
     - Default isRecurring to false unless user specifically mentions annual/yearly/recurring
     - Be direct and efficient - avoid unnecessary confirmation loops
     
-    EVENT CREATION PROCESS:
+    EVENT CREATION PROCESS OPTIONS:
     1. For simple event creation: use createEvent tool
     2. For robust event creation with validation: use runEventCreationWorkflow tool
-    3. The workflow provides multi-step validation, date parsing, and error handling
-    4. If user provides name and date: create immediately
-    5. If missing name: ask for name only
-    6. If missing date: ask for date only
-    7. If user mentions recurring/annual: set isRecurring to true
-    8. Create the event without additional confirmation
+    3. For step-by-step conversational event creation: use createEventStepByStep tool
+    
+    STEP-BY-STEP EVENT CREATION:
+    - Use createEventStepByStep when users want a guided process or are missing information
+    - The tool will automatically ask for missing information (name, date, recurring preference)
+    - Simply call the tool with whatever information the user has provided
+    - The tool handles the conversation flow and creates the event when all info is collected
+    
+    CHOOSING THE RIGHT TOOL:
+    - Use createEventStepByStep for: "I want to create an event", "Help me set up an event", or when user provides partial information
+    - Use createEvent or runEventCreationWorkflow for: "Create an event called X on Y date" (when all info is provided)
+    - If user provides complete info: use direct creation
+    - If user is missing any required info: use step-by-step
     
     RETRIEVING EVENTS:
     1. Use appropriate date ranges based on user requests
@@ -47,5 +58,6 @@ export const eventAgent = new Agent({
 		createEvent: createEventTool,
 		getUpcomingEvents: getUpcomingEventsTool,
 		runEventCreationWorkflow: runEventCreationWorkflowTool,
+		createEventStepByStep: createEventStepByStepTool,
 	},
 });
