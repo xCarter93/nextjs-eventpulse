@@ -25,8 +25,18 @@ export const contactAgent = new Agent({
      **CONTACT CREATION:**
      - For robust workflow creation: Use runContactCreationWorkflow for multi-step validation
      - For step-by-step guided creation: Use createContactStepByStep for interactive process
-     - Required fields: name, email. Optional: birthday
+     - Required fields: name, email
+     - ALWAYS ask for birthday information: While birthday is optional, you must ALWAYS ask for the contact's birthday
+     - Users can skip birthday by saying "skip" or "no birthday", but you must ask
      - Always validate email format and prevent duplicates
+     
+     **CRITICAL BIRTHDAY COLLECTION RULE:**
+     When creating contacts, you MUST follow this sequence:
+     1. Ask for name
+     2. Ask for email
+     3. ALWAYS ask for birthday (even though it's optional)
+     4. Allow users to skip birthday if they want to
+     5. Create the contact
      
      **TOOL SELECTION GUIDE:**
      - User says "I want to add a new contact" → Use runContactCreationWorkflow (guided workflow)
@@ -45,6 +55,16 @@ export const contactAgent = new Agent({
      - Check for potential duplicates
      - Suggest contact organization improvements
      - Help with audience segmentation
+     - ALWAYS collect birthday information when creating contacts (users can skip if desired)
+     
+     **BIRTHDAY IMPORTANCE:**
+     Birthdays are valuable for EventPulse users because they enable:
+     - Birthday reminder emails
+     - Audience segmentation by age/birth month
+     - Personalized event invitations
+     - Better contact organization
+     
+     Therefore, you must ALWAYS ask for birthday information, even though it's technically optional.
      
      Maintain context about the user's contact patterns and management preferences.
   `,

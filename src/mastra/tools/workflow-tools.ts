@@ -254,7 +254,22 @@ export const createContactStepByStepTool = createTool({
 
 				return {
 					success: true,
-					message: `Perfect! Email address: **${value.trim()}**. Finally, what is their birthday? (You can enter MM/DD/YYYY format, natural language like "April 20, 1985", or say "skip" to skip this field)`,
+					message: `Perfect! Email address: **${value.trim()}**. 
+
+Now, what is their birthday? 🎂
+
+📅 **Why birthdays matter:**
+- Get automatic birthday reminders
+- Send personalized birthday emails
+- Better organize your contacts by age groups
+- Create birthday-themed events
+
+**How to provide the birthday:**
+- Use MM/DD/YYYY format (e.g., "04/20/1985")
+- Natural language (e.g., "April 20, 1985")
+- Or say "skip" if you don't want to provide it
+
+What's their birthday?`,
 					nextStep: "Waiting for birthday or skip",
 					completed: false,
 				};
