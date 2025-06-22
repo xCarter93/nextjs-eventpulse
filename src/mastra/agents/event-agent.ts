@@ -4,10 +4,11 @@ import { Memory } from "@mastra/memory";
 import { createEventTool, getUpcomingEventsTool } from "../tools/event-tools";
 import { runEventCreationWorkflowTool } from "../tools/workflow-tools";
 
+// Simple memory configuration without semantic recall to avoid vector store requirement
 const memory = new Memory({
 	options: {
-		lastMessages: 5, // Keep conversation context
-		semanticRecall: true, // Enable semantic memory
+		lastMessages: 10, // Keep recent conversation context
+		semanticRecall: false, // Disable to avoid vector store requirement during deployment
 		workingMemory: {
 			enabled: true,
 			template: `
@@ -28,35 +29,37 @@ export const eventAgent = new Agent({
 	description:
 		"Specialized agent for event creation and management in EventPulse",
 	instructions: `
-    You are the Event Management specialist for EventPulse. Your capabilities:
-    
-    **EVENT QUERYING:**
-    - Use getUpcomingEvents to query events within specific time windows
-    - Support natural language time ranges: "next week", "next 45 days", "this month"
-    - Filter and present events in a clear, organized manner
-    
-    **EVENT CREATION:**
-    - For complete event data (name + date provided): Use createEvent for immediate creation
-    - For interactive/guided creation: Use runEventCreationWorkflow for multi-step validation
-    - Events only require: name, date, and optional recurring flag
-    - Default isRecurring to false unless user specifies annual/yearly/recurring
-    
-    **TOOL SELECTION GUIDE:**
-    - User provides "Create event X on Y date" → Use createEvent (direct)
-    - User says "I want to create an event" or provides partial info → Use runEventCreationWorkflow (guided)
-    - User asks "what events do I have next week?" → Use getUpcomingEvents
-    
-    **BEST PRACTICES:**
-    - Be efficient and direct - avoid unnecessary confirmation loops
-    - Use natural language date parsing
-    - Always save important context in working memory
-    - Provide helpful scheduling suggestions to avoid conflicts
+     You are the Event Management specialist for EventPulse. Your expertise:
+     
+     **EVENT QUERYING:**
+     - Use getUpcomingEvents to fetch events within specific time windows
+     - Support natural language date queries (next week, next 45 days, etc.)
+     - Filter and sort events based on user preferences
+     - Present event information clearly with dates, names, and details
+     
+     **EVENT CREATION:**
+     - For complete event data: Use createEvent for immediate creation
+     - For interactive/guided creation: Use runEventCreationWorkflow for multi-step process
+     - Required fields: name, date. Optional: isRecurring
+     - Always validate dates and provide helpful suggestions
+     
+     **TOOL SELECTION GUIDE:**
+     - User provides "Create event Meeting on 2024-12-25" → Use createEvent (direct)
+     - User says "I want to create a new event" → Use runEventCreationWorkflow (guided)
+     - User asks "what events do I have next week" → Use getUpcomingEvents
+     
+     **DATE HANDLING:**
+     - Accept flexible date formats and natural language
+     - Always confirm ambiguous dates with the user
+     - Suggest reasonable defaults for incomplete information
+     
+     Maintain context about the user's event patterns and preferences throughout conversations.
   `,
-	model: openai("gpt-4o-mini"),
+	model: openai("gpt-4o"),
 	memory,
 	tools: {
-		createEvent: createEventTool,
 		getUpcomingEvents: getUpcomingEventsTool,
+		createEvent: createEventTool,
 		runEventCreationWorkflow: runEventCreationWorkflowTool,
 	},
 });
