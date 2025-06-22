@@ -78,6 +78,57 @@ export const runEventCreationWorkflowTool = createTool({
 	},
 });
 
+// Tool that runs the contact creation workflow
+export const runContactCreationWorkflowTool = createTool({
+	id: "run-contact-creation-workflow",
+	description:
+		"Execute the multi-step contact creation workflow with validation and error handling",
+	inputSchema: z.object({
+		name: z.string().min(1, "Contact name is required"),
+		email: z.string().email("Valid email address is required"),
+		birthday: z
+			.string()
+			.optional()
+			.describe("Birthday in any format (optional)"),
+	}),
+	outputSchema: z.object({
+		success: z.boolean(),
+		contactId: z.string().optional(),
+		message: z.string(),
+		contactDetails: z.object({
+			name: z.string(),
+			email: z.string(),
+			birthday: z.string().optional(),
+		}),
+	}),
+	execute: async ({ context, mastra }) => {
+		const { name, email, birthday } = context;
+
+		const workflow = mastra?.getWorkflow("contactCreationWorkflow");
+		if (!workflow) {
+			throw new Error("Contact creation workflow not found");
+		}
+
+		const run = workflow.createRun();
+
+		const result = await run.start({
+			inputData: {
+				name,
+				email,
+				birthday,
+			},
+		});
+
+		if (result.status === "success") {
+			return result.result;
+		} else if (result.status === "failed") {
+			throw new Error(`Workflow failed: ${result.error || "Unknown error"}`);
+		} else {
+			throw new Error(`Workflow in unexpected state: ${result.status}`);
+		}
+	},
+});
+
 // Import the simplified step-by-step event creation tool from event-tools
 export { createEventStepByStepTool, askForEventInfoTool } from "./event-tools";
 
