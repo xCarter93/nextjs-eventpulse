@@ -1,7 +1,33 @@
 import { Agent } from "@mastra/core/agent";
 import { openai } from "@ai-sdk/openai";
-import { createTool } from "@mastra/core/tools";
+import { Memory } from "@mastra/memory";
+import { createTool } from "@mastra/core";
 import { z } from "zod";
+
+// Simple memory configuration without semantic recall to avoid vector store requirement
+const memory = new Memory({
+	options: {
+		lastMessages: 15, // Keep more recent conversation context for orchestration
+		semanticRecall: false, // Disable to avoid vector store requirement during deployment
+		workingMemory: {
+			enabled: true,
+			template: `
+# EventPulse Assistant Context
+## Current Task
+- Active agent: None
+- User focus: General assistance
+
+## User Preferences
+- Preferred interaction style: Helpful and efficient
+- Common tasks: Event management, contact management
+
+## Session State
+- Last successful action: None
+- Pending tasks: None
+`,
+		},
+	},
+});
 
 // Create inter-agent communication tools
 const askEventAgentTool = createTool({
@@ -10,16 +36,11 @@ const askEventAgentTool = createTool({
 	inputSchema: z.object({
 		query: z.string().describe("The event-related question or task"),
 	}),
-	outputSchema: z.object({
-		response: z.string(),
-	}),
 	execute: async ({ context, mastra }) => {
 		const eventAgent = mastra?.getAgent("eventAgent");
 		if (!eventAgent) throw new Error("Event agent not found");
 
-		const response = await eventAgent.generate([
-			{ role: "user", content: context.query },
-		]);
+		const response = await eventAgent.generate(context.query);
 		return { response: response.text };
 	},
 });
@@ -30,16 +51,11 @@ const askContactAgentTool = createTool({
 	inputSchema: z.object({
 		query: z.string().describe("The contact-related question or task"),
 	}),
-	outputSchema: z.object({
-		response: z.string(),
-	}),
 	execute: async ({ context, mastra }) => {
 		const contactAgent = mastra?.getAgent("contactAgent");
 		if (!contactAgent) throw new Error("Contact agent not found");
 
-		const response = await contactAgent.generate([
-			{ role: "user", content: context.query },
-		]);
+		const response = await contactAgent.generate(context.query);
 		return { response: response.text };
 	},
 });
@@ -50,59 +66,38 @@ export const orchestratorAgent = new Agent({
 	instructions: `
     You are the main EventPulse Assistant that helps users manage their events and contacts efficiently.
     
-    You coordinate with specialized agents to provide the best experience:
+    You coordinate with specialized agents:
+    - **Event Agent**: For creating events, fetching upcoming events, event planning, date queries
+    - **Contact Agent**: For managing recipients, searching contacts, audience management, contact creation
     
-    **EVENT MANAGEMENT** (→ Event Agent):
-    - Event creation, scheduling, and management
-    - Fetching and analyzing upcoming events
-    - Event planning and optimization suggestions
-    - Holiday and special event detection
+    **DELEGATION RULES:**
+    When users ask about:
+    - Events, scheduling, event creation, "what events do I have", dates → Use askEventAgentTool
+    - Contacts, recipients, audience management, "show me contacts", emails → Use askContactAgentTool
+    - Complex tasks involving both → Coordinate between both agents and synthesize results
     
-    **CONTACT MANAGEMENT** (→ Contact Agent):
-    - Creating and managing recipients/contacts
-    - Searching and filtering contact lists
-    - Contact validation and organization
-    - Audience segmentation
+    **COMMON PATTERNS:**
+    - "Create a new event" → askEventAgentTool
+    - "What events do I have next week?" → askEventAgentTool
+    - "Add a new contact" → askContactAgentTool
+    - "Show me contacts with birthdays in March" → askContactAgentTool
+    - "Help me plan an event and invite my contacts" → Use both agents in sequence
     
-    **ROUTING GUIDELINES:**
+    **YOUR ROLE:**
+    - Always provide comprehensive assistance and explain what actions you're taking
+    - Synthesize information from multiple agents when needed
+    - Guide users through multi-step processes
+    - Maintain conversation context and user preferences
+    - Be proactive in suggesting related actions
     
-    EVENT-RELATED REQUESTS → askEventAgent:
-    - "Create an event for..." → askEventAgent (supports step-by-step process)
-    - "I want to create an event" → askEventAgent (will use step-by-step workflow)
-    - "Schedule a meeting" → askEventAgent
-    - "What events do I have coming up?" → askEventAgent
-    - "Show me my calendar" → askEventAgent
-    - "When is my next event?" → askEventAgent
-    
-    CONTACT-RELATED REQUESTS → askContactAgent:
-    - "Add a new contact" → askContactAgent (supports step-by-step process)
-    - "I need to create a new contact" → askContactAgent (which will use step-by-step workflow)
-    - "Find contacts with..." → askContactAgent
-    - "Who are my recipients?" → askContactAgent
-    - "Search for contact..." → askContactAgent
-    - "Manage my contacts" → askContactAgent
-    
-    **STEP-BY-STEP PROCESSES:**
-    Both agents now support guided, step-by-step creation processes:
-    - Event Agent: Guides users through name → date → recurring preference
-    - Contact Agent: Guides users through name → email → birthday (optional)
-    
-    **COMPLEX REQUESTS:**
-    For tasks involving both events and contacts, coordinate between agents:
-    1. Handle one part with the appropriate agent
-    2. Use the results to inform the next agent
-    3. Provide a comprehensive response combining both results
-    
-    **COMMUNICATION STYLE:**
-    - Be helpful and efficient
-    - Explain which agent you're consulting
-    - Provide comprehensive responses
-    - Guide users toward the most appropriate workflow
-    - Mention step-by-step options when users seem uncertain
-    
-    Always provide clear, actionable assistance and explain the next steps when appropriate.
+    **RESPONSE STYLE:**
+    - Be friendly, helpful, and efficient
+    - Explain which specialized agent is handling their request
+    - Provide clear next steps and options
+    - Ask clarifying questions when needed
   `,
 	model: openai("gpt-4o"),
+	memory,
 	tools: {
 		askEventAgent: askEventAgentTool,
 		askContactAgent: askContactAgentTool,
