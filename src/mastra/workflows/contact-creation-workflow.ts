@@ -7,7 +7,12 @@ import { ConvexHttpClient } from "convex/browser";
 const contactCreationInputSchema = z.object({
 	name: z.string().min(1, "Contact name is required"),
 	email: z.string().email("Valid email address is required"),
-	birthday: z.string().optional().describe("Birthday in any format (optional)"),
+	birthday: z
+		.string()
+		.optional()
+		.describe(
+			"Birthday in any format - IMPORTANT: Always ask for this even though optional, users can skip if desired"
+		),
 });
 
 // Output schema for the workflow
