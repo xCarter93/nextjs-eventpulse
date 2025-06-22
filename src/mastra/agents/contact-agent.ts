@@ -1,6 +1,5 @@
 import { Agent } from "@mastra/core/agent";
 import { openai } from "@ai-sdk/openai";
-import { Memory } from "@mastra/memory";
 import {
 	searchRecipientsTool,
 	getRecipientsTool,
@@ -9,26 +8,6 @@ import {
 	createContactStepByStepTool,
 	runContactCreationWorkflowTool,
 } from "../tools/workflow-tools";
-
-// Simple memory configuration without semantic recall to avoid vector store requirement
-const memory = new Memory({
-	options: {
-		lastMessages: 10, // Keep recent conversation context
-		semanticRecall: false, // Disable to avoid vector store requirement during deployment
-		workingMemory: {
-			enabled: true,
-			template: `
-# Contact Management Context
-## Recent Contacts
-- None yet
-
-## Search Patterns
-- Common searches: birthdays, groups, email domains
-- User preferences: sorting, filtering
-`,
-		},
-	},
-});
 
 export const contactAgent = new Agent({
 	name: "Contact Manager",
@@ -70,7 +49,6 @@ export const contactAgent = new Agent({
      Maintain context about the user's contact patterns and management preferences.
   `,
 	model: openai("gpt-4o"),
-	memory,
 	tools: {
 		searchRecipients: searchRecipientsTool,
 		getRecipients: getRecipientsTool,
