@@ -1,28 +1,7 @@
 import { Agent } from "@mastra/core/agent";
 import { openai } from "@ai-sdk/openai";
-import { Memory } from "@mastra/memory";
 import { createEventTool, getUpcomingEventsTool } from "../tools/event-tools";
 import { runEventCreationWorkflowTool } from "../tools/workflow-tools";
-
-// Simple memory configuration without semantic recall to avoid vector store requirement
-const memory = new Memory({
-	options: {
-		lastMessages: 10, // Keep recent conversation context
-		semanticRecall: false, // Disable to avoid vector store requirement during deployment
-		workingMemory: {
-			enabled: true,
-			template: `
-# Event Management Context
-## Recent Events
-- None yet
-
-## User Preferences
-- Default recurring: false
-- Preferred date format: flexible
-`,
-		},
-	},
-});
 
 export const eventAgent = new Agent({
 	name: "Event Manager",
@@ -56,7 +35,6 @@ export const eventAgent = new Agent({
      Maintain context about the user's event patterns and preferences throughout conversations.
   `,
 	model: openai("gpt-4o"),
-	memory,
 	tools: {
 		getUpcomingEvents: getUpcomingEventsTool,
 		createEvent: createEventTool,

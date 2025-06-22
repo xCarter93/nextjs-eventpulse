@@ -1,33 +1,7 @@
 import { Agent } from "@mastra/core/agent";
 import { openai } from "@ai-sdk/openai";
-import { Memory } from "@mastra/memory";
 import { createTool } from "@mastra/core";
 import { z } from "zod";
-
-// Simple memory configuration without semantic recall to avoid vector store requirement
-const memory = new Memory({
-	options: {
-		lastMessages: 15, // Keep more recent conversation context for orchestration
-		semanticRecall: false, // Disable to avoid vector store requirement during deployment
-		workingMemory: {
-			enabled: true,
-			template: `
-# EventPulse Assistant Context
-## Current Task
-- Active agent: None
-- User focus: General assistance
-
-## User Preferences
-- Preferred interaction style: Helpful and efficient
-- Common tasks: Event management, contact management
-
-## Session State
-- Last successful action: None
-- Pending tasks: None
-`,
-		},
-	},
-});
 
 // Create inter-agent communication tools
 const askEventAgentTool = createTool({
@@ -97,7 +71,6 @@ export const orchestratorAgent = new Agent({
     - Ask clarifying questions when needed
   `,
 	model: openai("gpt-4o"),
-	memory,
 	tools: {
 		askEventAgent: askEventAgentTool,
 		askContactAgent: askContactAgentTool,
