@@ -58,7 +58,7 @@ export async function getUserByTokenIdentifier(
 ): Promise<Doc<"users"> | null> {
 	return await ctx.db
 		.query("users")
-		.withIndex(INDEX_NAMES.BY_TOKEN_IDENTIFIER, (q) =>
+		.withIndex(INDEX_NAMES.BY_TOKEN_IDENTIFIER, (q: any) =>
 			q.eq("tokenIdentifier", tokenIdentifier)
 		)
 		.first();
@@ -67,14 +67,14 @@ export async function getUserByTokenIdentifier(
 /**
  * Get all resources for a user by type - common pattern across many queries
  */
-export async function getUserResources<T extends keyof typeof INDEX_NAMES>(
+export async function getUserResources<T extends "recipients" | "groups" | "customEvents" | "audioFiles">(
 	ctx: QueryCtx,
-	table: T extends "BY_USER_ID" ? "recipients" | "groups" | "customEvents" | "audioFiles" : never,
+	table: T,
 	userId: Id<"users">
-): Promise<Doc<typeof table>[]> {
+): Promise<Doc<T>[]> {
 	return await ctx.db
 		.query(table)
-		.withIndex(INDEX_NAMES.BY_USER_ID, (q) => q.eq("userId", userId))
+		.withIndex(INDEX_NAMES.BY_USER_ID, (q: any) => q.eq("userId", userId))
 		.collect();
 }
 
@@ -84,7 +84,7 @@ export async function getUserResources<T extends keyof typeof INDEX_NAMES>(
 export async function checkSubscriptionLimit(
 	ctx: QueryCtx | MutationCtx,
 	userId: Id<"users">,
-	resourceType: "recipients" | "animations" | "events",
+	resourceType: "recipients",
 	currentCount: number
 ): Promise<void> {
 	const subscriptionLevel = await ctx.runQuery(
@@ -100,14 +100,8 @@ export async function checkSubscriptionLimit(
 			maxAllowed = limits.maxRecipients;
 			errorMessage = "You have reached your recipient limit. Upgrade to Pro for unlimited recipients.";
 			break;
-		case "animations":
-			maxAllowed = limits.maxAnimations;
-			errorMessage = "You have reached your animation limit. Upgrade to Pro for unlimited animations.";
-			break;
-		case "events":
-			maxAllowed = limits.maxEvents || Infinity;
-			errorMessage = "You have reached your event limit. Upgrade to Pro for unlimited events.";
-			break;
+		default:
+			throw new ConvexError("Invalid resource type");
 	}
 
 	if (currentCount >= maxAllowed) {
