@@ -9,6 +9,8 @@ import {
 	type EmailComponent,
 	type ImageComponent,
 } from "../src/types/email-components";
+import { getCurrentUser, getCurrentUserOrNull } from "./lib/auth";
+import { INDEX_NAMES, DB_ERRORS } from "./lib/database";
 
 export const scheduleCustomEmail = mutation({
 	args: {
@@ -72,24 +74,14 @@ export const scheduleCustomEmail = mutation({
 	async handler(ctx, args) {
 		const identity = await ctx.auth.getUserIdentity();
 		if (!identity) {
-			throw new ConvexError("Not authenticated");
+			throw new ConvexError(DB_ERRORS.NOT_AUTHENTICATED);
 		}
 
 		if (!identity.email) {
 			throw new ConvexError("User email is required");
 		}
 
-		// Verify user has access to all recipients
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
-
-		if (!user) {
-			throw new ConvexError("User not found");
-		}
+		const user = await getCurrentUser(ctx);
 
 		// Get user's subscription level
 		const subscriptionLevel = await ctx.runQuery(
@@ -151,18 +143,7 @@ export const scheduleCustomEmail = mutation({
 
 export const listScheduledEmails = query({
 	async handler(ctx) {
-		const identity = await ctx.auth.getUserIdentity();
-
-		if (!identity) {
-			return [];
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
+		const user = await getCurrentUserOrNull(ctx);
 
 		if (!user) {
 			return [];
@@ -247,22 +228,7 @@ export const cancelScheduledEmail = mutation({
 		scheduledEmailId: v.id("_scheduled_functions"),
 	},
 	async handler(ctx, args) {
-		const identity = await ctx.auth.getUserIdentity();
-		if (!identity) {
-			throw new ConvexError("Not authenticated");
-		}
-
-		// Verify user has access to this scheduled email
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
-
-		if (!user) {
-			throw new ConvexError("User not found");
-		}
+		const user = await getCurrentUser(ctx);
 
 		// Get the scheduled email
 		const scheduledEmail = await ctx.db.system.get(args.scheduledEmailId);
@@ -298,7 +264,7 @@ export const cancelScheduledEmail = mutation({
 		).then((results) => results.some(Boolean));
 
 		if (!hasAccess) {
-			throw new ConvexError("Access denied");
+			throw new ConvexError(DB_ERRORS.ACCESS_DENIED);
 		}
 
 		// Cancel the scheduled email

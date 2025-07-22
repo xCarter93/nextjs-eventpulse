@@ -4,6 +4,8 @@ import { ConvexError } from "convex/values";
 import { getSubscriptionLevel } from "../src/lib/subscriptions";
 import { FREE_TIER_LIMITS } from "../src/lib/subscriptions";
 import Stripe from "stripe";
+import { getCurrentUserOrNull } from "./lib/auth";
+import { INDEX_NAMES, getUserByTokenIdentifier } from "./lib/database";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -25,15 +27,8 @@ export const createOrUpdate = mutation({
 	},
 	async handler(ctx, args) {
 		// Find user in Convex
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq(
-					"tokenIdentifier",
-					`https://${process.env.CLERK_HOSTNAME}|${args.userId}`
-				)
-			)
-			.first();
+		const tokenIdentifier = `https://${process.env.CLERK_HOSTNAME}|${args.userId}`;
+		const user = await getUserByTokenIdentifier(ctx, tokenIdentifier);
 
 		if (!user) {
 			throw new ConvexError("User not found");
@@ -42,7 +37,7 @@ export const createOrUpdate = mutation({
 		// Find existing subscription
 		const existingSubscription = await ctx.db
 			.query("subscriptions")
-			.withIndex("by_userId", (q) => q.eq("userId", user._id))
+			.withIndex(INDEX_NAMES.BY_USER_ID, (q) => q.eq("userId", user._id))
 			.first();
 
 		if (existingSubscription) {
@@ -74,7 +69,7 @@ export const deleteSubscription = mutation({
 		// Find and delete existing subscription
 		const existingSubscription = await ctx.db
 			.query("subscriptions")
-			.withIndex("by_stripeCustomerId", (q) =>
+			.withIndex(INDEX_NAMES.BY_STRIPE_CUSTOMER_ID, (q) =>
 				q.eq("stripeCustomerId", args.stripeCustomerId)
 			)
 			.first();
@@ -87,18 +82,7 @@ export const deleteSubscription = mutation({
 
 export const getUserSubscriptionLevel = query({
 	async handler(ctx) {
-		const identity = await ctx.auth.getUserIdentity();
-
-		if (!identity) {
-			return "free";
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
+		const user = await getCurrentUserOrNull(ctx);
 
 		if (!user) {
 			return "free";
@@ -106,10 +90,14 @@ export const getUserSubscriptionLevel = query({
 
 		const subscription = await ctx.db
 			.query("subscriptions")
-			.withIndex("by_userId", (q) => q.eq("userId", user._id))
+			.withIndex(INDEX_NAMES.BY_USER_ID, (q) => q.eq("userId", user._id))
 			.first();
 
-		return getSubscriptionLevel(subscription);
+		if (!subscription) {
+			return "free";
+		}
+
+		return getSubscriptionLevel(subscription.stripePriceId);
 	},
 });
 

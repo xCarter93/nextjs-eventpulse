@@ -1,6 +1,8 @@
 import { ConvexError } from "convex/values";
 import { QueryCtx, MutationCtx } from "../_generated/server";
 import { Doc, Id } from "../_generated/dataModel";
+import { INDEX_NAMES, DB_ERRORS, getUserByTokenIdentifier } from "./database";
+import { api } from "../_generated/api";
 
 /**
  * Get the current authenticated user or throw an error if not authenticated.
@@ -16,18 +18,13 @@ export async function getCurrentUser(
 	const identity = await ctx.auth.getUserIdentity();
 
 	if (!identity) {
-		throw new ConvexError("Not authenticated");
+		throw new ConvexError(DB_ERRORS.NOT_AUTHENTICATED);
 	}
 
-	const user = await ctx.db
-		.query("users")
-		.withIndex("by_tokenIdentifier", (q) =>
-			q.eq("tokenIdentifier", identity.tokenIdentifier)
-		)
-		.first();
+	const user = await getUserByTokenIdentifier(ctx, identity.tokenIdentifier);
 
 	if (!user) {
-		throw new ConvexError("User not found");
+		throw new ConvexError(DB_ERRORS.USER_NOT_FOUND);
 	}
 
 	return user;
@@ -50,14 +47,25 @@ export async function getCurrentUserOrNull(
 		return null;
 	}
 
-	const user = await ctx.db
-		.query("users")
-		.withIndex("by_tokenIdentifier", (q) =>
-			q.eq("tokenIdentifier", identity.tokenIdentifier)
-		)
-		.first();
+	return await getUserByTokenIdentifier(ctx, identity.tokenIdentifier);
+}
 
-	return user;
+/**
+ * Get the current user with their subscription information
+ * Common pattern used across multiple queries
+ */
+export async function getCurrentUserWithSubscription(
+	ctx: QueryCtx | MutationCtx
+): Promise<{
+	user: Doc<"users">;
+	subscriptionLevel: "free" | "pro";
+}> {
+	const user = await getCurrentUser(ctx);
+	const subscriptionLevel = await ctx.runQuery(
+		api.subscriptions.getUserSubscriptionLevel
+	);
+	
+	return { user, subscriptionLevel };
 }
 
 /**
@@ -80,7 +88,7 @@ export async function authorizeGroupAccess(
 
 	const group = await ctx.db.get(groupId);
 	if (!group || group.userId !== user._id) {
-		throw new ConvexError(AUTH_ERRORS.RESOURCE_NOT_FOUND);
+		throw new ConvexError(DB_ERRORS.RESOURCE_NOT_FOUND);
 	}
 
 	return { user, group };
@@ -106,7 +114,7 @@ export async function authorizeRecipientAccess(
 
 	const recipient = await ctx.db.get(recipientId);
 	if (!recipient || recipient.userId !== user._id) {
-		throw new ConvexError(AUTH_ERRORS.RESOURCE_NOT_FOUND);
+		throw new ConvexError(DB_ERRORS.RESOURCE_NOT_FOUND);
 	}
 
 	return { user, recipient };
@@ -132,7 +140,7 @@ export async function authorizeEventAccess(
 
 	const event = await ctx.db.get(eventId);
 	if (!event || event.userId !== user._id) {
-		throw new ConvexError(AUTH_ERRORS.RESOURCE_NOT_FOUND);
+		throw new ConvexError(DB_ERRORS.RESOURCE_NOT_FOUND);
 	}
 
 	return { user, event };
@@ -158,7 +166,7 @@ export async function authorizeAudioFileAccess(
 
 	const audioFile = await ctx.db.get(audioFileId);
 	if (!audioFile || audioFile.userId !== user._id) {
-		throw new ConvexError(AUTH_ERRORS.RESOURCE_NOT_FOUND);
+		throw new ConvexError(DB_ERRORS.RESOURCE_NOT_FOUND);
 	}
 
 	return { user, audioFile };
@@ -166,10 +174,11 @@ export async function authorizeAudioFileAccess(
 
 /**
  * Error messages for consistent error handling across the application
+ * @deprecated Use DB_ERRORS from database.ts instead
  */
 export const AUTH_ERRORS = {
-	NOT_AUTHENTICATED: "Not authenticated",
-	USER_NOT_FOUND: "User not found",
-	ACCESS_DENIED: "Access denied",
-	RESOURCE_NOT_FOUND: "Resource not found or access denied",
+	NOT_AUTHENTICATED: DB_ERRORS.NOT_AUTHENTICATED,
+	USER_NOT_FOUND: DB_ERRORS.USER_NOT_FOUND,
+	ACCESS_DENIED: DB_ERRORS.ACCESS_DENIED,
+	RESOURCE_NOT_FOUND: DB_ERRORS.RESOURCE_NOT_FOUND,
 } as const;

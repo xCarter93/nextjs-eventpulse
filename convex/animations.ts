@@ -10,6 +10,8 @@ import { ConvexError } from "convex/values";
 import { internal } from "./_generated/api";
 import { api } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
+import { getCurrentUser, getCurrentUserOrNull } from "./lib/auth";
+import { INDEX_NAMES, DB_ERRORS, checkSubscriptionLimit } from "./lib/database";
 
 export const generateUploadUrl = mutation(async (ctx) => {
 	return await ctx.storage.generateUploadUrl();
@@ -31,23 +33,11 @@ export const getAnimationUrlInternal = internalQuery({
 
 export const getUserAnimations = query({
 	handler: async (ctx) => {
-		const identity = await ctx.auth.getUserIdentity();
+		const user = await getCurrentUserOrNull(ctx);
 
 		// If user is not logged in, only return base animations
-		if (!identity) {
-			return [];
-		}
-
-		// Get user's custom animations
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
-
 		if (!user) {
-			throw new ConvexError("User not found");
+			return [];
 		}
 
 		const userAnimations = await ctx.db
@@ -61,7 +51,7 @@ export const getUserAnimations = query({
 			.collect();
 
 		// Get URLs for user animations
-		const userAnimationsWithUrls = await Promise.all(
+		return await Promise.all(
 			userAnimations.map(async (animation) => ({
 				...animation,
 				url: animation.storageId
@@ -69,9 +59,6 @@ export const getUserAnimations = query({
 					: undefined,
 			}))
 		);
-
-		// Return both base animations and user's custom animations
-		return [...userAnimationsWithUrls];
 	},
 });
 
@@ -82,43 +69,37 @@ export const saveAnimation = mutation({
 		description: v.string(),
 	},
 	handler: async (ctx, args): Promise<Id<"animations">> => {
-		const identity = await ctx.auth.getUserIdentity();
+		const user = await getCurrentUser(ctx);
 
-		if (!identity) {
-			throw new ConvexError("Not authenticated");
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
+		// Get current animation count and check subscription limits
+		const userAnimations = await ctx.db
+			.query("animations")
+			.filter((q) =>
+				q.and(
+					q.eq(q.field("userId"), user._id),
+					q.eq(q.field("isBaseAnimation"), false)
+				)
 			)
-			.first();
+			.collect();
 
-		if (!user) {
-			throw new ConvexError("User not found");
-		}
+		await checkSubscriptionLimit(ctx, user._id, "animations", userAnimations.length);
 
-		// Get user's subscription level
-		const subscriptionLevel: "free" | "pro" = await ctx.runQuery(
+		// Set expiration for free users (30 days from now)
+		const subscriptionLevel = await ctx.runQuery(
 			api.subscriptions.getUserSubscriptionLevel
 		);
+		const expirationDate = subscriptionLevel === "free" 
+			? Date.now() + 30 * 24 * 60 * 60 * 1000 
+			: undefined;
 
-		// Calculate expiration date for free tier users (10 days from now)
-		const expirationDate: number | undefined =
-			subscriptionLevel === "free"
-				? Date.now() + 10 * 24 * 60 * 60 * 1000 // 10 days in milliseconds
-				: undefined;
-
-		const animationId = await ctx.db.insert("animations", {
+		return await ctx.db.insert("animations", {
+			userId: user._id,
 			storageId: args.storageId,
 			name: args.name,
 			description: args.description,
 			isBaseAnimation: false,
-			userId: user._id,
 			expirationDate,
 		});
-		return animationId;
 	},
 });
 
@@ -196,72 +177,85 @@ export const getExpiredAnimations = internalQuery({
 	args: { currentTime: v.number() },
 });
 
-export const deleteAnimation = internalMutation({
-	handler: async (ctx, args) => {
+export const deleteAnimation = mutation({
+	args: {
+		id: v.id("animations"),
+	},
+	async handler(ctx, args) {
+		const user = await getCurrentUser(ctx);
+
+		const animation = await ctx.db.get(args.id);
+		if (!animation || animation.userId !== user._id) {
+			throw new ConvexError(DB_ERRORS.RESOURCE_NOT_FOUND);
+		}
+
+		// Don't allow deletion of base animations
+		if (animation.isBaseAnimation) {
+			throw new ConvexError("Cannot delete base animations");
+		}
+
+		// Delete the storage file if it exists
+		if (animation.storageId) {
+			await ctx.storage.delete(animation.storageId);
+		}
+
+		// Delete the database record
 		await ctx.db.delete(args.id);
 	},
-	args: { id: v.id("animations") },
 });
 
-export const getBaseAnimation = internalQuery({
-	args: {},
-	async handler(ctx) {
-		// Get a random base animation
+// Get base animations (available to all users)
+export const getBaseAnimations = query({
+	handler: async (ctx) => {
 		const baseAnimations = await ctx.db
 			.query("animations")
 			.filter((q) => q.eq(q.field("isBaseAnimation"), true))
 			.collect();
 
-		if (baseAnimations.length === 0) {
-			throw new Error("No base animations found");
-		}
-
-		// Return a random animation
-		const randomIndex = Math.floor(Math.random() * baseAnimations.length);
-		return baseAnimations[randomIndex];
+		return await Promise.all(
+			baseAnimations.map(async (animation) => ({
+				...animation,
+				url: animation.storageId
+					? await ctx.storage.getUrl(animation.storageId)
+					: undefined,
+			}))
+		);
 	},
 });
 
-export const getAnimation = internalQuery({
-	args: { id: v.id("animations") },
-	async handler(ctx, args) {
-		return await ctx.db.get(args.id);
-	},
-});
+// Get all animations (base + user's custom) - updated to use the new pattern
+export const getAllAnimations = query({
+	handler: async (ctx) => {
+		const user = await getCurrentUserOrNull(ctx);
 
-export const deleteUserAnimation = mutation({
-	args: {
-		id: v.id("animations"),
-	},
-	async handler(ctx, args) {
-		const identity = await ctx.auth.getUserIdentity();
+		// Get base animations
+		const baseAnimations = await ctx.db
+			.query("animations")
+			.filter((q) => q.eq(q.field("isBaseAnimation"), true))
+			.collect();
 
-		if (!identity) {
-			throw new ConvexError("Not authenticated");
+		let userAnimations: any[] = [];
+		if (user) {
+			userAnimations = await ctx.db
+				.query("animations")
+				.filter((q) =>
+					q.and(
+						q.eq(q.field("userId"), user._id),
+						q.eq(q.field("isBaseAnimation"), false)
+					)
+				)
+				.collect();
 		}
 
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
-
-		if (!user) {
-			throw new ConvexError("User not found");
-		}
-
-		const animation = await ctx.db.get(args.id);
-		if (!animation || animation.userId !== user._id) {
-			throw new ConvexError("Animation not found or access denied");
-		}
-
-		// Delete the file from storage if it exists
-		if (animation.storageId) {
-			await ctx.storage.delete(animation.storageId);
-		}
-
-		// Delete the animation record
-		await ctx.db.delete(args.id);
+		// Get URLs for all animations
+		const allAnimations = [...baseAnimations, ...userAnimations];
+		return await Promise.all(
+			allAnimations.map(async (animation) => ({
+				...animation,
+				url: animation.storageId
+					? await ctx.storage.getUrl(animation.storageId)
+					: undefined,
+			}))
+		);
 	},
 });

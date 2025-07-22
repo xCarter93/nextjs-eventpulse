@@ -6,7 +6,7 @@ import {
 	getCurrentUserOrNull,
 	authorizeGroupAccess,
 } from "./lib/auth";
-import { INDEX_NAMES } from "./lib/database";
+import { INDEX_NAMES, DB_ERRORS } from "./lib/database";
 
 export const getGroups = query({
 	async handler(ctx) {
@@ -16,12 +16,10 @@ export const getGroups = query({
 			return [];
 		}
 
-		const groups = await ctx.db
+		return await ctx.db
 			.query("groups")
 			.withIndex(INDEX_NAMES.BY_USER_ID, (q) => q.eq("userId", user._id))
 			.collect();
-
-		return groups;
 	},
 });
 
@@ -34,14 +32,12 @@ export const createGroup = mutation({
 	async handler(ctx, args) {
 		const user = await getCurrentUser(ctx);
 
-		const groupId = await ctx.db.insert("groups", {
+		return await ctx.db.insert("groups", {
 			userId: user._id,
 			name: args.name,
 			color: args.color || "#3b82f6", // Default blue color
 			description: args.description,
 		});
-
-		return groupId;
 	},
 });
 
@@ -53,12 +49,7 @@ export const updateGroup = mutation({
 		description: v.optional(v.string()),
 	},
 	async handler(ctx, args) {
-		const user = await getCurrentUser(ctx);
-
-		const existing = await ctx.db.get(args.id);
-		if (!existing || existing.userId !== user._id) {
-			throw new ConvexError("Group not found or access denied");
-		}
+		const { group } = await authorizeGroupAccess(ctx, args.id);
 
 		const updateData: {
 			name?: string;
@@ -84,7 +75,7 @@ export const deleteGroup = mutation({
 		// Remove this group from all recipients
 		const recipients = await ctx.db
 			.query("recipients")
-			.withIndex("by_userId", (q) => q.eq("userId", user._id))
+			.withIndex(INDEX_NAMES.BY_USER_ID, (q) => q.eq("userId", user._id))
 			.collect();
 
 		for (const recipient of recipients) {
@@ -108,32 +99,17 @@ export const addRecipientToGroup = mutation({
 		groupId: v.id("groups"),
 	},
 	async handler(ctx, args) {
-		const identity = await ctx.auth.getUserIdentity();
-
-		if (!identity) {
-			throw new ConvexError("Not authenticated");
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
-
-		if (!user) {
-			throw new ConvexError("User not found");
-		}
+		const user = await getCurrentUser(ctx);
 
 		const recipient = await ctx.db.get(args.recipientId);
 		const group = await ctx.db.get(args.groupId);
 
 		if (!recipient || recipient.userId !== user._id) {
-			throw new ConvexError("Recipient not found or access denied");
+			throw new ConvexError(DB_ERRORS.RESOURCE_NOT_FOUND);
 		}
 
 		if (!group || group.userId !== user._id) {
-			throw new ConvexError("Group not found or access denied");
+			throw new ConvexError(DB_ERRORS.RESOURCE_NOT_FOUND);
 		}
 
 		const currentGroupIds = recipient.groupIds || [];
@@ -151,27 +127,12 @@ export const removeRecipientFromGroup = mutation({
 		groupId: v.id("groups"),
 	},
 	async handler(ctx, args) {
-		const identity = await ctx.auth.getUserIdentity();
-
-		if (!identity) {
-			throw new ConvexError("Not authenticated");
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
-
-		if (!user) {
-			throw new ConvexError("User not found");
-		}
+		const user = await getCurrentUser(ctx);
 
 		const recipient = await ctx.db.get(args.recipientId);
 
 		if (!recipient || recipient.userId !== user._id) {
-			throw new ConvexError("Recipient not found or access denied");
+			throw new ConvexError(DB_ERRORS.RESOURCE_NOT_FOUND);
 		}
 
 		const currentGroupIds = recipient.groupIds || [];
@@ -185,18 +146,7 @@ export const removeRecipientFromGroup = mutation({
 
 export const getGroupsWithCounts = query({
 	async handler(ctx) {
-		const identity = await ctx.auth.getUserIdentity();
-
-		if (!identity) {
-			return [];
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
+		const user = await getCurrentUserOrNull(ctx);
 
 		if (!user) {
 			return [];
@@ -204,12 +154,12 @@ export const getGroupsWithCounts = query({
 
 		const groups = await ctx.db
 			.query("groups")
-			.withIndex("by_userId", (q) => q.eq("userId", user._id))
+			.withIndex(INDEX_NAMES.BY_USER_ID, (q) => q.eq("userId", user._id))
 			.collect();
 
 		const recipients = await ctx.db
 			.query("recipients")
-			.withIndex("by_userId", (q) => q.eq("userId", user._id))
+			.withIndex(INDEX_NAMES.BY_USER_ID, (q) => q.eq("userId", user._id))
 			.collect();
 
 		// Calculate counts for each group

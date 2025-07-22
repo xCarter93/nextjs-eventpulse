@@ -10,7 +10,7 @@ import { PRO_TIER_LIMITS } from "../src/lib/subscriptions";
 import { getCurrentUser, getCurrentUserOrNull } from "./lib/auth";
 import { userSettingsValidator } from "./lib/validators";
 import { DEFAULT_USER_SETTINGS } from "./lib/constants";
-import { INDEX_NAMES } from "./lib/database";
+import { INDEX_NAMES, getUserByTokenIdentifier } from "./lib/database";
 
 const DEFAULT_USER_STATE = {
 	lastSignedInDate: DEFAULT_USER_SETTINGS.LAST_SIGNED_IN_DATE(),
@@ -44,12 +44,7 @@ export const createUser = internalMutation({
 	},
 	async handler(ctx, args) {
 		// Check if user already exists
-		const existingUser = await ctx.db
-			.query("users")
-			.withIndex(INDEX_NAMES.BY_TOKEN_IDENTIFIER, (q) =>
-				q.eq("tokenIdentifier", args.tokenIdentifier)
-			)
-			.first();
+		const existingUser = await getUserByTokenIdentifier(ctx, args.tokenIdentifier);
 
 		if (existingUser) {
 			throw new ConvexError("User already exists");
@@ -74,7 +69,7 @@ export const getUser = query({
 		// Get subscription
 		const subscription = await ctx.db
 			.query("subscriptions")
-			.withIndex("by_userId", (q) => q.eq("userId", user._id))
+			.withIndex(INDEX_NAMES.BY_USER_ID, (q) => q.eq("userId", user._id))
 			.first();
 
 		return {
@@ -121,12 +116,7 @@ export const updateLastSignIn = internalMutation({
 		tokenIdentifier: v.string(),
 	},
 	handler: async (ctx, args) => {
-		const user = await ctx.db
-			.query("users")
-			.withIndex(INDEX_NAMES.BY_TOKEN_IDENTIFIER, (q) =>
-				q.eq("tokenIdentifier", args.tokenIdentifier)
-			)
-			.first();
+		const user = await getUserByTokenIdentifier(ctx, args.tokenIdentifier);
 
 		// If no user found, just return without throwing error
 		if (!user) {

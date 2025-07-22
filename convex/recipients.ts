@@ -2,35 +2,22 @@ import { v } from "convex/values";
 import { mutation, query, internalQuery } from "./_generated/server";
 import { ConvexError } from "convex/values";
 import { api, internal } from "./_generated/api";
-import { getSubscriptionLimits } from "../src/lib/subscriptions";
-import { authorizeRecipientAccess } from "./lib/auth";
+import { getCurrentUser, getCurrentUserOrNull, authorizeRecipientAccess } from "./lib/auth";
 import { recipientMetadataValidator } from "./lib/validators";
+import { INDEX_NAMES, checkSubscriptionLimit, DB_ERRORS } from "./lib/database";
 
 export const getRecipients = query({
 	async handler(ctx) {
-		const identity = await ctx.auth.getUserIdentity();
-
-		if (!identity) {
-			return [];
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
+		const user = await getCurrentUserOrNull(ctx);
 
 		if (!user) {
 			return [];
 		}
 
-		const recipients = await ctx.db
+		return await ctx.db
 			.query("recipients")
-			.withIndex("by_userId", (q) => q.eq("userId", user._id))
+			.withIndex(INDEX_NAMES.BY_USER_ID, (q) => q.eq("userId", user._id))
 			.collect();
-
-		return recipients;
 	},
 });
 
@@ -41,49 +28,22 @@ export const addRecipient = mutation({
 		birthday: v.number(),
 	},
 	async handler(ctx, args) {
-		const identity = await ctx.auth.getUserIdentity();
+		const user = await getCurrentUser(ctx);
 
-		if (!identity) {
-			throw new ConvexError("Not authenticated");
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
-
-		if (!user) {
-			throw new ConvexError("User not found");
-		}
-
-		// Get current recipient count and subscription level
+		// Get current recipient count and check subscription limits
 		const recipients = await ctx.db
 			.query("recipients")
-			.withIndex("by_userId", (q) => q.eq("userId", user._id))
+			.withIndex(INDEX_NAMES.BY_USER_ID, (q) => q.eq("userId", user._id))
 			.collect();
 
-		const subscriptionLevel = await ctx.runQuery(
-			api.subscriptions.getUserSubscriptionLevel
-		);
-		const limits = getSubscriptionLimits(subscriptionLevel);
+		await checkSubscriptionLimit(ctx, user._id, "recipients", recipients.length);
 
-		// Check if user has reached their recipient limit
-		if (recipients.length >= limits.maxRecipients) {
-			throw new ConvexError(
-				"You have reached your recipient limit. Upgrade to Pro for unlimited recipients."
-			);
-		}
-
-		const recipientId = await ctx.db.insert("recipients", {
+		return await ctx.db.insert("recipients", {
 			userId: user._id,
 			name: args.name,
 			email: args.email,
 			birthday: args.birthday,
 		});
-
-		return recipientId;
 	},
 });
 
@@ -111,27 +71,7 @@ export const updateRecipientMetadata = mutation({
 		metadata: recipientMetadataValidator,
 	},
 	async handler(ctx, args) {
-		const identity = await ctx.auth.getUserIdentity();
-
-		if (!identity) {
-			throw new ConvexError("Not authenticated");
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
-
-		if (!user) {
-			throw new ConvexError("User not found");
-		}
-
-		const existing = await ctx.db.get(args.id);
-		if (!existing || existing.userId !== user._id) {
-			throw new ConvexError("Recipient not found or access denied");
-		}
+		const { user, recipient } = await authorizeRecipientAccess(ctx, args.id);
 
 		// Get user's subscription level
 		const subscriptionLevel = await ctx.runQuery(
@@ -148,18 +88,18 @@ export const updateRecipientMetadata = mutation({
 			// Check if there's an existing anniversary event for this recipient
 			const existingEvents = await ctx.db
 				.query("customEvents")
-				.withIndex("by_userId", (q) => q.eq("userId", user._id))
+				.withIndex(INDEX_NAMES.BY_USER_ID, (q) => q.eq("userId", user._id))
 				.collect();
 
 			const existingAnniversaryEvent = existingEvents.find(
-				(event) => event.name === `Anniversary with ${existing.name}`
+				(event) => event.name === `Anniversary with ${recipient.name}`
 			);
 
 			// If no existing anniversary event, create one
 			if (!existingAnniversaryEvent) {
 				await ctx.db.insert("customEvents", {
 					userId: user._id,
-					name: `Anniversary with ${existing.name}`,
+					name: `Anniversary with ${recipient.name}`,
 					date: args.metadata.anniversaryDate,
 					isRecurring: true,
 				});
@@ -182,27 +122,7 @@ export const deleteRecipient = mutation({
 		id: v.id("recipients"),
 	},
 	async handler(ctx, args) {
-		const identity = await ctx.auth.getUserIdentity();
-
-		if (!identity) {
-			throw new ConvexError("Not authenticated");
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
-
-		if (!user) {
-			throw new ConvexError("User not found");
-		}
-
-		const existing = await ctx.db.get(args.id);
-		if (!existing || existing.userId !== user._id) {
-			throw new ConvexError("Recipient not found or access denied");
-		}
+		const { recipient } = await authorizeRecipientAccess(ctx, args.id);
 
 		// Delete any scheduled emails for this recipient
 		await ctx.runMutation(
@@ -241,19 +161,10 @@ export const getRecipient = query({
 		}
 
 		// For authenticated users, verify ownership
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
-
-		if (!user) {
-			throw new ConvexError("User not found");
-		}
+		const user = await getCurrentUser(ctx);
 
 		if (recipient.userId !== user._id) {
-			throw new ConvexError("Access denied");
+			throw new ConvexError(DB_ERRORS.ACCESS_DENIED);
 		}
 
 		return recipient;
@@ -267,7 +178,7 @@ export const listRecipients = internalQuery({
 	async handler(ctx, args) {
 		return await ctx.db
 			.query("recipients")
-			.filter((q) => q.eq(q.field("userId"), args.userId))
+			.withIndex(INDEX_NAMES.BY_USER_ID, (q) => q.eq("userId", args.userId))
 			.collect();
 	},
 });
