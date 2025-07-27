@@ -1,6 +1,12 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { ConvexError } from "convex/values";
+import { 
+	getCurrentUser, 
+	getCurrentUserOrNull,
+	authorizeResourceAccess,
+	authorizeAudioFileAccess
+} from "./lib/auth";
 
 // Generate an upload URL for audio files
 export const generateUploadUrl = mutation(async (ctx) => {
@@ -18,22 +24,10 @@ export const getAudioUrl = query({
 // Get all audio files for the current user
 export const getUserAudioFiles = query({
 	handler: async (ctx) => {
-		const identity = await ctx.auth.getUserIdentity();
-
-		if (!identity) {
-			return [];
-		}
-
-		// Get user
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
+		const user = await getCurrentUserOrNull(ctx);
 
 		if (!user) {
-			throw new ConvexError("User not found");
+			return [];
 		}
 
 		// Get audio files for the user
@@ -66,22 +60,7 @@ export const storeAudioFile = mutation({
 		isRecorded: v.boolean(),
 	},
 	async handler(ctx, args) {
-		const identity = await ctx.auth.getUserIdentity();
-
-		if (!identity) {
-			throw new ConvexError("Not authenticated");
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
-
-		if (!user) {
-			throw new ConvexError("User not found");
-		}
+		const user = await getCurrentUser(ctx);
 
 		const audioFileId = await ctx.db.insert("audioFiles", {
 			userId: user._id,
@@ -101,28 +80,7 @@ export const deleteAudioFile = mutation({
 		audioFileId: v.id("audioFiles"),
 	},
 	async handler(ctx, args) {
-		const identity = await ctx.auth.getUserIdentity();
-
-		if (!identity) {
-			throw new ConvexError("Not authenticated");
-		}
-
-		const audioFile = await ctx.db.get(args.audioFileId);
-
-		if (!audioFile) {
-			throw new ConvexError("Audio file not found");
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
-
-		if (!user || audioFile.userId !== user._id) {
-			throw new ConvexError("Not authorized");
-		}
+		const { user, audioFile } = await authorizeAudioFileAccess(ctx, args.audioFileId);
 
 		// Delete the file from storage
 		await ctx.storage.delete(audioFile.storageId);

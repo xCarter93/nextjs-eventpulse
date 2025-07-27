@@ -10,6 +10,12 @@ import { ConvexError } from "convex/values";
 import { internal } from "./_generated/api";
 import { api } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
+import {
+	getCurrentUser,
+	getCurrentUserOrNull,
+	getUserWithSubscription,
+	authorizeResourceAccess
+} from "./lib/auth";
 
 export const generateUploadUrl = mutation(async (ctx) => {
 	return await ctx.storage.generateUploadUrl();
@@ -31,23 +37,11 @@ export const getAnimationUrlInternal = internalQuery({
 
 export const getUserAnimations = query({
 	handler: async (ctx) => {
-		const identity = await ctx.auth.getUserIdentity();
+		const user = await getCurrentUserOrNull(ctx);
 
 		// If user is not logged in, only return base animations
-		if (!identity) {
-			return [];
-		}
-
-		// Get user's custom animations
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
-
 		if (!user) {
-			throw new ConvexError("User not found");
+			return [];
 		}
 
 		const userAnimations = await ctx.db
@@ -82,27 +76,7 @@ export const saveAnimation = mutation({
 		description: v.string(),
 	},
 	handler: async (ctx, args): Promise<Id<"animations">> => {
-		const identity = await ctx.auth.getUserIdentity();
-
-		if (!identity) {
-			throw new ConvexError("Not authenticated");
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
-
-		if (!user) {
-			throw new ConvexError("User not found");
-		}
-
-		// Get user's subscription level
-		const subscriptionLevel: "free" | "pro" = await ctx.runQuery(
-			api.subscriptions.getUserSubscriptionLevel
-		);
+		const { user, subscriptionLevel } = await getUserWithSubscription(ctx);
 
 		// Calculate expiration date for free tier users (10 days from now)
 		const expirationDate: number | undefined =
@@ -234,27 +208,11 @@ export const deleteUserAnimation = mutation({
 		id: v.id("animations"),
 	},
 	async handler(ctx, args) {
-		const identity = await ctx.auth.getUserIdentity();
-
-		if (!identity) {
-			throw new ConvexError("Not authenticated");
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
-
-		if (!user) {
-			throw new ConvexError("User not found");
-		}
-
-		const animation = await ctx.db.get(args.id);
-		if (!animation || animation.userId !== user._id) {
-			throw new ConvexError("Animation not found or access denied");
-		}
+		const { user, resource: animation } = await authorizeResourceAccess(
+			ctx,
+			args.id,
+			"Animation"
+		);
 
 		// Delete the file from storage if it exists
 		if (animation.storageId) {

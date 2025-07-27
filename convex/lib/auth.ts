@@ -165,6 +165,114 @@ export async function authorizeAudioFileAccess(
 }
 
 /**
+ * Authorize access to a generic resource by checking ownership.
+ * This is a generic version that can be used for any resource type that has a userId field.
+ *
+ * @param ctx - The query or mutation context
+ * @param resourceId - The ID of the resource to authorize
+ * @param resourceType - The type of resource being accessed (for error messages)
+ * @returns Promise<{user: Doc<"users">, resource: any}> - The user and resource if authorized
+ * @throws ConvexError if not authenticated, user not found, or access denied
+ */
+export async function authorizeResourceAccess<T extends { userId: Id<"users"> }>(
+	ctx: QueryCtx | MutationCtx,
+	resourceId: Id<any>,
+	resourceType: string = "Resource"
+): Promise<{
+	user: Doc<"users">;
+	resource: T;
+}> {
+	const user = await getCurrentUser(ctx);
+
+	const resource = await ctx.db.get(resourceId) as T | null;
+	if (!resource || resource.userId !== user._id) {
+		throw new ConvexError(`${resourceType} not found or access denied`);
+	}
+
+	return { user, resource };
+}
+
+/**
+ * Get user with subscription information.
+ * This combines user authentication with subscription level checking.
+ *
+ * @param ctx - The query or mutation context
+ * @returns Promise<{user: Doc<"users">, subscriptionLevel: "free" | "pro"}> - User and subscription level
+ * @throws ConvexError if not authenticated or user not found
+ */
+export async function getUserWithSubscription(
+	ctx: QueryCtx | MutationCtx
+): Promise<{
+	user: Doc<"users">;
+	subscriptionLevel: "free" | "pro";
+}> {
+	const user = await getCurrentUser(ctx);
+
+	const subscription = await ctx.db
+		.query("subscriptions")
+		.withIndex("by_userId", (q) => q.eq("userId", user._id))
+		.first();
+
+	return {
+		user,
+		subscriptionLevel: subscription ? "pro" : "free",
+	};
+}
+
+/**
+ * Check if the current user has a pro subscription.
+ * Throws an error with a specific message if not.
+ *
+ * @param ctx - The query or mutation context
+ * @param feature - The feature name that requires pro subscription
+ * @returns Promise<Doc<"users">> - The authenticated user if they have pro subscription
+ * @throws ConvexError if user doesn't have pro subscription
+ */
+export async function requireProSubscription(
+	ctx: QueryCtx | MutationCtx,
+	feature: string
+): Promise<Doc<"users">> {
+	const { user, subscriptionLevel } = await getUserWithSubscription(ctx);
+
+	if (subscriptionLevel !== "pro") {
+		throw new ConvexError(`${feature} requires a Pro subscription`);
+	}
+
+	return user;
+}
+
+/**
+ * Helper to create consistent authentication error responses.
+ * Use this for queries that should return a default value when not authenticated.
+ *
+ * @param defaultValue - The value to return when not authenticated
+ * @returns The default value
+ */
+export function authOrDefault<T>(defaultValue: T): T {
+	return defaultValue;
+}
+
+/**
+ * Get user by token identifier - for internal use only.
+ * This is used in internal mutations where we have the token identifier from external sources.
+ *
+ * @param ctx - The query or mutation context
+ * @param tokenIdentifier - The token identifier to look up
+ * @returns Promise<Doc<"users"> | null> - The user document or null if not found
+ */
+export async function getUserByTokenIdentifier(
+	ctx: QueryCtx | MutationCtx,
+	tokenIdentifier: string
+): Promise<Doc<"users"> | null> {
+	return await ctx.db
+		.query("users")
+		.withIndex("by_tokenIdentifier", (q) =>
+			q.eq("tokenIdentifier", tokenIdentifier)
+		)
+		.first();
+}
+
+/**
  * Error messages for consistent error handling across the application
  */
 export const AUTH_ERRORS = {

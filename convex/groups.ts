@@ -5,6 +5,7 @@ import {
 	getCurrentUser,
 	getCurrentUserOrNull,
 	authorizeGroupAccess,
+	authorizeResourceAccess
 } from "./lib/auth";
 import { INDEX_NAMES } from "./lib/database";
 
@@ -53,12 +54,11 @@ export const updateGroup = mutation({
 		description: v.optional(v.string()),
 	},
 	async handler(ctx, args) {
-		const user = await getCurrentUser(ctx);
-
-		const existing = await ctx.db.get(args.id);
-		if (!existing || existing.userId !== user._id) {
-			throw new ConvexError("Group not found or access denied");
-		}
+		const { user, resource: existing } = await authorizeResourceAccess(
+			ctx,
+			args.id,
+			"Group"
+		);
 
 		const updateData: {
 			name?: string;
@@ -108,22 +108,7 @@ export const addRecipientToGroup = mutation({
 		groupId: v.id("groups"),
 	},
 	async handler(ctx, args) {
-		const identity = await ctx.auth.getUserIdentity();
-
-		if (!identity) {
-			throw new ConvexError("Not authenticated");
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
-
-		if (!user) {
-			throw new ConvexError("User not found");
-		}
+		const user = await getCurrentUser(ctx);
 
 		const recipient = await ctx.db.get(args.recipientId);
 		const group = await ctx.db.get(args.groupId);
@@ -151,22 +136,7 @@ export const removeRecipientFromGroup = mutation({
 		groupId: v.id("groups"),
 	},
 	async handler(ctx, args) {
-		const identity = await ctx.auth.getUserIdentity();
-
-		if (!identity) {
-			throw new ConvexError("Not authenticated");
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
-
-		if (!user) {
-			throw new ConvexError("User not found");
-		}
+		const user = await getCurrentUser(ctx);
 
 		const recipient = await ctx.db.get(args.recipientId);
 
@@ -185,18 +155,7 @@ export const removeRecipientFromGroup = mutation({
 
 export const getGroupsWithCounts = query({
 	async handler(ctx) {
-		const identity = await ctx.auth.getUserIdentity();
-
-		if (!identity) {
-			return [];
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
+		const user = await getCurrentUserOrNull(ctx);
 
 		if (!user) {
 			return [];

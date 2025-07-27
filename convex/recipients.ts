@@ -3,23 +3,19 @@ import { mutation, query, internalQuery } from "./_generated/server";
 import { ConvexError } from "convex/values";
 import { api, internal } from "./_generated/api";
 import { getSubscriptionLimits } from "../src/lib/subscriptions";
-import { authorizeRecipientAccess } from "./lib/auth";
+import { 
+	authorizeRecipientAccess, 
+	getCurrentUser, 
+	getCurrentUserOrNull,
+	getUserWithSubscription,
+	requireProSubscription,
+	authorizeResourceAccess
+} from "./lib/auth";
 import { recipientMetadataValidator } from "./lib/validators";
 
 export const getRecipients = query({
 	async handler(ctx) {
-		const identity = await ctx.auth.getUserIdentity();
-
-		if (!identity) {
-			return [];
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
+		const user = await getCurrentUserOrNull(ctx);
 
 		if (!user) {
 			return [];
@@ -41,32 +37,14 @@ export const addRecipient = mutation({
 		birthday: v.number(),
 	},
 	async handler(ctx, args) {
-		const identity = await ctx.auth.getUserIdentity();
+		const { user, subscriptionLevel } = await getUserWithSubscription(ctx);
 
-		if (!identity) {
-			throw new ConvexError("Not authenticated");
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
-
-		if (!user) {
-			throw new ConvexError("User not found");
-		}
-
-		// Get current recipient count and subscription level
+		// Get current recipient count
 		const recipients = await ctx.db
 			.query("recipients")
 			.withIndex("by_userId", (q) => q.eq("userId", user._id))
 			.collect();
 
-		const subscriptionLevel = await ctx.runQuery(
-			api.subscriptions.getUserSubscriptionLevel
-		);
 		const limits = getSubscriptionLimits(subscriptionLevel);
 
 		// Check if user has reached their recipient limit
@@ -111,32 +89,19 @@ export const updateRecipientMetadata = mutation({
 		metadata: recipientMetadataValidator,
 	},
 	async handler(ctx, args) {
-		const identity = await ctx.auth.getUserIdentity();
-
-		if (!identity) {
-			throw new ConvexError("Not authenticated");
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
-
-		if (!user) {
-			throw new ConvexError("User not found");
-		}
-
-		const existing = await ctx.db.get(args.id);
-		if (!existing || existing.userId !== user._id) {
-			throw new ConvexError("Recipient not found or access denied");
-		}
+		const { user, resource: existing } = await authorizeResourceAccess(
+			ctx,
+			args.id,
+			"Recipient"
+		);
 
 		// Get user's subscription level
-		const subscriptionLevel = await ctx.runQuery(
-			api.subscriptions.getUserSubscriptionLevel
-		);
+		const subscription = await ctx.db
+			.query("subscriptions")
+			.withIndex("by_userId", (q) => q.eq("userId", user._id))
+			.first();
+
+		const subscriptionLevel = subscription ? "pro" : "free";
 
 		// If user is not on pro plan and trying to update address, throw error
 		if (subscriptionLevel !== "pro" && args.metadata.address) {
@@ -182,27 +147,11 @@ export const deleteRecipient = mutation({
 		id: v.id("recipients"),
 	},
 	async handler(ctx, args) {
-		const identity = await ctx.auth.getUserIdentity();
-
-		if (!identity) {
-			throw new ConvexError("Not authenticated");
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
-
-		if (!user) {
-			throw new ConvexError("User not found");
-		}
-
-		const existing = await ctx.db.get(args.id);
-		if (!existing || existing.userId !== user._id) {
-			throw new ConvexError("Recipient not found or access denied");
-		}
+		const { user, resource: existing } = await authorizeResourceAccess(
+			ctx,
+			args.id,
+			"Recipient"
+		);
 
 		// Delete any scheduled emails for this recipient
 		await ctx.runMutation(
@@ -228,7 +177,6 @@ export const getRecipientInternal = internalQuery({
 export const getRecipient = query({
 	args: { id: v.id("recipients") },
 	async handler(ctx, args) {
-		const identity = await ctx.auth.getUserIdentity();
 		const recipient = await ctx.db.get(args.id);
 
 		if (!recipient) {
@@ -236,21 +184,13 @@ export const getRecipient = query({
 		}
 
 		// If this is an internal call (no user identity), allow access
+		const identity = await ctx.auth.getUserIdentity();
 		if (!identity) {
 			return recipient;
 		}
 
 		// For authenticated users, verify ownership
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
-
-		if (!user) {
-			throw new ConvexError("User not found");
-		}
+		const user = await getCurrentUser(ctx);
 
 		if (recipient.userId !== user._id) {
 			throw new ConvexError("Access denied");
