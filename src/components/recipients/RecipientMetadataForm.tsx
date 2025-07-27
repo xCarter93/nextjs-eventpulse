@@ -98,7 +98,7 @@ export function RecipientMetadataForm({
 		api.recipients.updateRecipientMetadata
 	);
 	const updateRecipient = useMutation(api.recipients.updateRecipient);
-	const subscription = useQuery(api.subscriptions.getUserSubscription);
+	const subscription = useQuery(api.subscriptions.getActiveSubscription);
 	const isSubscriptionActive =
 		subscription && new Date(subscription.stripeCurrentPeriodEnd) > new Date();
 

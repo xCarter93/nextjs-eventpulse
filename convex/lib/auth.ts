@@ -174,9 +174,11 @@ export async function authorizeAudioFileAccess(
  * @returns Promise<{user: Doc<"users">, resource: T}> - The user and resource if authorized
  * @throws ConvexError if not authenticated, user not found, or access denied
  */
-export async function authorizeResourceAccess<T extends { userId: Id<"users"> }>(
+export async function authorizeResourceAccess<
+	T extends { userId: Id<"users"> },
+>(
 	ctx: QueryCtx | MutationCtx,
-	resourceId: Id<any>,
+	resourceId: Id<"groups" | "recipients" | "customEvents" | "audioFiles">,
 	resourceType: string = "Resource"
 ): Promise<{
 	user: Doc<"users">;
@@ -184,7 +186,7 @@ export async function authorizeResourceAccess<T extends { userId: Id<"users"> }>
 }> {
 	const user = await getCurrentUser(ctx);
 
-	const resource = await ctx.db.get(resourceId) as T | null;
+	const resource = (await ctx.db.get(resourceId)) as T | null;
 	if (!resource || resource.userId !== user._id) {
 		throw new ConvexError(`${resourceType} not found or access denied`);
 	}
