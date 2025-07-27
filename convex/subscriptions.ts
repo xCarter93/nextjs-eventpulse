@@ -4,6 +4,8 @@ import { ConvexError } from "convex/values";
 import { getSubscriptionLevel } from "../src/lib/subscriptions";
 import { FREE_TIER_LIMITS } from "../src/lib/subscriptions";
 import Stripe from "stripe";
+import { getCurrentUserOrNull, getCurrentUser, getUserByTokenIdentifier } from "./lib/auth";
+import { api } from "./_generated/api";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -25,15 +27,10 @@ export const createOrUpdate = mutation({
 	},
 	async handler(ctx, args) {
 		// Find user in Convex
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq(
-					"tokenIdentifier",
-					`https://${process.env.CLERK_HOSTNAME}|${args.userId}`
-				)
-			)
-			.first();
+		const user = await getUserByTokenIdentifier(
+			ctx,
+			`https://${process.env.CLERK_HOSTNAME}|${args.userId}`
+		);
 
 		if (!user) {
 			throw new ConvexError("User not found");
@@ -87,18 +84,7 @@ export const deleteSubscription = mutation({
 
 export const getUserSubscriptionLevel = query({
 	async handler(ctx) {
-		const identity = await ctx.auth.getUserIdentity();
-
-		if (!identity) {
-			return "free";
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
+		const user = await getCurrentUserOrNull(ctx);
 
 		if (!user) {
 			return "free";
@@ -109,24 +95,13 @@ export const getUserSubscriptionLevel = query({
 			.withIndex("by_userId", (q) => q.eq("userId", user._id))
 			.first();
 
-		return getSubscriptionLevel(subscription);
+		return subscription ? "pro" : "free";
 	},
 });
 
-export const getUserSubscription = query({
+export const getActiveSubscription = query({
 	async handler(ctx) {
-		const identity = await ctx.auth.getUserIdentity();
-
-		if (!identity) {
-			return null;
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
+		const user = await getCurrentUserOrNull(ctx);
 
 		if (!user) {
 			return null;
@@ -141,24 +116,83 @@ export const getUserSubscription = query({
 	},
 });
 
-export const cancelSubscription = mutation({
+export const isSubscribed = query({
 	async handler(ctx) {
-		const identity = await ctx.auth.getUserIdentity();
-
-		if (!identity) {
-			throw new ConvexError("Not authenticated");
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
+		const user = await getCurrentUserOrNull(ctx);
 
 		if (!user) {
-			throw new ConvexError("User not found");
+			return false;
 		}
+
+		const subscription = await ctx.db
+			.query("subscriptions")
+			.withIndex("by_userId", (q) => q.eq("userId", user._id))
+			.first();
+
+		return subscription
+			? !subscription.stripeCancelAtPeriodEnd &&
+					subscription.stripeCurrentPeriodEnd > Date.now()
+			: false;
+	},
+});
+
+export const getCheckoutSession = action({
+	args: {
+		priceId: v.string(),
+		email: v.string(),
+		userId: v.string(),
+	},
+	async handler(ctx, args) {
+		// For actions, we need to get authentication differently
+		// Actions don't have direct access to ctx.auth
+		// This would typically be handled by passing user info from the client
+		
+		// Validate the price ID is from our environment
+		const proPriceId = process.env.NEXT_PUBLIC_PRO_PRICE_ID;
+		if (args.priceId !== proPriceId) {
+			throw new ConvexError("Invalid price ID");
+		}
+
+		const domain = process.env.NEXT_PUBLIC_URL!;
+
+		const session = await stripe.checkout.sessions.create({
+			line_items: [{ price: args.priceId, quantity: 1 }],
+			customer_email: args.email,
+			mode: "subscription",
+			success_url: `${domain}/billing/success`,
+			cancel_url: `${domain}/billing`,
+			metadata: {
+				userId: args.userId,
+			},
+		});
+
+		return session.url;
+	},
+});
+
+export const createBillingPortalSession = action({
+	async handler(ctx) {
+		// Get the active subscription using the API reference
+		const subscription = await ctx.runQuery(api.subscriptions.getActiveSubscription);
+
+		if (!subscription || !subscription.stripeCustomerId) {
+			throw new ConvexError("No active subscription found");
+		}
+
+		const domain = process.env.NEXT_PUBLIC_URL!;
+
+		const session = await stripe.billingPortal.sessions.create({
+			customer: subscription.stripeCustomerId,
+			return_url: `${domain}/billing`,
+		});
+
+		return session.url;
+	},
+});
+
+export const cancelSubscription = mutation({
+	async handler(ctx) {
+		const user = await getCurrentUser(ctx);
 
 		// Get current subscription
 		const subscription = await ctx.db
@@ -170,45 +204,17 @@ export const cancelSubscription = mutation({
 			throw new ConvexError("No active subscription found");
 		}
 
-		// Check recipient count
-		const recipients = await ctx.db
-			.query("recipients")
-			.withIndex("by_userId", (q) => q.eq("userId", user._id))
-			.collect();
-
-		if (recipients.length > FREE_TIER_LIMITS.maxRecipients) {
-			throw new ConvexError(
-				`Please remove ${
-					recipients.length - FREE_TIER_LIMITS.maxRecipients
-				} recipients before cancelling. Free accounts are limited to ${
-					FREE_TIER_LIMITS.maxRecipients
-				} recipients.`
-			);
-		}
-
-		// Reset settings to free tier defaults
-		await ctx.db.patch(user._id, {
-			settings: {
-				...user.settings,
-				upcomingEvents: {
-					daysToShow: FREE_TIER_LIMITS.defaultEventLookAheadDays,
-					maxEvents: FREE_TIER_LIMITS.maxUpcomingEvents,
-				},
-				notifications: {
-					reminderDays: FREE_TIER_LIMITS.defaultReminderDays,
-					emailReminders: user.settings?.notifications?.emailReminders || {
-						events: true,
-						birthdays: true,
-						holidays: false,
-					},
-				},
-			},
+		// Cancel the subscription in Stripe
+		await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+			cancel_at_period_end: true,
 		});
 
-		// Delete the subscription from Convex
-		await ctx.db.delete(subscription._id);
+		// Update the subscription in the database
+		await ctx.db.patch(subscription._id, {
+			stripeCancelAtPeriodEnd: true,
+		});
 
-		return subscription.stripeSubscriptionId;
+		return subscription;
 	},
 });
 
