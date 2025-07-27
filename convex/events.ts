@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query, internalQuery } from "./_generated/server";
 import { ConvexError } from "convex/values";
-import { getCurrentUser, getCurrentUserOrNull } from "./lib/auth";
+import { getCurrentUser, getCurrentUserOrNull, authorizeResourceAccess } from "./lib/auth";
 
 export const createEvent = mutation({
 	args: {
@@ -26,27 +26,11 @@ export const deleteEvent = mutation({
 		id: v.id("customEvents"),
 	},
 	async handler(ctx, args) {
-		const identity = await ctx.auth.getUserIdentity();
-
-		if (!identity) {
-			throw new ConvexError("Not authenticated");
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
-
-		if (!user) {
-			throw new ConvexError("User not found");
-		}
-
-		const event = await ctx.db.get(args.id);
-		if (!event || event.userId !== user._id) {
-			throw new ConvexError("Event not found or access denied");
-		}
+		const { user, resource: event } = await authorizeResourceAccess(
+			ctx,
+			args.id,
+			"Event"
+		);
 
 		await ctx.db.delete(args.id);
 	},
@@ -91,22 +75,7 @@ export const syncGoogleCalendarEvents = mutation({
 		),
 	},
 	async handler(ctx, args) {
-		const identity = await ctx.auth.getUserIdentity();
-
-		if (!identity) {
-			throw new ConvexError("Not authenticated");
-		}
-
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_tokenIdentifier", (q) =>
-				q.eq("tokenIdentifier", identity.tokenIdentifier)
-			)
-			.first();
-
-		if (!user) {
-			throw new ConvexError("User not found");
-		}
+		const user = await getCurrentUser(ctx);
 
 		// Delete existing Google Calendar events
 		const existingEvents = await ctx.db
