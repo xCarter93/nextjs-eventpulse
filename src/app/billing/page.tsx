@@ -13,7 +13,7 @@ import { useEffect, useState } from "react";
 
 export default function Page() {
 	const { userId } = useAuth();
-	const subscription = useQuery(api.subscriptions.getUserSubscription);
+	const subscription = useQuery(api.subscriptions.getActiveSubscription);
 	const [priceInfo, setPriceInfo] =
 		useState<Stripe.Response<Stripe.Price> | null>(null);
 	const getPrice = useAction(api.subscriptions.getSubscriptionPrice);
