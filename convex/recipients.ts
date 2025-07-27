@@ -89,11 +89,7 @@ export const updateRecipientMetadata = mutation({
 		metadata: recipientMetadataValidator,
 	},
 	async handler(ctx, args) {
-		const { user, resource: existing } = await authorizeResourceAccess(
-			ctx,
-			args.id,
-			"Recipient"
-		);
+		const { user, recipient: existing } = await authorizeRecipientAccess(ctx, args.id);
 
 		// Get user's subscription level
 		const subscription = await ctx.db
@@ -147,11 +143,7 @@ export const deleteRecipient = mutation({
 		id: v.id("recipients"),
 	},
 	async handler(ctx, args) {
-		const { user, resource: existing } = await authorizeResourceAccess(
-			ctx,
-			args.id,
-			"Recipient"
-		);
+		const { user, recipient: existing } = await authorizeRecipientAccess(ctx, args.id);
 
 		// Delete any scheduled emails for this recipient
 		await ctx.runMutation(

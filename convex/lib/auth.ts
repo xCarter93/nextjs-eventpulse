@@ -171,7 +171,7 @@ export async function authorizeAudioFileAccess(
  * @param ctx - The query or mutation context
  * @param resourceId - The ID of the resource to authorize
  * @param resourceType - The type of resource being accessed (for error messages)
- * @returns Promise<{user: Doc<"users">, resource: any}> - The user and resource if authorized
+ * @returns Promise<{user: Doc<"users">, resource: T}> - The user and resource if authorized
  * @throws ConvexError if not authenticated, user not found, or access denied
  */
 export async function authorizeResourceAccess<T extends { userId: Id<"users"> }>(

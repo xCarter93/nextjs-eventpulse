@@ -208,11 +208,12 @@ export const deleteUserAnimation = mutation({
 		id: v.id("animations"),
 	},
 	async handler(ctx, args) {
-		const { user, resource: animation } = await authorizeResourceAccess(
-			ctx,
-			args.id,
-			"Animation"
-		);
+		const user = await getCurrentUser(ctx);
+		
+		const animation = await ctx.db.get(args.id);
+		if (!animation || animation.userId !== user._id) {
+			throw new ConvexError("Animation not found or access denied");
+		}
 
 		// Delete the file from storage if it exists
 		if (animation.storageId) {

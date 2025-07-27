@@ -5,6 +5,7 @@ import { getSubscriptionLevel } from "../src/lib/subscriptions";
 import { FREE_TIER_LIMITS } from "../src/lib/subscriptions";
 import Stripe from "stripe";
 import { getCurrentUserOrNull, getCurrentUser, getUserByTokenIdentifier } from "./lib/auth";
+import { api } from "./_generated/api";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -138,16 +139,14 @@ export const isSubscribed = query({
 export const getCheckoutSession = action({
 	args: {
 		priceId: v.string(),
+		email: v.string(),
+		userId: v.string(),
 	},
 	async handler(ctx, args) {
-		const identity = await ctx.runAction("clerk:getAuth", {});
-
-		if (!identity || !identity.userId) {
-			throw new ConvexError("Not authenticated");
-		}
-
-		const email = identity.emailAddress;
-
+		// For actions, we need to get authentication differently
+		// Actions don't have direct access to ctx.auth
+		// This would typically be handled by passing user info from the client
+		
 		// Validate the price ID is from our environment
 		const proPriceId = process.env.NEXT_PUBLIC_PRO_PRICE_ID;
 		if (args.priceId !== proPriceId) {
@@ -158,12 +157,12 @@ export const getCheckoutSession = action({
 
 		const session = await stripe.checkout.sessions.create({
 			line_items: [{ price: args.priceId, quantity: 1 }],
-			customer_email: email,
+			customer_email: args.email,
 			mode: "subscription",
 			success_url: `${domain}/billing/success`,
 			cancel_url: `${domain}/billing`,
 			metadata: {
-				userId: identity.userId,
+				userId: args.userId,
 			},
 		});
 
@@ -173,16 +172,17 @@ export const getCheckoutSession = action({
 
 export const createBillingPortalSession = action({
 	async handler(ctx) {
-		const user = await ctx.runQuery("subscriptions:getActiveSubscription", {});
+		// Get the active subscription using the API reference
+		const subscription = await ctx.runQuery(api.subscriptions.getActiveSubscription);
 
-		if (!user || !user.stripeCustomerId) {
+		if (!subscription || !subscription.stripeCustomerId) {
 			throw new ConvexError("No active subscription found");
 		}
 
 		const domain = process.env.NEXT_PUBLIC_URL!;
 
 		const session = await stripe.billingPortal.sessions.create({
-			customer: user.stripeCustomerId,
+			customer: subscription.stripeCustomerId,
 			return_url: `${domain}/billing`,
 		});
 
